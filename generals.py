@@ -21,3 +21,7 @@ GENERAL_OF_THE_ARMY = 14 # Five Stars
 SPY = 15 # Two Prying Eyes
 # Red pieces will be denoted 16 (FLAG) to 30 (SPY)
 UNKNOWN = 31 # Placeholder for unidentified enemy pieces
+
+# Designations of players
+BLUE = 1 # Moves first
+RED = 2
