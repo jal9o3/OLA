@@ -1,3 +1,11 @@
+import logging
+
+# Set up basic configuration
+logging.basicConfig(
+    level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+# Create a logger
+logger = logging.getLogger('my_logger')
+
 # Global constants for Game of the Generals
 ROWS = 8
 COLUMNS = 9
@@ -41,11 +49,11 @@ def main():
     red_board = [[BLANK for _ in range(COLUMNS)] for _ in range(ROWS)]
     
     # Initial formations span three rows
-    blue_formation = [BLANK for _ in range(COLUMNS) for _ in range(ROWS)]
-    red_formation = [BLANK for _ in range(COLUMNS) for _ in range(ROWS)]
+    blue_formation = [BLANK for _ in range(COLUMNS) for _ in range(3)]
+    red_formation = [BLANK for _ in range(COLUMNS) for _ in range(3)]
 
     # formation_temp = input("BLUE formation: ")
-    formation_temp = "1 15 15 2 2 2 2 0 2 3 4 5 6 7 8 9 10 11 0 13 14 0 0 12 0 2 0"
+    formation_temp = "1 15 15 2 2 2 2 0 2 3 4 5 6 7 8 9 10 11 0 13 14 0 0 12 2 0 0"
     # Preprocess input
     for i, p in enumerate(formation_temp.split(" ")):
         blue_formation[i] = int(p)
@@ -67,7 +75,7 @@ def main():
     #print_matrix(blue_board)
 
     # formation_temp = input("RED formation: ")
-    formation_temp = "1 15 0 2 2 2 2 2 2 3 4 5 6 7 0 9 10 11 12 13 14 0 0 8 0 15 0"
+    formation_temp = "1 15 0 2 2 2 2 2 2 3 4 5 6 7 0 9 10 11 12 13 14 0 0 8 15 0 0"
     # Preprocess input
     for i, p in enumerate(formation_temp.split(" ")):
         if int(p) != BLANK:
@@ -89,51 +97,66 @@ def main():
 
     # Flip the board matrix for the standard POV (blue on the bottom side):
     standard_pov = board[::-1]
-    standard_pov = [row[::-1] for row in standard_pov] # flip rows
+    #standard_pov = [row[::-1] for row in standard_pov] # flip rows
     
     print_matrix(board)
 
     print_matrix(standard_pov)
 
+    print(is_terminal(board, annotation))
+
 def is_terminal(board, annotation):
     # If either of the flags have been captured
-    if FLAG not in board or SPY + FLAG not in board:
+    if not any(FLAG in _ for _ in board) or \
+       not any(SPY + FLAG in _ for _ in board):
+        logger.debug("Check #1")
         return True
 
     # Procedure for checking adjacent enemy pieces in waiting flags
-    def has_adjacent(flag_col):
+    def has_adjacent(flag_col, nrow): # nrow is either the first or last row
+        logger.debug(f"flag_col: {flag_col}")
+        logger.debug("Inside has_adjacent function")
         # If not at the left or rightmost edge of the board
         if flag_col != 0 and flag_col != COLUMNS - 1:
             # Check both squares to the left and right
-            if not board[-1][flag_col - 1] and not board[-1][flag_col + 1]:
+            if not nrow[flag_col - 1] and not nrow[flag_col + 1]:
+                logger.debug("Not at edge, return True")
                 return True
-        elif flag_col == 0 and not board[-1][flag_col + 1]:
+        elif flag_col == 0 and not nrow[flag_col + 1]:
             # If flag is at the first column
             # and the square next to it is empty
+            logger.debug("First column, return True")
             return True
-        elif flag_col == COLUMNS - 1 and not board[-1][flag_col - 1]:
+        elif flag_col == COLUMNS - 1 and not nrow[flag_col - 1]:
             # If flag is at the last column
             # and the square before it is empty
+            logger.debug("Last column, return True")
             return True
+        else:
+            logger.debug("has_adjacent checks ended, return False")
+            return False
     
     # If the blue flag is on the other side of the board
     if FLAG in board[-1]:
         # If flag has already survived a turn
         if annotation[WAITING_BLUE_FLAG]:
+            logger.debug("Waiting blue flag, return True")
             return True
         else:
             flag_col = board[-1].index(FLAG) # Get the flag's column number
-            return has_adjacent(flag_col)
+            return has_adjacent(flag_col, board[-1])
 
     # Do the same checking for the red flag
     if SPY + FLAG in board[0]:
         if annotation[WAITING_RED_FLAG]:
+            logger.debug("Waiting red flag, return True")
             return True
         else:
-            flag_col = board[0].index(FLAG)
-            return has_adjacent(flag_col)
+            flag_col = board[0].index(SPY + FLAG)
+            return has_adjacent(flag_col, board[0])
 
     # If none of the checks have been passed, it is not a terminal state
+    logger.debug("No checks passed, return False")
     return False
             
 def print_matrix(board):
