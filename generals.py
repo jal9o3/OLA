@@ -39,7 +39,7 @@ def main():
     red_formation = [BLANK for _ in range(COLUMNS) for _ in range(ROWS)]
 
     # formation_temp = input("BLUE formation: ")
-    formation_temp = "1 15 15 2 2 2 2 2 2 3 4 5 6 7 8 9 10 11 12 13 14 0 0 0 0 0 0"
+    formation_temp = "1 15 15 2 2 2 2 0 2 3 4 5 6 7 8 9 10 11 0 13 14 0 0 12 0 2 0"
     # Preprocess input
     for i, p in enumerate(formation_temp.split(" ")):
         blue_formation[i] = int(p)
@@ -52,7 +52,13 @@ def main():
                 blue_board[row][column] = blue_formation[i]
                 i += 1
 
-    print_matrix(blue_board)
+    # Flip the blue board matrix:
+    # Flip the blue board matrix upside down 
+    blue_board = blue_board[::-1]
+    # Flip each blue board row left to right 
+    blue_board = [row[::-1] for row in blue_board]
+
+    #print_matrix(blue_board)
 
     # formation_temp = input("RED formation: ")
     formation_temp = "1 15 0 2 2 2 2 2 2 3 4 5 6 7 0 9 10 11 12 13 14 0 0 8 0 15 0"
@@ -68,22 +74,27 @@ def main():
             if i < len(red_formation):
                 red_board[row][column] = red_formation[i]
                 i += 1
-    # Flip the matrix
-    # Flip the matrix upside down 
-    red_board = red_board[::-1] 
-    # Flip each row left to right 
-    red_board = [row[::-1] for row in red_board]
 
-    print_matrix(red_board)
+    #print_matrix(red_board)
 
     # Perform matrix addition 
     board = [[blue_board[i][j] + red_board[i][j] for j in range(COLUMNS)] for i in range(len(board))]
 
+
+    # Flip the board matrix:
+    board = board[::-1]
+    board = [row[::-1] for row in board]
+    
     print_matrix(board)
 
-def print_matrix(matrix):
+def is_terminal(board):
+    # If either of the flags have been captured
+    if FLAG not in board or SPY + FLAG not in board:
+        return True
+
+def print_matrix(board):
     print()
-    for row in matrix: 
+    for row in board: 
         for elem in row: 
             print(f"{elem:2}", end=' ') 
         print()
