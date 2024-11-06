@@ -110,6 +110,12 @@ def main():
     print(moves)
     print(len(moves))
 
+    annotation[CURRENT_PLAYER] = RED
+
+    moves = actions(board, annotation)
+    print(moves)
+    print(len(moves))
+
 # Determine if the current state is a terminal state
 def is_terminal(board, annotation):
     # If either of the flags have been captured
@@ -169,37 +175,49 @@ def is_terminal(board, annotation):
 def actions(board, annotation):
     current_player = annotation[CURRENT_PLAYER]
     logger.debug(f"Current Player: {current_player}")
+
+    # Set ranges of piece designations
+    if current_player == BLUE:
+        range_start = FLAG
+        range_end = SPY
+    else:
+        range_start = SPY + FLAG
+        range_end = SPY + SPY
+        
     moves = []
     # Iterate over every square of the board
     for row in range(ROWS):
         for column in range(COLUMNS):
             square = board[row][column]
-            #logger.debug(f"Square: {row}{column} - {square}")
             # Check for a piece that belongs to the current player
-            if square <= SPY and square > 0 and current_player == BLUE:
+            if square <= range_end and square >= range_start:
                 # Check for allied pieces in adjacent squares:
                 if row != ROWS - 1: # UP 
                     up_square = board[row + 1][column]
                     logger.debug(f"up: {up_square}")
-                    if not up_square <= SPY or up_square == BLANK:
+                    if not up_square <= range_end and \
+                       not up_square >= range_start or up_square == BLANK:
                         logger.debug("Appending up square")
                         moves.append(f"{row}{column}{row + 1}{column}")
                 if row != 0: # DOWN
                     down_square = board[row - 1][column]
                     logger.debug(f"down {down_square}")
-                    if not down_square <= SPY or down_square == BLANK:
+                    if not down_square <= range_end and \
+                       not down_square >= range_start or down_square == BLANK:
                         logger.debug("Appending down square")
                         moves.append(f"{row}{column}{row - 1}{column}")
                 if column != COLUMNS - 1: # RIGHT
                     right_square = board[row][column + 1]
                     logger.debug(f"right {right_square}")
-                    if not right_square <= SPY or right_square == BLANK:
+                    if not right_square <= range_end and \
+                       not right_square >= range_start or right_square == BLANK:
                         logger.debug("Appending right square")
                         moves.append(f"{row}{column}{row}{column + 1}")
                 if column != 0: # LEFT
                     left_square = board[row][column - 1]
                     logger.debug(f"left {left_square}")
-                    if not left_square <= SPY or left_square == BLANK:
+                    if not left_square <= range_end and \
+                       not left_square >= range_start or left_square == BLANK:
                         logger.debug("Appending left square")
                         moves.append(f"{row}{column}{row}{column - 1}")
     return moves
