@@ -220,11 +220,7 @@ def actions(board, annotation):
                        not left_square >= range_start or left_square == BLANK:
                         logger.debug("Appending left square")
                         moves.append(f"{row}{column}{row}{column - 1}")
-    return moves
-                                     
-             
-                
-            
+    return moves            
 
 def print_matrix(board):
     print()
