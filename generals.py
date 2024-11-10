@@ -1,4 +1,4 @@
-import logging
+import logging, copy
 
 # Set up basic configuration
 logging.basicConfig(
@@ -67,10 +67,9 @@ def main():
                 blue_board[row][column] = blue_formation[i]
                 i += 1
 
-    # Flip the blue board matrix:
-    # Flip the blue board matrix upside down 
+    # Flip the blue board matrix: Flip the blue board matrix upside down
     blue_board = blue_board[::-1]
-    # Flip each blue board row left to right 
+    # Flip each blue board row left to right
     blue_board = [row[::-1] for row in blue_board]
 
     #print_matrix(blue_board)
@@ -92,7 +91,7 @@ def main():
 
     #print_matrix(red_board)
 
-    # Perform matrix addition 
+    # Perform matrix addition
     board = [[blue_board[i][j] + red_board[i][j] for j in range(COLUMNS)] for i in range(len(board))]
 
 
@@ -101,20 +100,25 @@ def main():
     #standard_pov = [row[::-1] for row in standard_pov] # flip rows
     
     print_matrix(board)
+    print(f"Player: {annotation[CURRENT_PLAYER]}")
 
-    print_matrix(standard_pov)
+    #print_matrix(standard_pov)
 
-    print(is_terminal(board, annotation))
-
-    moves = actions(board, annotation)
-    print(moves)
-    print(len(moves))
-
-    annotation[CURRENT_PLAYER] = RED
+    #print(is_terminal(board, annotation))
 
     moves = actions(board, annotation)
     print(moves)
     print(len(moves))
+
+    #annotation[CURRENT_PLAYER] = RED
+
+    #moves = actions(board, annotation)
+    #print(moves)
+    #print(len(moves))
+    new_board, new_annotation = transition(board, annotation, "0201")
+    print(f"Player: {new_annotation[CURRENT_PLAYER]}")
+
+    print_matrix(new_board)
 
 # Determine if the current state is a terminal state
 def is_terminal(board, annotation):
@@ -135,13 +139,11 @@ def is_terminal(board, annotation):
                 logger.debug("Not at edge, return True")
                 return True
         elif flag_col == 0 and not nrow[flag_col + 1]:
-            # If flag is at the first column
-            # and the square next to it is empty
+            # If flag is at the first column and the square next to it is empty
             logger.debug("First column, return True")
             return True
         elif flag_col == COLUMNS - 1 and not nrow[flag_col - 1]:
-            # If flag is at the last column
-            # and the square before it is empty
+            # If flag is at the last column and the square before it is empty
             logger.debug("Last column, return True")
             return True
         else:
@@ -192,7 +194,7 @@ def actions(board, annotation):
             # Check for a piece that belongs to the current player
             if square <= range_end and square >= range_start:
                 # Check for allied pieces in adjacent squares:
-                if row != ROWS - 1: # UP 
+                if row != ROWS - 1: # UP
                     up_square = board[row + 1][column]
                     logger.debug(f"up: {up_square}")
                     if not up_square <= range_end and \
@@ -222,12 +224,71 @@ def actions(board, annotation):
                         moves.append(f"{row}{column}{row}{column - 1}")
     return moves            
 
+def transition(board, annotation, action):
+    new_board = copy.deepcopy(board)
+    new_annotation = copy.deepcopy(annotation)
+
+    # Obtain indices of starting and destination squares
+    start_row = int(action[0])
+    start_col = int(action[1])
+    end_row = int(action[2])
+    end_col = int(action[3])
+
+    current_player = annotation[CURRENT_PLAYER]
+    
+    range_start = FLAG if current_player == BLUE else FLAG + SPY
+    range_end = SPY if current_player == BLUE else SPY + SPY
+
+    # Check if starting square's piece belongs to current player
+    if not (board[start_row][start_col] != BLANK and \
+            board[start_row][start_col] <= range_end and \
+            board[start_row][start_col] >= range_start):
+        return None
+    
+    # Check if destination square's piece does not belong to the current player
+    if board[end_row][end_col] != BLANK and \
+       board[end_row][end_col] <= range_end and \
+       board[end_row][end_col] >= range_start:
+        return None
+
+    def move_piece(start_row, start_col, end_row, end_col):
+       new_board[end_row][end_col] = board[start_row][start_col]
+       new_board[start_row][start_col] = BLANK
+
+    def handle_challenges(challenger_value, target_value):
+       # If challenging piece is stronger, move it to the opponent's square
+       if challenger_value > target_value:
+           move_piece(start_row, start_col, end_row, end_col)
+       elif challenger_value < target_value:
+           new_board[start_row][start_col] = BLANK # remove losing attacker
+       elif challenger_value == target_value:
+           new_board[start_row][start_col] = BLANK
+           new_board[end_row][end_col] = BLANK # remove both in tie
+
+    # If the destination square is blank, move selected piece to it
+    if board[end_row][end_col] == BLANK:
+        move_piece(start_row, start_col, end_row, end_col)
+    elif current_player == BLUE: # Handle challenges
+        opponent_value = board[end_row][end_col] - SPY
+        handle_challenges(board[start_row][start_row], opponent_value)  
+    elif current_player == RED:
+        own_value = board[start_row][start_col] - SPY
+        handle_challenges(own_value, board[end_row][end_col])
+        
+    new_annotation[CURRENT_PLAYER] = RED if current_player == BLUE else BLUE 
+    return (new_board, new_annotation)          
+
 def print_matrix(board):
     print()
-    for row in board: 
-        for elem in row: 
-            print(f"{elem:2}", end=' ') 
+    for i, row in enumerate(board):
+        print(f"{i:2}", end='  ')
+        for j, elem in enumerate(row): 
+            print(f"{elem:2}", end=' ')
         print()
+    print()
+    print("    ", end='')
+    for k in range(COLUMNS):
+        print(f"{k:2}", end=' ')
     print()       
 
 if __name__ == "__main__":
