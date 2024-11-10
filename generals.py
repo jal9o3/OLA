@@ -1,4 +1,4 @@
-import logging, copy
+import logging, copy, random
 
 # Set up basic configuration
 logging.basicConfig(
@@ -98,27 +98,37 @@ def main():
     # Flip the board matrix for the standard POV (blue on the bottom side):
     standard_pov = board[::-1]
     #standard_pov = [row[::-1] for row in standard_pov] # flip rows
+
+    # Sample random game ten plies deep
+    for i in range(15):
+        print(f"\nTurn: {i + 1}")
+        print_matrix(board)
+        print(f"Player: {annotation[CURRENT_PLAYER]}")
+        move = random.choice(actions(board, annotation))
+        print(f"Move: {move}")
+        board, annotation = transition(board, annotation, move)
+
     
-    print_matrix(board)
-    print(f"Player: {annotation[CURRENT_PLAYER]}")
+    #print_matrix(board)
+    #print(f"Player: {annotation[CURRENT_PLAYER]}")
 
     #print_matrix(standard_pov)
 
     #print(is_terminal(board, annotation))
 
-    moves = actions(board, annotation)
-    print(moves)
-    print(len(moves))
+    #moves = actions(board, annotation)
+    #print(moves)
+    #xcprint(len(moves))
 
     #annotation[CURRENT_PLAYER] = RED
 
     #moves = actions(board, annotation)
     #print(moves)
     #print(len(moves))
-    new_board, new_annotation = transition(board, annotation, "0201")
-    print(f"Player: {new_annotation[CURRENT_PLAYER]}")
+    #new_board, new_annotation = transition(board, annotation, "0201")
+    #print(f"Player: {new_annotation[CURRENT_PLAYER]}")
 
-    print_matrix(new_board)
+    #print_matrix(new_board)
 
 # Determine if the current state is a terminal state
 def is_terminal(board, annotation):
