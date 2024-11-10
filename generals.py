@@ -105,7 +105,7 @@ def main():
     moves_N = 0 # total number of branches found
     while not is_terminal(board, annotation):
         print(f"\nTurn: {i + 1}")
-        print_matrix(board)
+        print_matrix(board, color=True)
         print(f"Player: {annotation[CURRENT_PLAYER]}")
         moves = actions(board, annotation)
         moves_N += len(moves)
@@ -309,13 +309,17 @@ def has_none_adjacent(flag_col, nrow): # nrow is either the first or last row
         logger.debug("has_none_adjacent checks ended, return False")
         return False
 
-def print_matrix(board):
+def print_matrix(board, color=False):
     print()
     for i, row in enumerate(board):
         print(f"{i:2}", end='  ')
         for j, elem in enumerate(row): 
             if elem == BLANK:
                 print(" -", end=' ')
+            elif color and elem == FLAG:
+                print(f"\033[34m{elem:2}\033[0m", end=' ')
+            elif color and elem == FLAG + SPY:
+                print(f"\033[31m{elem:2}\033[0m", end=' ')
             else:
                 print(f"{elem:2}", end=' ')
         print()
