@@ -5,7 +5,7 @@ logging.basicConfig(
     level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 # Create a logger
 logger = logging.getLogger('my_logger')
-logger.setLevel(logging.WARNING)
+logger.setLevel(logging.INFO)
 
 # Global constants for Game of the Generals
 ROWS = 8
@@ -104,10 +104,13 @@ def main():
     i = 0
     moves_N = 0 # total number of branches found
     while not is_terminal(board, annotation):
+        if i == 200:
+            break
         print(f"\nTurn: {i + 1}")
         print_matrix(board, color=True)
         print(f"Player: {annotation[CURRENT_PLAYER]}")
         moves = actions(board, annotation)
+        print(moves)
         moves_N += len(moves)
         print(f"Possible Moves: {len(moves)}")
         move = random.choice(moves)
@@ -192,29 +195,29 @@ def actions(board, annotation):
                 if row != ROWS - 1: # UP
                     up_square = board[row + 1][column]
                     logger.debug(f"up: {up_square}")
-                    if not up_square <= range_end and \
-                       not up_square >= range_start or up_square == BLANK:
+                    if not (up_square <= range_end and \
+                       up_square >= range_start) or up_square == BLANK:
                         logger.debug("Appending up square")
                         moves.append(f"{row}{column}{row + 1}{column}")
                 if row != 0: # DOWN
                     down_square = board[row - 1][column]
                     logger.debug(f"down {down_square}")
-                    if not down_square <= range_end and \
-                       not down_square >= range_start or down_square == BLANK:
+                    if not (down_square <= range_end and \
+                       down_square >= range_start) or down_square == BLANK:
                         logger.debug("Appending down square")
                         moves.append(f"{row}{column}{row - 1}{column}")
                 if column != COLUMNS - 1: # RIGHT
                     right_square = board[row][column + 1]
                     logger.debug(f"right {right_square}")
-                    if not right_square <= range_end and \
-                       not right_square >= range_start or right_square == BLANK:
+                    if not (right_square <= range_end and \
+                       right_square >= range_start) or right_square == BLANK:
                         logger.debug("Appending right square")
                         moves.append(f"{row}{column}{row}{column + 1}")
                 if column != 0: # LEFT
                     left_square = board[row][column - 1]
                     logger.debug(f"left {left_square}")
-                    if not left_square <= range_end and \
-                       not left_square >= range_start or left_square == BLANK:
+                    if not (left_square <= range_end and \
+                       left_square >= range_start) or left_square == BLANK:
                         logger.debug("Appending left square")
                         moves.append(f"{row}{column}{row}{column - 1}")
     return moves            
@@ -267,12 +270,15 @@ def transition(board, annotation, action):
     # If the destination square is blank, move selected piece to it
     if board[end_row][end_col] == BLANK:
         move_piece(start_row, start_col, end_row, end_col)
+        logger.info(f"Piece {board[start_row][start_col]} moves to square {end_row}{end_col}")
     elif current_player == BLUE: # Handle challenges
         opponent_value = board[end_row][end_col] - SPY
-        handle_challenges(board[start_row][start_row], opponent_value)  
+        handle_challenges(board[start_row][start_row], opponent_value)
+        logger.info(f"BLUE {board[start_row][start_col]} challenges RED {opponent_value}")
     elif current_player == RED:
         own_value = board[start_row][start_col] - SPY
         handle_challenges(own_value, board[end_row][end_col])
+        logger.info(f"RED {own_value} challenges BLUE {board[end_row][end_col]}")
         
     new_annotation[CURRENT_PLAYER] = RED if current_player == BLUE else BLUE
     # If the blue flag reaches the other side
