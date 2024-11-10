@@ -100,14 +100,21 @@ def main():
     #standard_pov = [row[::-1] for row in standard_pov] # flip rows
 
     # Sample random game ten plies deep
-    for i in range(15):
+    #for i in range(15):
+    i = 0
+    moves_N = 0 # total number of branches found
+    while not is_terminal(board, annotation):
         print(f"\nTurn: {i + 1}")
         print_matrix(board)
         print(f"Player: {annotation[CURRENT_PLAYER]}")
-        move = random.choice(actions(board, annotation))
-        print(f"Move: {move}")
+        moves = actions(board, annotation)
+        moves_N += len(moves)
+        print(f"Possible Moves: {len(moves)}")
+        move = random.choice(moves)
+        print(f"Chosen Move: {move}")
         board, annotation = transition(board, annotation, move)
-
+        i += 1
+    print(f"Average branching: {moves_N/i}")
     
     #print_matrix(board)
     #print(f"Player: {annotation[CURRENT_PLAYER]}")
@@ -137,28 +144,6 @@ def is_terminal(board, annotation):
        not any(SPY + FLAG in _ for _ in board):
         logger.debug("Check #1")
         return True
-
-    # Procedure for checking adjacent enemy pieces in waiting flags
-    def has_adjacent(flag_col, nrow): # nrow is either the first or last row
-        logger.debug(f"flag_col: {flag_col}")
-        logger.debug("Inside has_adjacent function")
-        # If not at the left or rightmost edge of the board
-        if flag_col != 0 and flag_col != COLUMNS - 1:
-            # Check both squares to the left and right
-            if not nrow[flag_col - 1] and not nrow[flag_col + 1]:
-                logger.debug("Not at edge, return True")
-                return True
-        elif flag_col == 0 and not nrow[flag_col + 1]:
-            # If flag is at the first column and the square next to it is empty
-            logger.debug("First column, return True")
-            return True
-        elif flag_col == COLUMNS - 1 and not nrow[flag_col - 1]:
-            # If flag is at the last column and the square before it is empty
-            logger.debug("Last column, return True")
-            return True
-        else:
-            logger.debug("has_adjacent checks ended, return False")
-            return False
     
     # If the blue flag is on the other side of the board
     if FLAG in board[-1]:
@@ -168,7 +153,7 @@ def is_terminal(board, annotation):
             return True
         else:
             flag_col = board[-1].index(FLAG) # Get the flag's column number
-            return has_adjacent(flag_col, board[-1])
+            return has_none_adjacent(flag_col, board[-1])
 
     # Do the same checking for the red flag
     if SPY + FLAG in board[0]:
@@ -177,7 +162,7 @@ def is_terminal(board, annotation):
             return True
         else:
             flag_col = board[0].index(SPY + FLAG)
-            return has_adjacent(flag_col, board[0])
+            return has_none_adjacent(flag_col, board[0])
 
     # If none of the checks have been passed, it is not a terminal state
     logger.debug("No checks passed, return False")
@@ -272,8 +257,12 @@ def transition(board, annotation, action):
        elif challenger_value < target_value:
            new_board[start_row][start_col] = BLANK # remove losing attacker
        elif challenger_value == target_value:
-           new_board[start_row][start_col] = BLANK
-           new_board[end_row][end_col] = BLANK # remove both in tie
+           # Handle flag to flag challenge
+           if challenger_value == FLAG: # challenger flag wins
+               move_piece(start_row, start_col, end_row, end_col)
+           else: 
+               new_board[start_row][start_col] = BLANK
+               new_board[end_row][end_col] = BLANK # remove both in tie
 
     # If the destination square is blank, move selected piece to it
     if board[end_row][end_col] == BLANK:
@@ -285,15 +274,50 @@ def transition(board, annotation, action):
         own_value = board[start_row][start_col] - SPY
         handle_challenges(own_value, board[end_row][end_col])
         
-    new_annotation[CURRENT_PLAYER] = RED if current_player == BLUE else BLUE 
+    new_annotation[CURRENT_PLAYER] = RED if current_player == BLUE else BLUE
+    # If the blue flag reaches the other side
+    if FLAG in board[-1] and \
+       not annotation[WAITING_BLUE_FLAG] and \
+       not has_none_adjacent(board[-1].index(FLAG), board[-1]):
+       new_annotation[WAITING_BLUE_FLAG] = 1
+    # Check for the red flag
+    elif SPY + FLAG in board[0] and \ 
+         not annotation[WAITING_RED_FLAG] and \
+         not has_none_adjacent(board[0].index(SPY + FLAG), board[0]): 
+        new_annotation[WAITING_RED_FLAG] = 1
     return (new_board, new_annotation)          
+
+# Procedure for checking adjacent enemy pieces in waiting flags
+def has_none_adjacent(flag_col, nrow): # nrow is either the first or last row
+    logger.debug(f"flag_col: {flag_col}")
+    logger.debug("Inside has_none_adjacent function")
+    # If not at the left or rightmost edge of the board
+    if flag_col != 0 and flag_col != COLUMNS - 1:
+        # Check both squares to the left and right
+        if not nrow[flag_col - 1] and not nrow[flag_col + 1]:
+            logger.debug("Not at edge, return True")
+            return True
+    elif flag_col == 0 and not nrow[flag_col + 1]:
+        # If flag is at the first column and the square next to it is empty
+        logger.debug("First column, return True")
+        return True
+    elif flag_col == COLUMNS - 1 and not nrow[flag_col - 1]:
+        # If flag is at the last column and the square before it is empty
+        logger.debug("Last column, return True")
+        return True
+    else:
+        logger.debug("has_none_adjacent checks ended, return False")
+        return False
 
 def print_matrix(board):
     print()
     for i, row in enumerate(board):
         print(f"{i:2}", end='  ')
         for j, elem in enumerate(row): 
-            print(f"{elem:2}", end=' ')
+            if elem == BLANK:
+                print(" -", end=' ')
+            else:
+                print(f"{elem:2}", end=' ')
         print()
     print()
     print("    ", end='')
