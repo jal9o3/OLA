@@ -1,11 +1,11 @@
 import logging, copy, random
 
 # Set up basic configuration
-logging.basicConfig(
-    level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+#logging.basicConfig(
+    #level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 # Create a logger
-logger = logging.getLogger('my_logger')
-logger.setLevel(logging.INFO)
+#logger = logging.getLogger('my_logger')
+#logger.setLevel(logging.DEBUG)
 
 # Global constants for Game of the Generals
 ROWS = 8
@@ -39,6 +39,10 @@ RED = 2
 CURRENT_PLAYER = 0
 WAITING_BLUE_FLAG = 1 # If blue flag reaches enemy base with an adjacent enemy
 WAITING_RED_FLAG = 2 # Same for the red flag
+
+# Gameplay modes
+RANDOM_VS_RANDOM = 0
+HUMAN_VS_RANDOM = 1
 
 def main():
     # Board for arbiter
@@ -99,13 +103,14 @@ def main():
     standard_pov = board[::-1]
     #standard_pov = [row[::-1] for row in standard_pov] # flip rows
 
-    # Sample random game ten plies deep
-    #for i in range(15):
+    # Gameplay loop
+    mode = HUMAN_VS_RANDOM
     i = 0
     moves_N = 0 # total number of branches found
+    if mode == HUMAN_VS_RANDOM:
+        human = random.choice([BLUE, RED])
+        print(f"You are player {human}")
     while not is_terminal(board, annotation):
-        if i == 200:
-            break
         print(f"\nTurn: {i + 1}")
         print_matrix(board, color=True)
         print(f"Player: {annotation[CURRENT_PLAYER]}")
@@ -113,32 +118,16 @@ def main():
         print(moves)
         moves_N += len(moves)
         print(f"Possible Moves: {len(moves)}")
-        move = random.choice(moves)
+        move = ""
+        if mode == HUMAN_VS_RANDOM and annotation[CURRENT_PLAYER] == human:
+            while move not in moves:
+                move = input("Move: ")
+        else:
+            move = random.choice(moves)
         print(f"Chosen Move: {move}")
         board, annotation = transition(board, annotation, move)
         i += 1
-    print(f"Average branching: {moves_N/i}")
-    
-    #print_matrix(board)
-    #print(f"Player: {annotation[CURRENT_PLAYER]}")
-
-    #print_matrix(standard_pov)
-
-    #print(is_terminal(board, annotation))
-
-    #moves = actions(board, annotation)
-    #print(moves)
-    #xcprint(len(moves))
-
-    #annotation[CURRENT_PLAYER] = RED
-
-    #moves = actions(board, annotation)
-    #print(moves)
-    #print(len(moves))
-    #new_board, new_annotation = transition(board, annotation, "0201")
-    #print(f"Player: {new_annotation[CURRENT_PLAYER]}")
-
-    #print_matrix(new_board)
+    print(f"Average branching: {round(moves_N/i)}")
 
 # Determine if the current state is a terminal state
 def is_terminal(board, annotation):
@@ -168,11 +157,13 @@ def is_terminal(board, annotation):
             return has_none_adjacent(flag_col, board[0])
 
     # If none of the checks have been passed, it is not a terminal state
-    logger.debug("No checks passed, return False")
+    logger.debug("No terminal checks passed, return False")
     return False
 
 # Obtain all possible actions for each state
 def actions(board, annotation):
+    logger.setLevel(logging.INFO)
+    
     current_player = annotation[CURRENT_PLAYER]
     logger.debug(f"Current Player: {current_player}")
 
@@ -223,6 +214,13 @@ def actions(board, annotation):
     return moves            
 
 def transition(board, annotation, action):
+    # Set up basic configuration
+    #logging.basicConfig(
+        #level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+    # Create a logger
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+    
     new_board = copy.deepcopy(board)
     new_annotation = copy.deepcopy(annotation)
 
@@ -254,12 +252,25 @@ def transition(board, annotation, action):
        new_board[start_row][start_col] = BLANK
 
     def handle_challenges(challenger_value, target_value):
+       logger.debug("Handling a challenge") 
        # If challenging piece is stronger, move it to the opponent's square
        if challenger_value > target_value:
-           move_piece(start_row, start_col, end_row, end_col)
+           logger.debug("Challenger over Target")
+           if challenger_value == SPY and target_value == PRIVATE: # edge case
+               logger.info("SPY vs PRIVATE, removing attacking SPY")
+               new_board[start_row][start_col] = BLANK
+           else: 
+               move_piece(start_row, start_col, end_row, end_col)
        elif challenger_value < target_value:
-           new_board[start_row][start_col] = BLANK # remove losing attacker
+           logger.debug("Challenger below Target")
+           logger.debug(f"Challenger: {challenger_value} -- Target: {target_value}")
+           if challenger_value == PRIVATE and target_value == SPY:
+               logger.info("PRIVATE vs SPY, removing defending SPY")
+               move_piece(start_row, start_col, end_row, end_col)
+           else: 
+               new_board[start_row][start_col] = BLANK # remove losing attacker
        elif challenger_value == target_value:
+           logger.debug("Challenger equals Target")
            # Handle flag to flag challenge
            if challenger_value == FLAG: # challenger flag wins
                move_piece(start_row, start_col, end_row, end_col)
@@ -273,7 +284,7 @@ def transition(board, annotation, action):
         logger.info(f"Piece {board[start_row][start_col]} moves to square {end_row}{end_col}")
     elif current_player == BLUE: # Handle challenges
         opponent_value = board[end_row][end_col] - SPY
-        handle_challenges(board[start_row][start_row], opponent_value)
+        handle_challenges(board[start_row][start_col], opponent_value)
         logger.info(f"BLUE {board[start_row][start_col]} challenges RED {opponent_value}")
     elif current_player == RED:
         own_value = board[start_row][start_col] - SPY
