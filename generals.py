@@ -104,12 +104,14 @@ def main():
     #standard_pov = [row[::-1] for row in standard_pov] # flip rows
 
     # Gameplay loop
-    mode = HUMAN_VS_RANDOM
+    mode = RANDOM_VS_RANDOM
     i = 0
     moves_N = 0 # total number of branches found
     if mode == HUMAN_VS_RANDOM:
         human = random.choice([BLUE, RED])
         print(f"You are player {human}")
+    else:
+        human = 0
     while not is_terminal(board, annotation):
         print(f"\nTurn: {i + 1}")
         print_matrix(board, color=True)
@@ -219,7 +221,7 @@ def transition(board, annotation, action):
         #level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
     # Create a logger
     logger = logging.getLogger(__name__)
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
     
     new_board = copy.deepcopy(board)
     new_annotation = copy.deepcopy(annotation)
