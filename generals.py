@@ -29,7 +29,8 @@ GENERAL = 13 # Four Stars
 GENERAL_OF_THE_ARMY = 14 # Five Stars
 SPY = 15 # Two Prying Eyes
 # Red pieces will be denoted 16 (FLAG) to 30 (SPY)
-UNKNOWN = 31 # Placeholder for unidentified enemy pieces
+BLUE_UNKNOWN = 31 # Placeholder for unidentified blue enemy pieces
+RED_UNKNOWN = 32
 
 # Designations of players
 BLUE = 1 # Moves first
@@ -43,6 +44,11 @@ WAITING_RED_FLAG = 2 # Same for the red flag
 # Gameplay modes
 RANDOM_VS_RANDOM = 0
 HUMAN_VS_RANDOM = 1
+
+# State display levels
+WORLD = 0 # Every piece value is visible
+# BLUE = 1; RED = 2 (as above)
+BLIND = 3 # None of the piece values are visible
 
 def main():
     # Board for arbiter
@@ -114,7 +120,7 @@ def main():
         human = 0
     while not is_terminal(board, annotation):
         print(f"\nTurn: {i + 1}")
-        print_matrix(board, color=True)
+        print_matrix(board, color=True, pov=BLIND)
         print(f"Player: {annotation[CURRENT_PLAYER]}")
         moves = actions(board, annotation)
         print(moves)
@@ -133,6 +139,10 @@ def main():
 
 # Determine if the current state is a terminal state
 def is_terminal(board, annotation):
+
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
+    
     # If either of the flags have been captured
     if not any(FLAG in _ for _ in board) or \
        not any(SPY + FLAG in _ for _ in board):
@@ -164,6 +174,8 @@ def is_terminal(board, annotation):
 
 # Obtain all possible actions for each state
 def actions(board, annotation):
+
+    logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
     
     current_player = annotation[CURRENT_PLAYER]
@@ -328,19 +340,25 @@ def has_none_adjacent(flag_col, nrow): # nrow is either the first or last row
         logger.debug("has_none_adjacent checks ended, return False")
         return False
 
-def print_matrix(board, color=False):
+def print_matrix(board, color=False, pov=WORLD):
     print()
     for i, row in enumerate(board):
         print(f"{i:2}", end='  ')
         for j, elem in enumerate(row): 
             if elem == BLANK:
                 print(" -", end=' ')
-            elif color and elem == FLAG:
-                print(f"\033[34m{elem:2}\033[0m", end=' ')
-            elif color and elem == FLAG + SPY:
-                print(f"\033[31m{elem:2}\033[0m", end=' ')
-            else:
-                print(f"{elem:2}", end=' ')
+            elif pov == WORLD:
+                if color and elem == FLAG:
+                    print(f"\033[34m{elem:2}\033[0m", end=' ')
+                elif color and elem == FLAG + SPY:
+                    print(f"\033[31m{elem:2}\033[0m", end=' ')
+                else:
+                    print(f"{elem:2}", end=' ')
+            elif pov == BLIND:
+                if elem <= SPY and elem >= FLAG:
+                    print(f"{BLUE_UNKNOWN:2}", end=' ')
+                else:
+                    print(f"{RED_UNKNOWN:2}", end=' ')
         print()
     print()
     print("    ", end='')
