@@ -51,6 +51,9 @@ WORLD = 0 # Every piece value is visible
 BLIND = 3 # None of the piece values are visible
 
 def main():
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
+
     # Board for arbiter
     board = [[BLANK for _ in range(COLUMNS)] for _ in range(ROWS)]
     annotation = [BLUE, 0, 0]
@@ -64,7 +67,7 @@ def main():
     red_formation = [BLANK for _ in range(COLUMNS) for _ in range(3)]
 
     # formation_temp = input("BLUE formation: ")
-    formation_temp = "1 15 15 2 2 2 2 0 2 3 4 5 6 7 8 9 10 11 0 13 14 0 0 12 2 0 0"
+    formation_temp = "0 15 15 2 2 2 2 0 2 3 4 5 6 7 8 9 10 11 0 13 14 0 0 12 2 0 1"
     # Preprocess input
     for i, p in enumerate(formation_temp.split(" ")):
         blue_formation[i] = int(p)
@@ -85,7 +88,7 @@ def main():
     #print_matrix(blue_board)
 
     # formation_temp = input("RED formation: ")
-    formation_temp = "1 15 0 2 2 2 2 2 2 3 4 5 6 7 0 9 10 11 12 13 14 0 0 8 15 0 0"
+    formation_temp = "0 15 0 2 2 2 2 2 2 3 4 5 6 7 0 9 10 11 12 13 14 0 0 8 15 0 1"
     # Preprocess input
     for i, p in enumerate(formation_temp.split(" ")):
         if int(p) != BLANK:
@@ -120,7 +123,10 @@ def main():
         human = 0
     while not is_terminal(board, annotation):
         print(f"\nTurn: {i + 1}")
-        print_matrix(board, color=True, pov=BLIND)
+        if mode == RANDOM_VS_RANDOM:
+            print_matrix(board, color=True, pov=WORLD)
+        elif mode == HUMAN_VS_RANDOM:
+            print_matrix(board, color=True, pov=human)
         print(f"Player: {annotation[CURRENT_PLAYER]}")
         moves = actions(board, annotation)
         print(moves)
@@ -320,6 +326,9 @@ def transition(board, annotation, action):
 
 # Procedure for checking adjacent enemy pieces in waiting flags
 def has_none_adjacent(flag_col, nrow): # nrow is either the first or last row
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
+
     logger.debug(f"flag_col: {flag_col}")
     logger.debug("Inside has_none_adjacent function")
     # If not at the left or rightmost edge of the board
@@ -341,6 +350,9 @@ def has_none_adjacent(flag_col, nrow): # nrow is either the first or last row
         return False
 
 def print_matrix(board, color=False, pov=WORLD):
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
+    
     print()
     for i, row in enumerate(board):
         print(f"{i:2}", end='  ')
@@ -359,6 +371,21 @@ def print_matrix(board, color=False, pov=WORLD):
                     print(f"{BLUE_UNKNOWN:2}", end=' ')
                 else:
                     print(f"{RED_UNKNOWN:2}", end=' ')
+            elif pov == BLUE:
+                if color and elem == FLAG:
+                    print(f"\033[34m{elem:2}\033[0m", end=' ')
+                elif elem <= SPY and elem >= FLAG:
+                    print(f"{elem:2}", end=' ') # optimize repeated code later
+                else:
+                    print(f"{RED_UNKNOWN:2}", end=' ')
+            elif pov == RED:
+                if color and elem == FLAG + SPY:
+                    print(f"\033[31m{elem:2}\033[0m", end=' ')
+                elif elem <= 2*SPY and elem >= FLAG + SPY:
+                    print(f"{elem:2}", end=' ')
+                else:
+                    print(f"{BLUE_UNKNOWN:2}", end=' ')
+                            
         print()
     print()
     print("    ", end='')
