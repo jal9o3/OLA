@@ -1,5 +1,8 @@
 import logging, copy, random
 
+# Configure the logging
+logging.basicConfig(level=logging.WARNING)
+
 # Global constants for Game of the Generals
 ROWS = 8
 COLUMNS = 9
@@ -45,7 +48,7 @@ BLIND = 3 # None of the piece values are visible
 
 def main():
     logger = logging.getLogger(__name__)
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.WARNING)
 
     # Board for arbiter
     board = [[BLANK for _ in range(COLUMNS)] for _ in range(ROWS)]
@@ -217,7 +220,7 @@ def actions(board, annotation):
 def transition(board, annotation, action):
     # Create a logger
     logger = logging.getLogger(__name__)
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.WARNING)
     
     new_board = copy.deepcopy(board)
     new_annotation = copy.deepcopy(annotation)
