@@ -1,12 +1,5 @@
 import logging, copy, random
 
-# Set up basic configuration
-#logging.basicConfig(
-    #level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-# Create a logger
-#logger = logging.getLogger('my_logger')
-#logger.setLevel(logging.DEBUG)
-
 # Global constants for Game of the Generals
 ROWS = 8
 COLUMNS = 9
@@ -85,8 +78,6 @@ def main():
     # Flip each blue board row left to right
     blue_board = [row[::-1] for row in blue_board]
 
-    #print_matrix(blue_board)
-
     # formation_temp = input("RED formation: ")
     formation_temp = "0 15 0 2 2 2 2 2 2 3 4 5 6 7 0 9 10 11 12 13 14 0 0 8 15 0 1"
     # Preprocess input
@@ -101,8 +92,6 @@ def main():
             if i < len(red_formation):
                 red_board[row][column] = red_formation[i]
                 i += 1
-
-    #print_matrix(red_board)
 
     # Perform matrix addition
     board = [[blue_board[i][j] + red_board[i][j] for j in range(COLUMNS)] for i in range(len(board))]
@@ -205,38 +194,27 @@ def actions(board, annotation):
                 # Check for allied pieces in adjacent squares:
                 if row != ROWS - 1: # UP
                     up_square = board[row + 1][column]
-                    logger.debug(f"up: {up_square}")
                     if not (up_square <= range_end and \
                        up_square >= range_start) or up_square == BLANK:
-                        logger.debug("Appending up square")
                         moves.append(f"{row}{column}{row + 1}{column}")
                 if row != 0: # DOWN
                     down_square = board[row - 1][column]
-                    logger.debug(f"down {down_square}")
                     if not (down_square <= range_end and \
                        down_square >= range_start) or down_square == BLANK:
-                        logger.debug("Appending down square")
                         moves.append(f"{row}{column}{row - 1}{column}")
                 if column != COLUMNS - 1: # RIGHT
                     right_square = board[row][column + 1]
-                    logger.debug(f"right {right_square}")
                     if not (right_square <= range_end and \
                        right_square >= range_start) or right_square == BLANK:
-                        logger.debug("Appending right square")
                         moves.append(f"{row}{column}{row}{column + 1}")
                 if column != 0: # LEFT
                     left_square = board[row][column - 1]
-                    logger.debug(f"left {left_square}")
                     if not (left_square <= range_end and \
                        left_square >= range_start) or left_square == BLANK:
-                        logger.debug("Appending left square")
                         moves.append(f"{row}{column}{row}{column - 1}")
     return moves            
 
 def transition(board, annotation, action):
-    # Set up basic configuration
-    #logging.basicConfig(
-        #level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
     # Create a logger
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
@@ -272,25 +250,18 @@ def transition(board, annotation, action):
        new_board[start_row][start_col] = BLANK
 
     def handle_challenges(challenger_value, target_value):
-       logger.debug("Handling a challenge") 
        # If challenging piece is stronger, move it to the opponent's square
        if challenger_value > target_value:
-           logger.debug("Challenger over Target")
            if challenger_value == SPY and target_value == PRIVATE: # edge case
-               logger.info("SPY vs PRIVATE, removing attacking SPY")
                new_board[start_row][start_col] = BLANK
            else: 
                move_piece(start_row, start_col, end_row, end_col)
        elif challenger_value < target_value:
-           logger.debug("Challenger below Target")
-           logger.debug(f"Challenger: {challenger_value} -- Target: {target_value}")
            if challenger_value == PRIVATE and target_value == SPY:
-               logger.info("PRIVATE vs SPY, removing defending SPY")
                move_piece(start_row, start_col, end_row, end_col)
            else: 
                new_board[start_row][start_col] = BLANK # remove losing attacker
        elif challenger_value == target_value:
-           logger.debug("Challenger equals Target")
            # Handle flag to flag challenge
            if challenger_value == FLAG: # challenger flag wins
                move_piece(start_row, start_col, end_row, end_col)
