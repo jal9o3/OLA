@@ -39,20 +39,18 @@ def is_terminal(board, annotation):
 
 # Obtain all possible actions for each state
 def actions(board, annotation):
-
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
     
     current_player = annotation[CURRENT_PLAYER]
-
     # Set ranges of piece designations
-    if current_player == BLUE:
-        range_start = FLAG
-        range_end = SPY
-    else:
-        range_start = SPY + FLAG
-        range_end = SPY + SPY
-        
+    range_start, range_end = (
+        (FLAG, SPY) if current_player == BLUE else (SPY + FLAG, SPY + SPY)
+    )   
+
+    def is_valid(square):
+        return not (range_start <= square <= range_end) or square == BLANK
+
     moves = []
     # Iterate over every square of the board
     for row in range(ROWS):
@@ -62,24 +60,16 @@ def actions(board, annotation):
             if square <= range_end and square >= range_start:
                 # Check for allied pieces in adjacent squares:
                 if row != ROWS - 1: # UP
-                    up_square = board[row + 1][column]
-                    if not (up_square <= range_end and \
-                       up_square >= range_start) or up_square == BLANK:
+                    if is_valid(board[row + 1][column]):
                         moves.append(f"{row}{column}{row + 1}{column}")
                 if row != 0: # DOWN
-                    down_square = board[row - 1][column]
-                    if not (down_square <= range_end and \
-                       down_square >= range_start) or down_square == BLANK:
+                    if is_valid(board[row - 1][column]):
                         moves.append(f"{row}{column}{row - 1}{column}")
                 if column != COLUMNS - 1: # RIGHT
-                    right_square = board[row][column + 1]
-                    if not (right_square <= range_end and \
-                       right_square >= range_start) or right_square == BLANK:
+                    if is_valid(board[row][column + 1]):
                         moves.append(f"{row}{column}{row}{column + 1}")
                 if column != 0: # LEFT
-                    left_square = board[row][column - 1]
-                    if not (left_square <= range_end and \
-                       left_square >= range_start) or left_square == BLANK:
+                    if is_valid(board[row][column - 1]):
                         moves.append(f"{row}{column}{row}{column - 1}")
     return moves            
 
