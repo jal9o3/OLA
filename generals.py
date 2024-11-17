@@ -6,95 +6,6 @@ logging.basicConfig(level=logging.WARNING)
 # Global constants
 from world_constants import *
 
-def main():
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.WARNING)
-
-    # Board for arbiter
-    board = [[BLANK for _ in range(COLUMNS)] for _ in range(ROWS)]
-    annotation = [BLUE, 0, 0]
-    
-    # Boards for both player POVs
-    blue_board = [[BLANK for _ in range(COLUMNS)] for _ in range(ROWS)]
-    red_board = [[BLANK for _ in range(COLUMNS)] for _ in range(ROWS)]
-    
-    # Initial formations span three rows
-    blue_formation = [BLANK for _ in range(COLUMNS) for _ in range(3)]
-    red_formation = [BLANK for _ in range(COLUMNS) for _ in range(3)]
-
-    # formation_temp = input("BLUE formation: ")
-    formation_temp = "0 15 15 2 2 2 2 0 2 3 4 5 6 7 8 9 10 11 0 13 14 0 0 12 2 0 1"
-    # Preprocess input
-    for i, p in enumerate(formation_temp.split(" ")):
-        blue_formation[i] = int(p)
-
-    # Place pieces on blue board
-    i = 0
-    for row in range(ROWS-3, ROWS):
-        for column in range(COLUMNS):
-            if i < len(blue_formation):
-                blue_board[row][column] = blue_formation[i]
-                i += 1
-
-    # Flip the blue board matrix: Flip the blue board matrix upside down
-    blue_board = blue_board[::-1]
-    # Flip each blue board row left to right
-    blue_board = [row[::-1] for row in blue_board]
-
-    # formation_temp = input("RED formation: ")
-    formation_temp = "0 15 0 2 2 2 2 2 2 3 4 5 6 7 0 9 10 11 12 13 14 0 0 8 15 0 1"
-    # Preprocess input
-    for i, p in enumerate(formation_temp.split(" ")):
-        if int(p) != BLANK:
-            red_formation[i] = int(p) + SPY # Red pieces range from 15 to 30
-
-    # Place pieces on red board
-    i = 0
-    for row in range(ROWS-3, ROWS):
-        for column in range(COLUMNS):
-            if i < len(red_formation):
-                red_board[row][column] = red_formation[i]
-                i += 1
-
-    # Perform matrix addition
-    board = [[blue_board[i][j] + red_board[i][j] for j in range(COLUMNS)] for i in range(len(board))]
-
-
-    # Flip the board matrix for the standard POV (blue on the bottom side):
-    standard_pov = board[::-1]
-    #standard_pov = [row[::-1] for row in standard_pov] # flip rows
-
-    # Gameplay loop
-    mode = RANDOM_VS_RANDOM
-    i = 0
-    moves_N = 0 # total number of branches found
-    if mode == HUMAN_VS_RANDOM:
-        human = random.choice([BLUE, RED])
-        print(f"You are player {human}")
-    else:
-        human = 0
-    while not is_terminal(board, annotation):
-        print(f"\nTurn: {i + 1}")
-        if mode == RANDOM_VS_RANDOM:
-            print_matrix(board, color=True, pov=WORLD)
-        elif mode == HUMAN_VS_RANDOM:
-            print_matrix(board, color=True, pov=human)
-        print(f"Player: {annotation[CURRENT_PLAYER]}")
-        moves = actions(board, annotation)
-        print(moves)
-        moves_N += len(moves)
-        print(f"Possible Moves: {len(moves)}")
-        move = ""
-        if mode == HUMAN_VS_RANDOM and annotation[CURRENT_PLAYER] == human:
-            while move not in moves:
-                move = input("Move: ")
-        else:
-            move = random.choice(moves)
-        print(f"Chosen Move: {move}")
-        board, annotation = transition(board, annotation, move)
-        i += 1
-    print(f"Average branching: {round(moves_N/i)}")
-
 # Determine if the current state is a terminal state
 def is_terminal(board, annotation):
 
@@ -298,6 +209,8 @@ def print_matrix(board, color=False, pov=WORLD):
                     print(f"\033[34m{elem:2}\033[0m", end=' ')
                 elif color and elem == FLAG + SPY:
                     print(f"\033[31m{elem:2}\033[0m", end=' ')
+                elif elem < 0: # for board diffs
+                    print(f"\033[33m{abs(elem):2}\033[0m", end=' ')
                 else:
                     print(f"{elem:2}", end=' ')
             elif pov == BLIND:
@@ -327,5 +240,104 @@ def print_matrix(board, color=False, pov=WORLD):
         print(f"{k:2}", end=' ')
     print()       
 
+def main():
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.WARNING)
+
+    # Board for arbiter
+    board = [[BLANK for _ in range(COLUMNS)] for _ in range(ROWS)]
+    annotation = [BLUE, 0, 0]
+    
+    # Boards for both player POVs
+    blue_board = [[BLANK for _ in range(COLUMNS)] for _ in range(ROWS)]
+    red_board = [[BLANK for _ in range(COLUMNS)] for _ in range(ROWS)]
+    
+    # Initial formations span three rows
+    blue_formation = [BLANK for _ in range(COLUMNS) for _ in range(3)]
+    red_formation = [BLANK for _ in range(COLUMNS) for _ in range(3)]
+
+    # formation_temp = input("BLUE formation: ")
+    formation_temp = "0 15 15 2 2 2 2 0 2 3 4 5 6 7 8 9 10 11 0 13 14 0 0 12 2 0 1"
+    # Preprocess input
+    for i, p in enumerate(formation_temp.split(" ")):
+        blue_formation[i] = int(p)
+
+    # Place pieces on blue board
+    i = 0
+    for row in range(ROWS-3, ROWS):
+        for column in range(COLUMNS):
+            if i < len(blue_formation):
+                blue_board[row][column] = blue_formation[i]
+                i += 1
+
+    # Flip the blue board matrix: Flip the blue board matrix upside down
+    blue_board = blue_board[::-1]
+    # Flip each blue board row left to right
+    blue_board = [row[::-1] for row in blue_board]
+
+    # formation_temp = input("RED formation: ")
+    formation_temp = "0 15 0 2 2 2 2 2 2 3 4 5 6 7 0 9 10 11 12 13 14 0 0 8 15 0 1"
+    # Preprocess input
+    for i, p in enumerate(formation_temp.split(" ")):
+        if int(p) != BLANK:
+            red_formation[i] = int(p) + SPY # Red pieces range from 15 to 30
+
+    # Place pieces on red board
+    i = 0
+    for row in range(ROWS-3, ROWS):
+        for column in range(COLUMNS):
+            if i < len(red_formation):
+                red_board[row][column] = red_formation[i]
+                i += 1
+
+    # Perform matrix addition
+    board = [[blue_board[i][j] + red_board[i][j] for j in range(COLUMNS)] for i in range(len(board))]
+
+
+    # Flip the board matrix for the standard POV (blue on the bottom side):
+    standard_pov = board[::-1]
+    #standard_pov = [row[::-1] for row in standard_pov] # flip rows
+
+    # Gameplay loop
+    mode = RANDOM_VS_RANDOM
+    i = 0
+    moves_N = 0 # total number of branches found
+    if mode == HUMAN_VS_RANDOM:
+        human = random.choice([BLUE, RED])
+        print(f"You are player {human}")
+    else:
+        human = 0
+    while not is_terminal(board, annotation):
+        print(f"\nTurn: {i + 1}")
+        if mode == RANDOM_VS_RANDOM:
+            print_matrix(board, color=True, pov=WORLD)
+        elif mode == HUMAN_VS_RANDOM:
+            print_matrix(board, color=True, pov=human)
+        print(f"Player: {annotation[CURRENT_PLAYER]}")
+        moves = actions(board, annotation)
+        print(moves)
+        moves_N += len(moves)
+        print(f"Possible Moves: {len(moves)}")
+        move = ""
+        if mode == HUMAN_VS_RANDOM and annotation[CURRENT_PLAYER] == human:
+            while move not in moves:
+                move = input("Move: ")
+        else:
+            move = random.choice(moves)
+        print(f"Chosen Move: {move}")
+
+        # Examine move result (WIN, LOSS, TIE):
+        new_board, new_annotation = transition(board, annotation, move)
+        # Perform matrix subtraction on old and new boards
+        board_diff = [[board[i][j] - new_board[i][j] for j in range(len(board[0]))] for i in range(len(board))]
+
+        print("Board Diff:")
+        print_matrix(board_diff)
+        # Overwrite old state
+        board, annotation = new_board, new_annotation
+        
+        i += 1
+    print(f"Average branching: {round(moves_N/i)}")
+    
 if __name__ == "__main__":
     main()
