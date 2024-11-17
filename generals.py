@@ -160,6 +160,9 @@ def has_none_adjacent(flag_col, nrow): # nrow is either the first or last row
 def print_matrix(board, color=False, pov=WORLD):
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
+
+    def colored(text, color_code):
+        return f"\033[{color_code}m{text:2}\033[0m"
     
     print()
     for i, row in enumerate(board):
@@ -169,36 +172,27 @@ def print_matrix(board, color=False, pov=WORLD):
                 print(" -", end=' ')
             elif pov == WORLD:
                 if color and elem == FLAG:
-                    print(f"\033[34m{elem:2}\033[0m", end=' ')
+                    print(colored(elem, "34"), end=' ')  # Blue
                 elif color and elem == FLAG + SPY:
-                    print(f"\033[31m{elem:2}\033[0m", end=' ')
-                elif elem < 0: # for board diffs
-                    print(f"\033[33m{abs(elem):2}\033[0m", end=' ')
+                    print(colored(elem, "31"), end=' ')  # Red
+                elif elem < 0:  # For board diffs
+                    print(colored(abs(elem), "33"), end=' ')  # Yellow
                 else:
                     print(f"{elem:2}", end=' ')
-            elif pov == BLIND:
+            elif pov in {BLIND, BLUE, RED}:
+                is_blue_pov = pov in {BLIND, BLUE}
                 if elem <= SPY and elem >= FLAG:
-                    print(f"{BLUE_UNKNOWN:2}", end=' ')
+                    if color and elem == FLAG and is_blue_pov:
+                        print(colored(elem, "34"), end=' ')  # Blue
+                    elif color and elem == FLAG + SPY and not is_blue_pov:
+                        print(colored(elem, "31"), end=' ')  # Red
+                    else:
+                        print(f"{elem:2}", end=' ')
                 else:
-                    print(f"{RED_UNKNOWN:2}", end=' ')
-            elif pov == BLUE:
-                if color and elem == FLAG:
-                    print(f"\033[34m{elem:2}\033[0m", end=' ')
-                elif elem <= SPY and elem >= FLAG:
-                    print(f"{elem:2}", end=' ') # optimize repeated code later
-                else:
-                    print(f"{RED_UNKNOWN:2}", end=' ')
-            elif pov == RED:
-                if color and elem == FLAG + SPY:
-                    print(f"\033[31m{elem:2}\033[0m", end=' ')
-                elif elem <= 2*SPY and elem >= FLAG + SPY:
-                    print(f"{elem:2}", end=' ')
-                else:
-                    print(f"{BLUE_UNKNOWN:2}", end=' ')
-                            
+                    unknown = BLUE_UNKNOWN if is_blue_pov else RED_UNKNOWN
+                    print(f"{unknown:2}", end=' ')                    
         print()
-    print()
-    print("    ", end='')
+    print("\n    ", end='')
     for k in range(COLUMNS):
         print(f"{k:2}", end=' ')
     print()       
