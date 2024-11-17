@@ -74,59 +74,48 @@ def actions(board, annotation):
     return moves            
 
 def transition(board, annotation, action):
-    # Create a logger
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.WARNING)
-    
-    new_board = copy.deepcopy(board)
-    new_annotation = copy.deepcopy(annotation)
-
-    # Obtain indices of starting and destination squares
-    start_row = int(action[0])
-    start_col = int(action[1])
-    end_row = int(action[2])
-    end_col = int(action[3])
-
-    current_player = annotation[CURRENT_PLAYER]
-    
-    range_start = FLAG if current_player == BLUE else FLAG + SPY
-    range_end = SPY if current_player == BLUE else SPY + SPY
-
-    # Check if starting square's piece belongs to current player
-    if not (board[start_row][start_col] != BLANK and \
-            board[start_row][start_col] <= range_end and \
-            board[start_row][start_col] >= range_start):
-        return None
-    
-    # Check if destination square's piece does not belong to the current player
-    if board[end_row][end_col] != BLANK and \
-       board[end_row][end_col] <= range_end and \
-       board[end_row][end_col] >= range_start:
-        return None
 
     def move_piece(start_row, start_col, end_row, end_col):
        new_board[end_row][end_col] = board[start_row][start_col]
        new_board[start_row][start_col] = BLANK
 
     def handle_challenges(challenger_value, target_value):
-       # If challenging piece is stronger, move it to the opponent's square
-       if challenger_value > target_value:
-           if challenger_value == SPY and target_value == PRIVATE: # edge case
-               new_board[start_row][start_col] = BLANK
-           else: 
-               move_piece(start_row, start_col, end_row, end_col)
-       elif challenger_value < target_value:
-           if challenger_value == PRIVATE and target_value == SPY:
-               move_piece(start_row, start_col, end_row, end_col)
-           else: 
-               new_board[start_row][start_col] = BLANK # remove losing attacker
-       elif challenger_value == target_value:
-           # Handle flag to flag challenge
-           if challenger_value == FLAG: # challenger flag wins
-               move_piece(start_row, start_col, end_row, end_col)
-           else: 
-               new_board[start_row][start_col] = BLANK
-               new_board[end_row][end_col] = BLANK # remove both in tie
+        # Edge case where PRIVATE defeats SPY
+        if ((challenger_value == SPY and target_value == PRIVATE)
+            or (challenger_value == PRIVATE and target_value == SPY)):
+            move_piece(start_row, start_col, end_row, end_col)
+            return
+        # Stronger piece or flag challenge
+        if (challenger_value > target_value
+            or (challenger_value == FLAG and target_value == FLAG)):            
+            move_piece(start_row, start_col, end_row, end_col)
+        elif challenger_value < target_value:
+            new_board[start_row][start_col] = BLANK # remove losing attacker
+        else:
+            # Remove both in tie
+            new_board[start_row][start_col] = BLANK
+            new_board[end_row][end_col] = BLANK
+    
+    new_board, new_annotation = copy.deepcopy(board), copy.deepcopy(annotation)
+
+    # Obtain indices of starting and destination squares
+    start_row, start_col, end_row, end_col = map(int, action)
+
+    current_player = annotation[CURRENT_PLAYER]
+    range_start = FLAG if current_player == BLUE else FLAG + SPY
+    range_end = SPY if current_player == BLUE else SPY + SPY
+
+    # Check if starting square's piece belongs to current player
+    if not (board[start_row][start_col] != BLANK
+            and range_start <= board[start_row][start_col] <= range_end):
+        return None
+    
+    # Check if destination square's piece does not belong to the current player
+    if (board[end_row][end_col] != BLANK
+        and range_start <= board[end_row][end_col] <= range_end):
+        return None
 
     # If the destination square is blank, move selected piece to it
     if board[end_row][end_col] == BLANK:
@@ -140,14 +129,12 @@ def transition(board, annotation, action):
         
     new_annotation[CURRENT_PLAYER] = RED if current_player == BLUE else BLUE
     # If the blue flag reaches the other side
-    if FLAG in board[-1] and \
-       not annotation[WAITING_BLUE_FLAG] and \
-       not has_none_adjacent(board[-1].index(FLAG), board[-1]):
-       new_annotation[WAITING_BLUE_FLAG] = 1
+    if (FLAG in board[-1] and not annotation[WAITING_BLUE_FLAG]
+        and not has_none_adjacent(board[-1].index(FLAG), board[-1])):
+        new_annotation[WAITING_BLUE_FLAG] = 1
     # Check for the red flag
-    elif SPY + FLAG in board[0] and \ 
-         not annotation[WAITING_RED_FLAG] and \
-         not has_none_adjacent(board[0].index(SPY + FLAG), board[0]): 
+    elif (SPY + FLAG in board[0] and not annotation[WAITING_RED_FLAG]
+          and not has_none_adjacent(board[0].index(SPY + FLAG), board[0])):
         new_annotation[WAITING_RED_FLAG] = 1
     return (new_board, new_annotation)          
 
