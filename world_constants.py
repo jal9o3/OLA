@@ -40,3 +40,8 @@ HUMAN_VS_RANDOM = 1
 WORLD = 0 # Every piece value is visible
 # BLUE = 1; RED = 2 (as above)
 BLIND = 3 # None of the piece values are visible
+
+# Challenge results
+DRAW = 0
+WIN = 1
+LOSS = 2

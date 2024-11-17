@@ -227,7 +227,8 @@ def main():
                 blue_board[row][column] = blue_formation[i]
                 i += 1
 
-    # Flip the blue board matrix: Flip the blue board matrix upside down
+    # Flip the blue board matrix:
+    # Flip the blue board matrix upside down
     blue_board = blue_board[::-1]
     # Flip each blue board row left to right
     blue_board = [row[::-1] for row in blue_board]
@@ -249,7 +250,6 @@ def main():
 
     # Perform matrix addition
     board = [[blue_board[i][j] + red_board[i][j] for j in range(COLUMNS)] for i in range(len(board))]
-
 
     # Flip the board matrix for the standard POV (blue on the bottom side):
     standard_pov = board[::-1]
@@ -288,8 +288,28 @@ def main():
         # Perform matrix subtraction on old and new boards
         board_diff = [[board[i][j] - new_board[i][j] for j in range(len(board[0]))] for i in range(len(board))]
 
-        print("Board Diff:")
-        print_matrix(board_diff)
+        # print("Board Diff:")
+        # print_matrix(board_diff)
+
+        # Examine move result
+        start_row, start_col, end_row, end_col = map(int, move) # get indices
+        challenger, target = board[start_row][start_col], board[end_row][end_col]
+        result = -1 # Placeholder value
+
+        # If the challenge removed both challenger and target (DRAW)
+        if (board_diff[start_row][start_col] == challenger
+            and board_diff[end_row][end_col] == target):
+            result = DRAW
+        elif (board_diff[start_row][start_col] == challenger
+              and board_diff[end_row][end_col] == (target - challenger)):
+            result = WIN
+        elif (board_diff[start_row][start_col] == challenger
+              and board_diff[end_row][end_col] == BLANK):
+            result = LOSS
+              
+        results = ["DRAW", "WIN", "LOSS"]
+        print(f"Result: {results[result]}") 
+            
         # Overwrite old state
         board, annotation = new_board, new_annotation
         
