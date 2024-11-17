@@ -15,14 +15,12 @@ def is_terminal(board, annotation):
     # If either of the flags have been captured
     if not any(FLAG in _ for _ in board) or \
        not any(SPY + FLAG in _ for _ in board):
-        logger.debug("Check #1")
         return True
     
     # If the blue flag is on the other side of the board
     if FLAG in board[-1]:
         # If flag has already survived a turn
         if annotation[WAITING_BLUE_FLAG]:
-            logger.debug("Waiting blue flag, return True")
             return True
         else:
             flag_col = board[-1].index(FLAG) # Get the flag's column number
@@ -31,14 +29,12 @@ def is_terminal(board, annotation):
     # Do the same checking for the red flag
     if SPY + FLAG in board[0]:
         if annotation[WAITING_RED_FLAG]:
-            logger.debug("Waiting red flag, return True")
             return True
         else:
             flag_col = board[0].index(SPY + FLAG)
             return has_none_adjacent(flag_col, board[0])
 
     # If none of the checks have been passed, it is not a terminal state
-    logger.debug("No terminal checks passed, return False")
     return False
 
 # Obtain all possible actions for each state
@@ -48,7 +44,6 @@ def actions(board, annotation):
     logger.setLevel(logging.INFO)
     
     current_player = annotation[CURRENT_PLAYER]
-    logger.debug(f"Current Player: {current_player}")
 
     # Set ranges of piece designations
     if current_player == BLUE:
@@ -146,15 +141,12 @@ def transition(board, annotation, action):
     # If the destination square is blank, move selected piece to it
     if board[end_row][end_col] == BLANK:
         move_piece(start_row, start_col, end_row, end_col)
-        logger.info(f"Piece {board[start_row][start_col]} moves to square {end_row}{end_col}")
     elif current_player == BLUE: # Handle challenges
         opponent_value = board[end_row][end_col] - SPY
         handle_challenges(board[start_row][start_col], opponent_value)
-        logger.info(f"BLUE {board[start_row][start_col]} challenges RED {opponent_value}")
     elif current_player == RED:
         own_value = board[start_row][start_col] - SPY
         handle_challenges(own_value, board[end_row][end_col])
-        logger.info(f"RED {own_value} challenges BLUE {board[end_row][end_col]}")
         
     new_annotation[CURRENT_PLAYER] = RED if current_player == BLUE else BLUE
     # If the blue flag reaches the other side
@@ -174,24 +166,18 @@ def has_none_adjacent(flag_col, nrow): # nrow is either the first or last row
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
 
-    logger.debug(f"flag_col: {flag_col}")
-    logger.debug("Inside has_none_adjacent function")
     # If not at the left or rightmost edge of the board
     if flag_col != 0 and flag_col != COLUMNS - 1:
         # Check both squares to the left and right
         if not nrow[flag_col - 1] and not nrow[flag_col + 1]:
-            logger.debug("Not at edge, return True")
             return True
     elif flag_col == 0 and not nrow[flag_col + 1]:
         # If flag is at the first column and the square next to it is empty
-        logger.debug("First column, return True")
         return True
     elif flag_col == COLUMNS - 1 and not nrow[flag_col - 1]:
         # If flag is at the last column and the square before it is empty
-        logger.debug("Last column, return True")
         return True
     else:
-        logger.debug("has_none_adjacent checks ended, return False")
         return False
 
 def print_matrix(board, color=False, pov=WORLD):
