@@ -281,7 +281,7 @@ def main():
         for piece in range(INITIAL_ARMY):
             for col in range(INFOCOLS):
                 if col == PLAYER:
-                    infostate[piece][col] = player
+                    infostate[piece][col] = RED if player == BLUE else BLUE
                 elif range_start <= col <= range_end:
                     if col == PRIVATE:
                         infostate[piece][col] = 6/INITIAL_ARMY
@@ -312,6 +312,7 @@ def main():
                         board[row][column] if player == BLUE
                         else board[row][column] - SPY
                     ) # calculate actual value of the piece
+                    infostate[piece_n][PLAYER] = player
                     infostate[piece_n][value] = 1
                     infostate[piece_n][ROW] = row
                     infostate[piece_n][COLUMN] = column
@@ -332,8 +333,8 @@ def main():
     while not is_terminal(board, annotation):
         print(f"\nTurn: {i + 1}")
         if mode == RANDOM_VS_RANDOM:
-            # print_board(board, color=True, pov=WORLD)
-            print_infostate(blue_infostate, blue_infostate_annotation)
+            print_board(board, color=True, pov=WORLD)
+            # print_infostate(blue_infostate, blue_infostate_annotation)
         elif mode == HUMAN_VS_RANDOM:
             print_board(board, color=True, pov=human)
         print(f"Player: {annotation[CURRENT_PLAYER]}")
@@ -365,12 +366,15 @@ def main():
             result = DRAW
         elif (board_diff[start_row][start_col] == challenger
               and board_diff[end_row][end_col] == (target - challenger)):
-            result = WIN
+            if board[end_row][end_col] == BLANK:
+                result = OCCUPY # if no piece has been displaced
+            else:
+                result = WIN
         elif (board_diff[start_row][start_col] == challenger
               and board_diff[end_row][end_col] == BLANK):
             result = LOSS
               
-        results = ["DRAW", "WIN", "LOSS"]
+        results = ["DRAW", "WIN", "OCCUPY", "LOSS"]
         print(f"Result: {results[result]}")
 
         # Update infostate

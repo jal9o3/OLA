@@ -50,4 +50,5 @@ BLIND = 3 # None of the piece values are visible
 # Challenge results
 DRAW = 0
 WIN = 1
-LOSS = 2
+OCCUPY = 2
+LOSS = 3
