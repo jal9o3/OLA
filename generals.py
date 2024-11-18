@@ -203,7 +203,10 @@ def print_board(board, color=False, pov=WORLD):
 def print_infostate(infostate, annotation):
     for i in range(INITIAL_ARMY): # Change row number later
         for j in range(INFOCOLS):
-            print(f"{infostate[i][j]*100:.0f}", end=' ')
+            if infostate[i][j]*100 < 100:
+                print(f"{infostate[i][j]*100:.0f}", end=' ')
+            else:
+                print(f"{infostate[i][j]}", end=' ')
         print()
 
 def main():
@@ -270,31 +273,29 @@ def main():
     blue_infostate_annotation = [BLUE, 0, BLUE]
     red_infostate = [[BLANK for _ in range(INFOCOLS)] for _ in range(INFOROWS)]
     red_infostate_annotation = [BLUE, 0, RED]
-
-    logger.setLevel(logging.DEBUG)
     
     # Obtain initial probabilities for BLUE
     for piece in range(INITIAL_ARMY):
         for col in range(INFOCOLS):
-            logger.debug(f"col> {col}")
             if col == PLAYER:
-                logger.debug("col is PLAYER")
                 blue_infostate[piece][col] = BLUE
             elif FLAG <= col <= SPY:
                 if col == PRIVATE:
-                    logger.debug("col is PRIVATE")
                     blue_infostate[piece][col] = 6/INITIAL_ARMY
                 elif col == SPY:
-                    logger.debug("col is SPY")
                     blue_infostate[piece][col] = 2/INITIAL_ARMY
                 else:
-                    logger.debug("col is not PRIVATE or SPY")
                     blue_infostate[piece][col] = 1/INITIAL_ARMY
             
     range_start, range_end = FLAG, SPY
+    piece_n = 0
     # Add locations
-    # for row in range(ROWS):
-        # for column in range(COLUMNS):
+    for row in range(ROWS):
+        for column in range(COLUMNS):
+            if range_start <= board[row][column] <= range_end:
+                blue_infostate[piece_n][ROW] = row
+                blue_infostate[piece_n][COLUMN] = column
+                piece_n += 1
             
     
 
