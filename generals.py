@@ -201,7 +201,7 @@ def print_board(board, color=False, pov=WORLD):
     print()       
 
 def print_infostate(infostate, annotation):
-    for i in range(INITIAL_ARMY): # Change row number later
+    for i in range(INITIAL_ARMY*2):
         for j in range(INFOCOLS):
             if infostate[i][j]*100 < 100:
                 print(f"{infostate[i][j]*100:.0f}", end=' ')
@@ -269,35 +269,56 @@ def main():
 
     # Represent initial information states for BLUE and RED
     # 42 ROWS (21 pieces each) by 19 COLS (Player, p(1...15), row, col, captured)
-    blue_infostate = [[BLANK for _ in range(INFOCOLS)] for _ in range(INFOROWS)]
-    blue_infostate_annotation = [BLUE, 0, BLUE]
-    red_infostate = [[BLANK for _ in range(INFOCOLS)] for _ in range(INFOROWS)]
-    red_infostate_annotation = [BLUE, 0, RED]
-    
-    # Obtain initial probabilities for BLUE
-    for piece in range(INITIAL_ARMY):
-        for col in range(INFOCOLS):
-            if col == PLAYER:
-                blue_infostate[piece][col] = BLUE
-            elif FLAG <= col <= SPY:
-                if col == PRIVATE:
-                    blue_infostate[piece][col] = 6/INITIAL_ARMY
-                elif col == SPY:
-                    blue_infostate[piece][col] = 2/INITIAL_ARMY
-                else:
-                    blue_infostate[piece][col] = 1/INITIAL_ARMY
+    def initial_infostate(player):
+        # Initialize blank matrix for the infostate
+        infostate = [[BLANK for _ in range(INFOCOLS)] for _ in range(INFOROWS)]
+        infostate_annotation = [BLUE, 0, player]
+
+        range_start, range_end = (
+            (FLAG, SPY) if player == BLUE else (FLAG + SPY, 2*SPY)
+        )
+        # Obtain initial probabilities for BLUE
+        for piece in range(INITIAL_ARMY):
+            for col in range(INFOCOLS):
+                if col == PLAYER:
+                    infostate[piece][col] = player
+                elif range_start <= col <= range_end:
+                    if col == PRIVATE:
+                        infostate[piece][col] = 6/INITIAL_ARMY
+                    elif col == SPY:
+                        infostate[piece][col] = 2/INITIAL_ARMY
+                    else:
+                        infostate[piece][col] = 1/INITIAL_ARMY
+        logger.setLevel(logging.DEBUG)
+        piece_n = 0
+        # Add locations
+        for row in range(ROWS):
+            for column in range(COLUMNS):
+                # Locations of opponent's pieces
+                # logger.debug(f"{piece_n}")
+                if (piece_n < INITIAL_ARMY and
+                    not (range_start <= board[row][column] <= range_end)
+                    and board[row][column] != BLANK):
+                    infostate[piece_n][ROW] = row
+                    infostate[piece_n][COLUMN] = column
+                    piece_n += 1
+        # Restart loop to obtain the player's piece locations
+        for row in range(ROWS):
+            for column in range(COLUMNS):
+                if (piece_n >= INITIAL_ARMY and
+                      range_start <= board[row][column] <= range_end
+                      and board[row][column] != BLANK):
+                    value = (
+                        board[row][column] if player == BLUE
+                        else board[row][column] - SPY
+                    ) # calculate actual value of the piece
+                    infostate[piece_n][value] = 1
+                    infostate[piece_n][ROW] = row
+                    infostate[piece_n][COLUMN] = column
+                    piece_n += 1
+        return infostate, infostate_annotation
             
-    range_start, range_end = FLAG, SPY
-    piece_n = 0
-    # Add locations
-    for row in range(ROWS):
-        for column in range(COLUMNS):
-            if range_start <= board[row][column] <= range_end:
-                blue_infostate[piece_n][ROW] = row
-                blue_infostate[piece_n][COLUMN] = column
-                piece_n += 1
-            
-    
+    blue_infostate, blue_infostate_annotation = initial_infostate(BLUE)
 
     # Gameplay loop
     mode = RANDOM_VS_RANDOM
