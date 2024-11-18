@@ -3,8 +3,11 @@ import logging, copy, random
 # Configure the logging
 logging.basicConfig(level=logging.WARNING)
 
-# Global constants
+# World constants
 from world_constants import *
+
+# Infostate related constants and functions
+from infostate import *
 
 # Determine if the current state is a terminal state
 def is_terminal(board, annotation):
@@ -157,7 +160,7 @@ def has_none_adjacent(flag_col, nrow): # nrow is either the first or last row
     else:
         return False
 
-def print_matrix(board, color=False, pov=WORLD):
+def print_board(board, color=False, pov=WORLD):
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
 
@@ -197,9 +200,15 @@ def print_matrix(board, color=False, pov=WORLD):
         print(f"{k:2}", end=' ')
     print()       
 
+def print_infostate(infostate, annotation):
+    for i in range(INITIAL_ARMY): # Change row number later
+        for j in range(INFOCOLS):
+            print(f"{infostate[i][j]*100:.0f}", end=' ')
+        print()
+
 def main():
     logger = logging.getLogger(__name__)
-    logger.setLevel(logging.WARNING)
+    logger.setLevel(logging.DEBUG)
 
     # Board for arbiter
     board = [[BLANK for _ in range(COLUMNS)] for _ in range(ROWS)]
@@ -252,8 +261,42 @@ def main():
     board = [[blue_board[i][j] + red_board[i][j] for j in range(COLUMNS)] for i in range(len(board))]
 
     # Flip the board matrix for the standard POV (blue on the bottom side):
-    standard_pov = board[::-1]
-    #standard_pov = [row[::-1] for row in standard_pov] # flip rows
+    # standard_pov = board[::-1]
+    # standard_pov = [row[::-1] for row in standard_pov] # flip rows
+
+    # Represent initial information states for BLUE and RED
+    # 42 ROWS (21 pieces each) by 19 COLS (Player, p(1...15), row, col, captured)
+    blue_infostate = [[BLANK for _ in range(INFOCOLS)] for _ in range(INFOROWS)]
+    blue_infostate_annotation = [BLUE, 0, BLUE]
+    red_infostate = [[BLANK for _ in range(INFOCOLS)] for _ in range(INFOROWS)]
+    red_infostate_annotation = [BLUE, 0, RED]
+
+    logger.setLevel(logging.DEBUG)
+    
+    # Obtain initial probabilities for BLUE
+    for piece in range(INITIAL_ARMY):
+        for col in range(INFOCOLS):
+            logger.debug(f"col> {col}")
+            if col == PLAYER:
+                logger.debug("col is PLAYER")
+                blue_infostate[piece][col] = BLUE
+            elif FLAG <= col <= SPY:
+                if col == PRIVATE:
+                    logger.debug("col is PRIVATE")
+                    blue_infostate[piece][col] = 6/INITIAL_ARMY
+                elif col == SPY:
+                    logger.debug("col is SPY")
+                    blue_infostate[piece][col] = 2/INITIAL_ARMY
+                else:
+                    logger.debug("col is not PRIVATE or SPY")
+                    blue_infostate[piece][col] = 1/INITIAL_ARMY
+            
+    range_start, range_end = FLAG, SPY
+    # Add locations
+    # for row in range(ROWS):
+        # for column in range(COLUMNS):
+            
+    
 
     # Gameplay loop
     mode = RANDOM_VS_RANDOM
@@ -267,9 +310,10 @@ def main():
     while not is_terminal(board, annotation):
         print(f"\nTurn: {i + 1}")
         if mode == RANDOM_VS_RANDOM:
-            print_matrix(board, color=True, pov=WORLD)
+            # print_board(board, color=True, pov=WORLD)
+            print_infostate(blue_infostate, blue_infostate_annotation)
         elif mode == HUMAN_VS_RANDOM:
-            print_matrix(board, color=True, pov=human)
+            print_board(board, color=True, pov=human)
         print(f"Player: {annotation[CURRENT_PLAYER]}")
         moves = actions(board, annotation)
         print(moves)
@@ -288,9 +332,6 @@ def main():
         # Perform matrix subtraction on old and new boards
         board_diff = [[board[i][j] - new_board[i][j] for j in range(len(board[0]))] for i in range(len(board))]
 
-        # print("Board Diff:")
-        # print_matrix(board_diff)
-
         # Examine move result
         start_row, start_col, end_row, end_col = map(int, move) # get indices
         challenger, target = board[start_row][start_col], board[end_row][end_col]
@@ -308,7 +349,10 @@ def main():
             result = LOSS
               
         results = ["DRAW", "WIN", "LOSS"]
-        print(f"Result: {results[result]}") 
+        print(f"Result: {results[result]}")
+
+        # Update infostate
+        
             
         # Overwrite old state
         board, annotation = new_board, new_annotation

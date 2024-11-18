@@ -2,6 +2,8 @@
 ROWS = 8
 COLUMNS = 9
 
+INITIAL_ARMY = 21 # Number of pieces a player obtains at the start
+
 # Power Rankings of Pieces
 BLANK = 0 # Unoccupied Square
 FLAG = 1 # Philippine Flag
@@ -22,6 +24,10 @@ SPY = 15 # Two Prying Eyes
 # Red pieces will be denoted 16 (FLAG) to 30 (SPY)
 BLUE_UNKNOWN = 31 # Placeholder for unidentified blue enemy pieces
 RED_UNKNOWN = 32
+
+PIECE_SELECTION = [
+    1, 2, 2, 2, 2, 2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 15
+] # The initial pieces
 
 # Designations of players
 BLUE = 1 # Moves first
