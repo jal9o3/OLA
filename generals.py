@@ -203,7 +203,7 @@ def print_board(board, color=False, pov=WORLD):
 def print_infostate(infostate, annotation):
     for i in range(INITIAL_ARMY*2):
         for j in range(INFOCOLS):
-            if infostate[i][j]*100 < 100:
+            if abs(infostate[i][j]*100) < 100:
                 print(f"{infostate[i][j]*100:.0f}", end=' ')
             else:
                 print(f"{infostate[i][j]}", end=' ')
@@ -261,7 +261,10 @@ def main():
                 i += 1
 
     # Perform matrix addition
-    board = [[blue_board[i][j] + red_board[i][j] for j in range(COLUMNS)] for i in range(len(board))]
+    board = [
+        [blue_board[i][j] + red_board[i][j] for j in range(COLUMNS)] 
+        for i in range(len(board))
+        ]
 
     # Flip the board matrix for the standard POV (blue on the bottom side):
     # standard_pov = board[::-1]
@@ -330,11 +333,12 @@ def main():
         print(f"You are player {human}")
     else:
         human = 0
+    previous_result = OCCUPY
     while not is_terminal(board, annotation):
         print(f"\nTurn: {i + 1}")
         if mode == RANDOM_VS_RANDOM:
             print_board(board, color=True, pov=WORLD)
-            # print_infostate(blue_infostate, blue_infostate_annotation)
+            print_infostate(blue_infostate, blue_infostate_annotation)
         elif mode == HUMAN_VS_RANDOM:
             print_board(board, color=True, pov=human)
         print(f"Player: {annotation[CURRENT_PLAYER]}")
@@ -378,10 +382,16 @@ def main():
         print(f"Result: {results[result]}")
 
         # Update infostate
-        
+        blue_infostate, blue_infostate_annotation = private_observation(
+            blue_infostate, blue_infostate_annotation, move, result)
             
         # Overwrite old state
         board, annotation = new_board, new_annotation
+
+        if previous_result == WIN:
+            break
+
+        previous_result = result
         
         i += 1
     print(f"Average branching: {round(moves_N/i)}")
