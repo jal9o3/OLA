@@ -87,7 +87,6 @@ def transition(board, annotation, action):
     def handle_challenges(challenger_value, target_value):
         # Edge case where PRIVATE defeats SPY
         if (challenger_value == PRIVATE and target_value == SPY):
-            logger.debug(f"challenger: {challenger_value} target: {target_value}")
             move_piece(start_row, start_col, end_row, end_col)
             return
         elif (challenger_value == SPY and target_value == PRIVATE):
@@ -337,7 +336,6 @@ def main():
     else:
         human = 0
 
-    stop = 0
     while not is_terminal(board, annotation):
         print(f"\nTurn: {i + 1}")
         if mode == RANDOM_VS_RANDOM:
@@ -391,12 +389,6 @@ def main():
             
         # Overwrite old state
         board, annotation = new_board, new_annotation
-
-        if stop == 1:
-            break
-
-        if result == LOSS:
-            stop = 1
         
         i += 1
     print(f"Average branching: {round(moves_N/i)}")

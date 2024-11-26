@@ -30,18 +30,17 @@ def conditional_probability(hypothesis, evidence):
     # p(H intersection E) / p(E)
     pass
 
-
 def private_observation(infostate, infostate_annotation, action, result):
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.WARNING)
     
     def handle_draw_update(piece):
-        if infostate_annotation[POV_PLAYER] == BLUE:
-            piece[ROW] = ROWS + 1
-            piece[COLUMN] = COLUMNS + 1 # Send piece outside the board
+        if piece[PLAYER] == BLUE:
+            piece[ROW] = -1
+            piece[COLUMN] = -1 # Send piece outside the board
         else:
-            piece[ROW] = ROWS + 2
-            piece[COLUMN] = COLUMNS + 2
+            piece[ROW] = ROWS + 1
+            piece[COLUMN] = COLUMNS + 1
         piece[CAPTURED] = 1
 
     for i, piece in enumerate(infostate):
@@ -50,12 +49,10 @@ def private_observation(infostate, infostate_annotation, action, result):
             and piece[COLUMN] == int(action[1])):
             # Draw
             if result == DRAW:
-                logger.debug("attacker draw")
                 handle_draw_update(piece)
             # Successful attacker or occupant or loss
             # Denotes either relocation or location of successful defender
             elif result == WIN or result == OCCUPY or result == LOSS:
-                logger.debug(f"attacker {result}")
                 piece[ROW] = int(action[2])
                 piece[COLUMN] = int(action[3])
                 if result == LOSS and piece[PLAYER] == infostate_annotation[CURRENT_PLAYER]:
@@ -65,12 +62,9 @@ def private_observation(infostate, infostate_annotation, action, result):
         logger.debug(f"{i}")
         if (piece[ROW] == int(action[2])
             and piece[COLUMN] == int(action[3])):
-            logger.debug("found defender")
             if result == DRAW:
-                logger.debug("defender draw")
                 handle_draw_update(piece)
             elif result == WIN and piece[PLAYER] != infostate_annotation[CURRENT_PLAYER]:
-                logger.debug("defender win")
                 piece[CAPTURED] = 1
             # No defender in occupation
             # No location update for winning defender
