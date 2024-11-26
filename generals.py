@@ -294,18 +294,19 @@ def main():
                         infostate[piece][col] = 2/INITIAL_ARMY
                     else:
                         infostate[piece][col] = 1/INITIAL_ARMY
-        logger.setLevel(logging.DEBUG)
         piece_n = 0
         # Add locations
         for row in range(ROWS):
             for column in range(COLUMNS):
                 # Locations of opponent's pieces
-                # logger.debug(f"{piece_n}")
                 if (piece_n < INITIAL_ARMY and
                     not (range_start <= board[row][column] <= range_end)
                     and board[row][column] != BLANK):
                     infostate[piece_n][ROW] = row
                     infostate[piece_n][COLUMN] = column
+                    # Set initial value range (for evidence pruning)
+                    infostate[piece_n][RANGE_BOT] = FLAG
+                    infostate[piece_n][RANGE_TOP] = SPY
                     piece_n += 1
         # Restart loop to obtain the player's piece locations
         for row in range(ROWS):
@@ -321,6 +322,9 @@ def main():
                     infostate[piece_n][value] = 1
                     infostate[piece_n][ROW] = row
                     infostate[piece_n][COLUMN] = column
+                    # Possible value range ends are equal for identified pieces
+                    infostate[piece_n][RANGE_BOT] = value
+                    infostate[piece_n][RANGE_TOP] = value
                     piece_n += 1
         return infostate, infostate_annotation
             

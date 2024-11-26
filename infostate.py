@@ -6,14 +6,16 @@ logging.basicConfig(level=logging.WARNING)
 from world_constants import *
 
 INFOROWS = 42 # 21 pieces per player
-INFOCOLS = 19 # see designations below
+INFOCOLS = 21 # see designations below
 
 # Define information state columns
 PLAYER = 0 # to which player a piece belongs
 # 1 - 15 is the probability of being pieces 1 - 15
 ROW = 16
 COLUMN = 17 # Current location of the piece (if captured, location of capturer)
-CAPTURED = 18 # Whether the piece has been captured
+RANGE_BOT = 18 # Lowest possible value of a piece
+RANGE_TOP = 19 # Highest possible value of a piece, these are equal once identified
+CAPTURED = 20 # Whether the piece has been captured
 
 # Annotation indices
 # CURRENT_PLAYER = 0, like in the world state annotation
