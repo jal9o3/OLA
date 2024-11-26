@@ -78,7 +78,7 @@ def actions(board, annotation):
 
 def transition(board, annotation, action):
     logger = logging.getLogger(__name__)
-    logger.setLevel(logging.WARNING)
+    logger.setLevel(logging.DEBUG)
 
     def move_piece(start_row, start_col, end_row, end_col):
        new_board[end_row][end_col] = board[start_row][start_col]
@@ -86,9 +86,12 @@ def transition(board, annotation, action):
 
     def handle_challenges(challenger_value, target_value):
         # Edge case where PRIVATE defeats SPY
-        if ((challenger_value == SPY and target_value == PRIVATE)
-            or (challenger_value == PRIVATE and target_value == SPY)):
+        if (challenger_value == PRIVATE and target_value == SPY):
+            logger.debug(f"challenger: {challenger_value} target: {target_value}")
             move_piece(start_row, start_col, end_row, end_col)
+            return
+        elif (challenger_value == SPY and target_value == PRIVATE):
+            new_board[start_row][start_col] # remove losing attacker
             return
         # Stronger piece or flag challenge
         if (challenger_value > target_value
@@ -333,7 +336,8 @@ def main():
         print(f"You are player {human}")
     else:
         human = 0
-    previous_result = OCCUPY
+
+    stop = 0
     while not is_terminal(board, annotation):
         print(f"\nTurn: {i + 1}")
         if mode == RANDOM_VS_RANDOM:
@@ -388,10 +392,11 @@ def main():
         # Overwrite old state
         board, annotation = new_board, new_annotation
 
-        if previous_result == WIN:
+        if stop == 1:
             break
 
-        previous_result = result
+        if result == LOSS:
+            stop = 1
         
         i += 1
     print(f"Average branching: {round(moves_N/i)}")

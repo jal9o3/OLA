@@ -33,7 +33,7 @@ def conditional_probability(hypothesis, evidence):
 
 def private_observation(infostate, infostate_annotation, action, result):
     logger = logging.getLogger(__name__)
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.WARNING)
     
     def handle_draw_update(piece):
         if infostate_annotation[POV_PLAYER] == BLUE:
