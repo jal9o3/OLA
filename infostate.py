@@ -58,14 +58,53 @@ def bayes_theorem(hypothesis, evidence):
     possible value.
     """
 
-    # TODO: estimate p(E|H)
-    # TODO: slice unique permutations
+    piece_to_assess, possible_value = hypothesis[0], hypothesis[1]
+
+    # Estimate p(E|H)
+    # Sample unique permutations
+    sample = value_permutation_sample(PIECES, 1000)
+    p_evidence = 0
+    p_evidence_with_hypothesis = 0
+    for permutation in sample:
+        # Estimate p(E)
+        # Check if the current permutation matches the evidence
+        is_match = True
+        for piece, fact in enumerate(evidence):
+            lower_bound, upper_bound = fact[0], fact[1]
+            if lower_bound <= permutation[piece] <= upper_bound:
+                pass # Do nothing as long as the evidence is matched
+            else:
+                is_match = False
+                break # Stop iterating over evidence once contradicted
+        if is_match:
+            p_evidence += 1 # Increase the probability of the evidence
+            # Estimate p(E intersection H)
+            # If the hypothesis is also true, increase p(E intersection H)
+            if permutation[piece_to_assess] == possible_value:
+                p_evidence_with_hypothesis += 1
+    
+    # Scale probabilities in relation to the sample size
+    p_evidence /= 1000
+    p_evidence_with_hypothesis /= 1000
+
+    # Obtain probability of hypothesis
+    p_hypothesis = 0
+    for piece in PIECES:
+        if piece == possible_value:
+            p_hypothesis += 1
+    
+    p_hypothesis /= 1000
+
+    # Recall: p(E|H) = p(E intersection H) / p(H)
+    return p_evidence_with_hypothesis/p_evidence
+
+
     
     
 
 def private_observation(infostate, infostate_annotation, action, result):
     logger = logging.getLogger(__name__)
-    logger.setLevel(logging.WARNING)
+    logger.setLevel(logging.DEBUG)
     
     start_row, start_col, end_row, end_col = map(int, action)
 
@@ -159,9 +198,22 @@ def private_observation(infostate, infostate_annotation, action, result):
             # No defender in occupation
             # No location update for winning defender
 
-    # TODO: Update the probabilities of piece identities
-    # TODO: Accumulate all gathered relevant evidence
-    # TODO: Use conditional probability to calculate the likelihoods
+    # Update the probabilities of piece identities
+    # Accumulate all gathered relevant evidence
+    evidence = []
+    for i, piece in enumerate(infostate):
+        if i == INITIAL_ARMY:
+            break
+        evidence.append([piece[RANGE_BOT], piece[RANGE_TOP]])
+
+    # Use conditional probability to calculate the likelihoods
+    for i, piece in enumerate(infostate):
+        if i == INITIAL_ARMY:
+            break
+        for j, value in enumerate(piece):
+            if 1 <= j <= 15:
+                hypothesis = [i, j]
+                piece[j] = bayes_theorem(hypothesis, evidence)
 
     infostate_annotation[CURRENT_PLAYER] = RED if infostate_annotation[CURRENT_PLAYER] == BLUE else BLUE 
 
@@ -198,9 +250,10 @@ def print_infostate(infostate, annotation):
 
 def main():
     
-    seen = value_permutation_sample(PIECES, 1000)
-    for permutation in seen:
-        print(permutation)
+    # seen = value_permutation_sample(PIECES, 1000)
+    # for permutation in seen:
+    #     print(permutation)
+    pass
                                
 
 if __name__ == "__main__":
