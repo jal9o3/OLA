@@ -39,9 +39,9 @@ def value_permutation_sample(pieces, n):
     
     seen = set()
     for i in range(n):
-        permutation = get_random_permutation(PIECES)
+        permutation = get_random_permutation(pieces)
         while permutation in seen:
-            permutation = get_random_permutation(PIECES)
+            permutation = get_random_permutation(pieces)
         seen.add(permutation)
     
     return seen
