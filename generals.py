@@ -202,15 +202,6 @@ def print_board(board, color=False, pov=WORLD):
         print(f"{k:2}", end=' ')
     print()       
 
-def print_infostate(infostate, annotation):
-    for i in range(INITIAL_ARMY*2):
-        for j in range(INFOCOLS):
-            if abs(infostate[i][j]*100) < 100:
-                print(f"{infostate[i][j]*100:.0f}", end=' ')
-            else:
-                print(f"{infostate[i][j]}", end=' ')
-        print()
-
 def main():
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
