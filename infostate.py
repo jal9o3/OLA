@@ -46,7 +46,7 @@ def value_permutation_sample(pieces, n):
     
     return seen
 
-# TODO: define the usage of bayes theorem
+# Define the usage of bayes theorem
 def bayes_theorem(hypothesis, evidence):
     # p(H|E) =
     # p(E|H)*p(H)/p(E)
@@ -59,50 +59,48 @@ def bayes_theorem(hypothesis, evidence):
     """
 
     piece_to_assess, possible_value = hypothesis[0], hypothesis[1]
+    sample_size = 1000
 
     # Estimate p(E|H)
-    # Sample unique permutations
-    sample = value_permutation_sample(PIECES, 1000)
     p_evidence = 0
     p_evidence_with_hypothesis = 0
-    for permutation in sample:
-        # Estimate p(E)
-        # Check if the current permutation matches the evidence
-        is_match = True
-        for piece, fact in enumerate(evidence):
-            lower_bound, upper_bound = fact[0], fact[1]
-            if lower_bound <= permutation[piece] <= upper_bound:
-                pass # Do nothing as long as the evidence is matched
-            else:
-                is_match = False
-                break # Stop iterating over evidence once contradicted
-        if is_match:
-            p_evidence += 1 # Increase the probability of the evidence
-            # Estimate p(E intersection H)
-            # If the hypothesis is also true, increase p(E intersection H)
-            if permutation[piece_to_assess] == possible_value:
-                p_evidence_with_hypothesis += 1
-    
-    # Scale probabilities in relation to the sample size
-    p_evidence /= 1000
-    p_evidence_with_hypothesis /= 1000
+    while p_evidence == 0: # avoid division by zero errors
+        # Sample unique permutations
+        sample = value_permutation_sample(PIECES, sample_size)
+        for permutation in sample:
+            # Estimate p(E)
+            # Check if the current permutation matches the evidence
+            is_match = True
+            for piece, fact in enumerate(evidence):
+                lower_bound, upper_bound = fact[0], fact[1]
+                if lower_bound <= permutation[piece] <= upper_bound:
+                    pass # Do nothing as long as the evidence is matched
+                else:
+                    is_match = False
+                    break # Stop iterating over evidence once contradicted
+            if is_match:
+                p_evidence += 1 # Increase the probability of the evidence
+                # Estimate p(E intersection H)
+                # If the hypothesis is also true, increase p(E intersection H)
+                if permutation[piece_to_assess] == possible_value:
+                    p_evidence_with_hypothesis += 1
+        
+        # Scale probabilities in relation to the sample size
+        p_evidence /= sample_size
+        p_evidence_with_hypothesis /= sample_size
 
-    # Obtain probability of hypothesis
-    p_hypothesis = 0
-    for piece in PIECES:
-        if piece == possible_value:
-            p_hypothesis += 1
-    
-    p_hypothesis /= 1000
+        # Obtain probability of hypothesis
+        p_hypothesis = 0
+        for piece in PIECES:
+            if piece == possible_value:
+                p_hypothesis += 1
+        
+        p_hypothesis /= sample_size
 
     # Recall: p(E|H) = p(E intersection H) / p(H)
     return p_evidence_with_hypothesis/p_evidence
 
-
-    
-    
-
-def private_observation(infostate, infostate_annotation, action, result):
+def private_observation(infostate, infostate_annotation, action, result, update_probabilities=False):
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
     
@@ -198,28 +196,30 @@ def private_observation(infostate, infostate_annotation, action, result):
             # No defender in occupation
             # No location update for winning defender
 
-    # Update the probabilities of piece identities
-    # Accumulate all gathered relevant evidence
-    evidence = []
-    for i, piece in enumerate(infostate):
-        if i == INITIAL_ARMY:
-            break
-        evidence.append([piece[RANGE_BOT], piece[RANGE_TOP]])
 
-    # Use conditional probability to calculate the likelihoods
-    for i, piece in enumerate(infostate):
-        if i == INITIAL_ARMY:
-            break
-        for j, value in enumerate(piece):
-            if 1 <= j <= 15:
-                hypothesis = [i, j]
-                piece[j] = bayes_theorem(hypothesis, evidence)
+    # Update the probabilities of piece identities
+    if result != OCCUPY and update_probabilities:
+        # Accumulate all gathered relevant evidence
+        evidence = []
+        for i, piece in enumerate(infostate):
+            if i == INITIAL_ARMY:
+                break
+            evidence.append([piece[RANGE_BOT], piece[RANGE_TOP]])
+
+        # Use conditional probability to calculate the likelihoods
+        for i, piece in enumerate(infostate):
+            if i == INITIAL_ARMY:
+                break
+            for j, value in enumerate(piece):
+                if 1 <= j <= 15:
+                    hypothesis = [i, j]
+                    piece[j] = bayes_theorem(hypothesis, evidence)
 
     infostate_annotation[CURRENT_PLAYER] = RED if infostate_annotation[CURRENT_PLAYER] == BLUE else BLUE 
 
     return infostate, infostate_annotation
             
-def print_infostate(infostate, annotation):
+def print_infostate(infostate, annotation, show_probabilities=False):
     
     # For side by side display of top and bottom half of infostate
     split_infostate = [
@@ -228,17 +228,22 @@ def print_infostate(infostate, annotation):
         ]
     
     def print_row_half(half_index, i, j):
-        if abs(split_infostate[half_index][i][j]*100) < 100:
-            print(f"{round(split_infostate[half_index][i][j]*100):2}", end=' ')
+        if show_probabilities:
+            if abs(split_infostate[half_index][i][j]*100) < 100:
+                print(f"{round(split_infostate[half_index][i][j]*100):2}", end=' ')
+            else:
+                print(f"{round(split_infostate[half_index][i][j]):2}", end=' ')
         else:
-            print(f"{split_infostate[half_index][i][j]:2}", end=' ')
+            if j < 1 or j > 15:
+                print(f"{round(split_infostate[half_index][i][j]):2}", end=' ')
 
     print("\nInfostate: Opponent Pieces - Allied Pieces")
-    print("Rows: Player-p(1:15)-x-y-floor-ceiling-is_captured")
+    if show_probabilities:
+        print("Columns: Player-p(1:15)-x-y-floor-ceiling-is_captured")
+    else:
+        print("Columns: Player-x-y-floor-ceiling-is_captured")
 
     for i in range(INITIAL_ARMY):
-        # print piece numbers
-        print(f"{i}+{i+INITIAL_ARMY}", end=" ")
         for j in range(INFOCOLS):
             # TODO: print row of first half
             print_row_half(0, i, j)
@@ -246,11 +251,13 @@ def print_infostate(infostate, annotation):
         for j in range(INFOCOLS):
             # TODO: print row of second half
             print_row_half(1, i, j)
+        # print piece numbers
+        print(f"   {i}+{i+INITIAL_ARMY}", end=" ")
         print()
 
 def main():
     
-    # seen = value_permutation_sample(PIECES, 1000)
+    # seen = value_permutation_sample(PIECES, sample_size)
     # for permutation in seen:
     #     print(permutation)
     pass
