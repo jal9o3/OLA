@@ -1,4 +1,4 @@
-import logging, copy
+import logging, math, itertools, random
 
 logging.basicConfig(level=logging.WARNING)
 
@@ -22,15 +22,35 @@ CAPTURED = 20 # Whether the piece has been captured
 WAITING_FLAG = 1 # Corresponds to WAITING_BLUE or WAITING_RED flags in world
 POV_PLAYER = 2 # to which the infostate belongs
 
+PIECES = [1, 2, 2, 2, 2, 2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 15]
+# The number of unique permutations of the above pieces
+# VALUE_PERMUTATIONS_N = (math.factorial(21))/math.factorial(6)*math.factorial(2)
+
+# SAMPLE_N = ((1.96**2)*0.5*(1 - 0.5))/0.05**2
+# Representative sample size
+# ADJUSTED_SAMPLE_N = SAMPLE_N/(1 + ((SAMPLE_N - 1)/VALUE_PERMUTATIONS_N))
+
+# Permutation generator
+VALUE_PERMUTATIONS_GENERATOR = itertools.permutations(PIECES)
+
+# TODO: define the usage of bayes theorem
 def bayes_theorem(hypothesis, evidence):
     # p(H|E) =
     # p(E|H)*p(H)/p(E)
-    pass
+    """
+    Hypothesis takes the form [i, r] where i is the index of the piece under
+    assessment, and r is the rank in question. Evidence is defined as an array
+    of size INITIAL_ARMY (21), of which each element j has the form [f, c],
+    where f is the lowest possible value for the piece j, and c is the highest
+    possible value.
+    """
 
-def conditional_probability(hypothesis, evidence):
-    # p(H|E) =
-    # p(H intersection E) / p(E)
-    pass
+    # TODO: estimate p(E|H)
+    # TODO: slice unique permutations
+    value_permutations_slice = set(
+        itertools.islice(VALUE_PERMUTATIONS_GENERATOR, 1000)
+        ) # Representative sample size as ADJUSTED_SAMPLE_N
+    
 
 def private_observation(infostate, infostate_annotation, action, result):
     logger = logging.getLogger(__name__)
@@ -128,6 +148,10 @@ def private_observation(infostate, infostate_annotation, action, result):
             # No defender in occupation
             # No location update for winning defender
 
+    # TODO: Update the probabilities of piece identities
+    # TODO: Accumulate all gathered relevant evidence
+    # TODO: Use conditional probability to calculate the likelihoods
+
     infostate_annotation[CURRENT_PLAYER] = RED if infostate_annotation[CURRENT_PLAYER] == BLUE else BLUE 
 
     return infostate, infostate_annotation
@@ -160,3 +184,22 @@ def print_infostate(infostate, annotation):
             # TODO: print row of second half
             print_row_half(1, i, j)
         print()
+
+def main():
+    def get_random_permutation(pieces):
+        permuted_list = pieces[:]
+        random.shuffle(permuted_list)
+        return tuple(permuted_list)
+    seen = set()
+    for i in range(1000):
+        permutation = get_random_permutation(PIECES)
+        while permutation in seen:
+            permutation = get_random_permutation(PIECES)
+        seen.add(permutation)
+
+    for permutation in seen:
+        print(permutation)
+                               
+
+if __name__ == "__main__":
+    main()
