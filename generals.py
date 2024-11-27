@@ -259,10 +259,6 @@ def main():
         for i in range(len(board))
         ]
 
-    # Flip the board matrix for the standard POV (blue on the bottom side):
-    # standard_pov = board[::-1]
-    # standard_pov = [row[::-1] for row in standard_pov] # flip rows
-
     # Represent initial information states for BLUE and RED
     # 42 ROWS (21 pieces each) by 19 COLS (Player, p(1...15), row, col, captured)
     def initial_infostate(player):
@@ -273,12 +269,13 @@ def main():
         range_start, range_end = (
             (FLAG, SPY) if player == BLUE else (FLAG + SPY, 2*SPY)
         )
-        # Obtain initial probabilities for BLUE
+        # Obtain initial probabilities
+        range_offset = 0 if player == BLUE else SPY # for finding the correct columns
         for piece in range(INITIAL_ARMY):
             for col in range(INFOCOLS):
                 if col == PLAYER:
                     infostate[piece][col] = RED if player == BLUE else BLUE
-                elif range_start <= col <= range_end:
+                elif range_start - range_offset <= col <= range_end - range_offset:
                     if col == PRIVATE:
                         infostate[piece][col] = 6/INITIAL_ARMY
                     elif col == SPY:
@@ -320,6 +317,7 @@ def main():
         return infostate, infostate_annotation
             
     blue_infostate, blue_infostate_annotation = initial_infostate(BLUE)
+    red_infostate, red_infostate_annotation = initial_infostate(RED)
 
     # Gameplay loop
     mode = RANDOM_VS_RANDOM
@@ -336,6 +334,7 @@ def main():
         if mode == RANDOM_VS_RANDOM:
             print_board(board, color=True, pov=WORLD)
             print_infostate(blue_infostate, blue_infostate_annotation)
+            print_infostate(red_infostate, red_infostate_annotation)
         elif mode == HUMAN_VS_RANDOM:
             print_board(board, color=True, pov=human)
         print(f"Player: {annotation[CURRENT_PLAYER]}")
@@ -381,6 +380,9 @@ def main():
         # Update infostate
         blue_infostate, blue_infostate_annotation = private_observation(
             blue_infostate, blue_infostate_annotation, move, result)
+        red_infostate, red_infostate_annotation = private_observation(
+            red_infostate, red_infostate_annotation, move, result
+        )
             
         # Overwrite old state
         board, annotation = new_board, new_annotation
