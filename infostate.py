@@ -1,4 +1,4 @@
-import logging, math, itertools, random
+import logging, random
 
 logging.basicConfig(level=logging.WARNING)
 
@@ -30,8 +30,21 @@ PIECES = [1, 2, 2, 2, 2, 2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 15]
 # Representative sample size
 # ADJUSTED_SAMPLE_N = SAMPLE_N/(1 + ((SAMPLE_N - 1)/VALUE_PERMUTATIONS_N))
 
-# Permutation generator
-VALUE_PERMUTATIONS_GENERATOR = itertools.permutations(PIECES)
+# Sample n permutations from the set of unique value permutations
+def value_permutation_sample(pieces, n):
+    def get_random_permutation(pieces):
+        permuted_list = pieces[:]
+        random.shuffle(permuted_list)
+        return tuple(permuted_list)
+    
+    seen = set()
+    for i in range(n):
+        permutation = get_random_permutation(PIECES)
+        while permutation in seen:
+            permutation = get_random_permutation(PIECES)
+        seen.add(permutation)
+    
+    return seen
 
 # TODO: define the usage of bayes theorem
 def bayes_theorem(hypothesis, evidence):
@@ -47,9 +60,7 @@ def bayes_theorem(hypothesis, evidence):
 
     # TODO: estimate p(E|H)
     # TODO: slice unique permutations
-    value_permutations_slice = set(
-        itertools.islice(VALUE_PERMUTATIONS_GENERATOR, 1000)
-        ) # Representative sample size as ADJUSTED_SAMPLE_N
+    
     
 
 def private_observation(infostate, infostate_annotation, action, result):
@@ -186,17 +197,8 @@ def print_infostate(infostate, annotation):
         print()
 
 def main():
-    def get_random_permutation(pieces):
-        permuted_list = pieces[:]
-        random.shuffle(permuted_list)
-        return tuple(permuted_list)
-    seen = set()
-    for i in range(1000):
-        permutation = get_random_permutation(PIECES)
-        while permutation in seen:
-            permutation = get_random_permutation(PIECES)
-        seen.add(permutation)
-
+    
+    seen = value_permutation_sample(PIECES, 1000)
     for permutation in seen:
         print(permutation)
                                
