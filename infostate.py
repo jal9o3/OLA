@@ -34,14 +34,11 @@ def conditional_probability(hypothesis, evidence):
 
 def private_observation(infostate, infostate_annotation, action, result):
     logger = logging.getLogger(__name__)
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.WARNING)
     
     start_row, start_col, end_row, end_col = map(int, action)
 
-    logger.debug(f"Start:{start_row}{start_col}")
-    logger.debug(f"End:{end_row}{end_col}")
-
-    # TODO: determine which piece to update range (attacker or defender)
+    # Determine which piece to update range (attacker or defender)
     for i, piece in enumerate(infostate):
         if ((piece[ROW] == int(start_row) and piece[COLUMN] == int(start_col) 
             or piece[ROW] == int(end_row) and piece[COLUMN] == int(end_col))
@@ -55,10 +52,8 @@ def private_observation(infostate, infostate_annotation, action, result):
                 for j, value in enumerate(piece):
                     if 1 <= j <= 15 and value == 1:
                         identified_value = j
-                        logger.debug(f"Piece i: {i}")
-                        logger.debug(f"Identified value: {identified_value}")
 
-    # TODO: update the range of the piece based on the action result
+    # Update the range of the piece based on the action result
     # Distinguish whether piece to update is the attacker or defender
     if (result != OCCUPY
         and infostate[piece_to_update][ROW] == start_row 
