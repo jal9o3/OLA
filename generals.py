@@ -189,13 +189,16 @@ def print_board(board, color=False, pov=WORLD):
                     print(f"{elem:2}", end=' ')
             elif pov in {BLIND, BLUE, RED}:
                 is_blue_pov = pov in {BLIND, BLUE}
-                if elem <= SPY and elem >= FLAG:
-                    if color and elem == FLAG and is_blue_pov:
+                if elem <= SPY and elem >= FLAG and is_blue_pov: # if piece is blue and pov is blue
+                    if color and elem == FLAG and is_blue_pov: # color flag according to pov
                         print(colored(elem, "34"), end=' ')  # Blue
-                    elif color and elem == FLAG + SPY and not is_blue_pov:
-                        print(colored(elem, "31"), end=' ')  # Red
                     else:
                         print(f"{elem:2}", end=' ')
+                elif elem <= 2*SPY and elem >= FLAG + SPY and not is_blue_pov:
+                    if color and elem == FLAG + SPY and not is_blue_pov:
+                        print(colored(elem - SPY, "31"), end=' ')  # Red
+                    else:
+                        print(f"{elem - SPY:2}", end=' ')
                 else:
                     unknown = BLUE_UNKNOWN if is_blue_pov else RED_UNKNOWN
                     print(f"{unknown:2}", end=' ')                    
@@ -358,7 +361,7 @@ def main():
     pbs, pbs_annotation = initial_pbs(board)
 
     # Gameplay loop
-    mode = RANDOM_VS_RANDOM
+    mode = HUMAN_VS_RANDOM
     i = 0
     moves_N = 0 # total number of branches found
     if mode == HUMAN_VS_RANDOM:
@@ -376,6 +379,7 @@ def main():
             print_pbs(pbs, pbs_annotation)
         elif mode == HUMAN_VS_RANDOM:
             print_board(board, color=True, pov=human)
+            print_pbs(pbs, pbs_annotation)
         print(f"Player: {annotation[CURRENT_PLAYER]}")
         moves = actions(board, annotation)
         print(moves)
