@@ -2,33 +2,11 @@ import logging, random
 
 logging.basicConfig(level=logging.WARNING)
 
-# GLobal constants
+# World constants
 from world_constants import *
 
-INFOROWS = 42 # 21 pieces per player
-INFOCOLS = 21 # see designations below
-
-# Define information state columns
-PLAYER = 0 # to which player a piece belongs
-# 1 - 15 is the probability of being pieces 1 - 15
-ROW = 16
-COLUMN = 17 # Current location of the piece (if captured, location of capturer)
-RANGE_BOT = 18 # Lowest possible value of a piece
-RANGE_TOP = 19 # Highest possible value of a piece, these are equal once identified
-CAPTURED = 20 # Whether the piece has been captured
-
-# Annotation indices
-# CURRENT_PLAYER = 0, like in the world state annotation
-WAITING_FLAG = 1 # Corresponds to WAITING_BLUE or WAITING_RED flags in world
-POV_PLAYER = 2 # to which the infostate belongs
-
-PIECES = [1, 2, 2, 2, 2, 2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 15]
-# The number of unique permutations of the above pieces
-# VALUE_PERMUTATIONS_N = (math.factorial(21))/math.factorial(6)*math.factorial(2)
-
-# SAMPLE_N = ((1.96**2)*0.5*(1 - 0.5))/0.05**2
-# Representative sample size
-# ADJUSTED_SAMPLE_N = SAMPLE_N/(1 + ((SAMPLE_N - 1)/VALUE_PERMUTATIONS_N))
+# Infostate constants
+from infostate_constants import *
 
 # Sample n permutations from the set of unique value permutations
 def value_permutation_sample(pieces, n):
@@ -108,8 +86,8 @@ def private_observation(infostate, infostate_annotation, action, result, update_
 
     # Determine which piece to update range (attacker or defender)
     for i, piece in enumerate(infostate):
-        if ((piece[ROW] == int(start_row) and piece[COLUMN] == int(start_col) 
-            or piece[ROW] == int(end_row) and piece[COLUMN] == int(end_col))
+        if ((piece[ROW] == start_row and piece[COLUMN] == start_col 
+            or piece[ROW] == end_row and piece[COLUMN] == end_col)
             and piece[CAPTURED] == 0
             ):
             if i < INITIAL_ARMY:
@@ -173,22 +151,22 @@ def private_observation(infostate, infostate_annotation, action, result, update_
         piece[CAPTURED] = 1
 
     for i, piece in enumerate(infostate):
-        if (piece[ROW] == int(start_row) 
-            and piece[COLUMN] == int(start_col)):
+        if (piece[ROW] == start_row 
+            and piece[COLUMN] == start_col):
             # Draw
             if result == DRAW:
                 handle_draw_update(piece)
             # Successful attacker or occupant or loss
             # Denotes either relocation or location of successful defender
             elif result == WIN or result == OCCUPY or result == LOSS:
-                piece[ROW] = int(end_row)
-                piece[COLUMN] = int(end_col)
+                piece[ROW] = end_row
+                piece[COLUMN] = end_col
                 if result == LOSS and piece[PLAYER] == infostate_annotation[CURRENT_PLAYER]:
                     piece[CAPTURED] = 1
 
     for i, piece in enumerate(infostate):
-        if (piece[ROW] == int(end_row)
-            and piece[COLUMN] == int(end_col)):
+        if (piece[ROW] == end_row
+            and piece[COLUMN] == end_col):
             if result == DRAW:
                 handle_draw_update(piece)
             elif result == WIN and piece[PLAYER] != infostate_annotation[CURRENT_PLAYER]:
@@ -245,11 +223,11 @@ def print_infostate(infostate, annotation, show_probabilities=False):
 
     for i in range(INITIAL_ARMY):
         for j in range(INFOCOLS):
-            # TODO: print row of first half
+            # Print row of first half
             print_row_half(0, i, j)
         print("  ", end='')
         for j in range(INFOCOLS):
-            # TODO: print row of second half
+            # Print row of second half
             print_row_half(1, i, j)
         # print piece numbers
         print(f"   {i}+{i+INITIAL_ARMY}", end=" ")

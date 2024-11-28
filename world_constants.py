@@ -25,7 +25,7 @@ SPY = 15 # Two Prying Eyes
 BLUE_UNKNOWN = 31 # Placeholder for unidentified blue enemy pieces
 RED_UNKNOWN = 32
 
-PIECE_SELECTION = [
+PIECES = [
     1, 2, 2, 2, 2, 2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 15
 ] # The initial pieces
 

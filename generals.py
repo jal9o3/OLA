@@ -6,8 +6,11 @@ logging.basicConfig(level=logging.WARNING)
 # World constants
 from world_constants import *
 
-# Infostate related constants and functions
-from infostate import *
+# Infostate related functions
+from infostate_logic import *
+
+# Public belief state related functions
+from pbs_logic import *
 
 # Determine if the current state is a terminal state
 def is_terminal(board, annotation):
@@ -319,6 +322,41 @@ def main():
     blue_infostate, blue_infostate_annotation = initial_infostate(BLUE)
     red_infostate, red_infostate_annotation = initial_infostate(RED)
 
+    # Represent initial public belief state
+    def initial_pbs(board):
+        # Initialize blank matrix for the infostate
+        pbs = [[BLANK for _ in range(PBS_COLS)] for _ in range(PBS_ROWS)]
+        pbs_annotation = [BLUE]
+
+        blue_range_start, blue_range_end = FLAG, SPY
+        red_range_start, red_range_end = SPY + FLAG, 2*SPY
+
+        piece_n = 0
+        # Add locations
+        for row in range(ROWS):
+            for column in range(COLUMNS):
+                # Locations of BLUE's pieces
+                if (piece_n < INITIAL_ARMY and
+                    blue_range_start <= board[row][column] <= blue_range_end
+                    and board[row][column] != BLANK):
+                    pbs[piece_n][PBS_PLAYER] = BLUE
+                    pbs[piece_n][PBS_ROW] = row
+                    pbs[piece_n][PBS_COLUMN] = column
+                    piece_n += 1
+        # Restart loop to obtain RED's piece locations
+        for row in range(ROWS):
+            for column in range(COLUMNS):
+                if (piece_n >= INITIAL_ARMY and
+                      red_range_start <= board[row][column] <= red_range_end
+                      and board[row][column] != BLANK):
+                    pbs[piece_n][PBS_PLAYER] = RED
+                    pbs[piece_n][PBS_ROW] = row
+                    pbs[piece_n][PBS_COLUMN] = column
+                    piece_n += 1
+        return pbs, pbs_annotation
+    
+    pbs, pbs_annotation = initial_pbs(board)
+
     # Gameplay loop
     mode = RANDOM_VS_RANDOM
     i = 0
@@ -333,8 +371,9 @@ def main():
         print(f"\nTurn: {i + 1}")
         if mode == RANDOM_VS_RANDOM:
             print_board(board, color=True, pov=WORLD)
-            print_infostate(blue_infostate, blue_infostate_annotation)
-            print_infostate(red_infostate, red_infostate_annotation)
+            # print_infostate(blue_infostate, blue_infostate_annotation)
+            # print_infostate(red_infostate, red_infostate_annotation)
+            print_pbs(pbs, pbs_annotation)
         elif mode == HUMAN_VS_RANDOM:
             print_board(board, color=True, pov=human)
         print(f"Player: {annotation[CURRENT_PLAYER]}")
@@ -383,6 +422,9 @@ def main():
         red_infostate, red_infostate_annotation = private_observation(
             red_infostate, red_infostate_annotation, move, result
         )
+
+        # Update PBS
+        pbs, pbs_annotation = public_observation(pbs, pbs_annotation, move, result)
             
         # Overwrite old state
         board, annotation = new_board, new_annotation
