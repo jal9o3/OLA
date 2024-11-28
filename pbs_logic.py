@@ -15,23 +15,26 @@ def public_observation(public_belief_state, pbs_annotation, action, result):
     start_row, start_col, end_row, end_col = map(int, action)
 
     # Determine which piece to update "surpasses" count (attacker or defender)
-    piece_to_update = -1
-    other_piece = -1
     for i, piece in enumerate(public_belief_state):
         if (piece[PBS_ROW] == start_row and piece[PBS_COLUMN] == start_col
             or piece[PBS_ROW] == end_row and piece[PBS_COLUMN] == end_col
             and piece[PBS_CAPTURED] == 0):
             piece_to_update = i # current piece
-        # Identify the other piece
-        if (piece_to_update != -1):
-            if (public_belief_state[piece_to_update][PBS_ROW] == start_row
-                and public_belief_state[piece_to_update][PBS_COLUMN] == start_col):
-                if (piece[PBS_ROW] == end_row and piece[PBS_COLUMN] == end_col):
-                    other_piece = i
-            elif (public_belief_state[piece_to_update][PBS_ROW] == end_row
-                  and public_belief_state[piece_to_update][PBS_COLUMN] == end_col):
-                if (piece[PBS_ROW] == start_row and piece[PBS_COLUMN] == start_col):
-                    other_piece = i
+    
+    # Restart loop to identify the other piece
+    for i, piece in enumerate(public_belief_state):
+        if (public_belief_state[piece_to_update][PBS_ROW] == start_row
+            and public_belief_state[piece_to_update][PBS_COLUMN] == start_col):
+            if (piece[PBS_ROW] == end_row and piece[PBS_COLUMN] == end_col
+                and piece[PBS_CAPTURED] == 0):
+                logger.debug(f"found other piece end square {i}")
+                other_piece = i
+        elif (public_belief_state[piece_to_update][PBS_ROW] == end_row
+                and public_belief_state[piece_to_update][PBS_COLUMN] == end_col
+                and piece[PBS_CAPTURED == 0]):
+            if (piece[PBS_ROW] == start_row and piece[PBS_COLUMN] == start_col):
+                logger.debug(f"found other piece start square {i}")
+                other_piece = i
     
     # Update the "surpasses" count based on the action result
     # Distinguish whether piece to update is the attacker or defender
@@ -65,7 +68,7 @@ def public_observation(public_belief_state, pbs_annotation, action, result):
             piece[PBS_ROW] = -1
             piece[PBS_COLUMN] = -1 # Send piece outside the board
         else:
-            piece[PBS_ROW] = PBS_ROWS + 1
+            piece[PBS_ROW] = ROWS + 1
             piece[PBS_COLUMN] = COLUMNS + 1
         piece[PBS_CAPTURED] = 1
 
