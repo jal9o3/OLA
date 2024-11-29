@@ -165,6 +165,97 @@ def has_none_adjacent(flag_col, nrow): # nrow is either the first or last row
     else:
         return False
 
+# Represent initial information states for BLUE and RED
+# 42 ROWS (21 pieces each) by 19 COLS (Player, p(1...15), row, col, captured)
+def initial_infostate(board, player):
+    # Initialize blank matrix for the infostate
+    infostate = [[BLANK for _ in range(INFOCOLS)] for _ in range(INFOROWS)]
+    infostate_annotation = [BLUE, 0, player]
+
+    range_start, range_end = (
+        (FLAG, SPY) if player == BLUE else (FLAG + SPY, 2*SPY)
+    )
+    # Obtain initial probabilities
+    range_offset = 0 if player == BLUE else SPY # for finding the correct columns
+    for piece in range(INITIAL_ARMY):
+        for col in range(INFOCOLS):
+            if col == PLAYER:
+                infostate[piece][col] = RED if player == BLUE else BLUE
+            elif range_start - range_offset <= col <= range_end - range_offset:
+                if col == PRIVATE:
+                    infostate[piece][col] = 6/INITIAL_ARMY
+                elif col == SPY:
+                    infostate[piece][col] = 2/INITIAL_ARMY
+                else:
+                    infostate[piece][col] = 1/INITIAL_ARMY
+    piece_n = 0
+    # Add locations
+    for row in range(ROWS):
+        for column in range(COLUMNS):
+            # Locations of opponent's pieces
+            if (piece_n < INITIAL_ARMY and
+                not (range_start <= board[row][column] <= range_end)
+                and board[row][column] != BLANK):
+                infostate[piece_n][ROW] = row
+                infostate[piece_n][COLUMN] = column
+                # Set initial value range (for evidence pruning)
+                infostate[piece_n][RANGE_BOT] = FLAG
+                infostate[piece_n][RANGE_TOP] = SPY
+                piece_n += 1
+    # Restart loop to obtain the player's piece locations
+    for row in range(ROWS):
+        for column in range(COLUMNS):
+            if (piece_n >= INITIAL_ARMY and
+                    range_start <= board[row][column] <= range_end
+                    and board[row][column] != BLANK):
+                value = (
+                    board[row][column] if player == BLUE
+                    else board[row][column] - SPY
+                ) # calculate actual value of the piece
+                infostate[piece_n][PLAYER] = player
+                infostate[piece_n][value] = 1
+                infostate[piece_n][ROW] = row
+                infostate[piece_n][COLUMN] = column
+                # Possible value range ends are equal for identified pieces
+                infostate[piece_n][RANGE_BOT] = value
+                infostate[piece_n][RANGE_TOP] = value
+                piece_n += 1
+    
+    return infostate, infostate_annotation
+
+# Represent initial public belief state
+def initial_pbs(board):
+    # Initialize blank matrix for the infostate
+    pbs = [[BLANK for _ in range(PBS_COLS)] for _ in range(PBS_ROWS)]
+    pbs_annotation = [BLUE]
+
+    blue_range_start, blue_range_end = FLAG, SPY
+    red_range_start, red_range_end = SPY + FLAG, 2*SPY
+
+    piece_n = 0
+    # Add locations
+    for row in range(ROWS):
+        for column in range(COLUMNS):
+            # Locations of BLUE's pieces
+            if (piece_n < INITIAL_ARMY and
+                blue_range_start <= board[row][column] <= blue_range_end
+                and board[row][column] != BLANK):
+                pbs[piece_n][PBS_PLAYER] = BLUE
+                pbs[piece_n][PBS_ROW] = row
+                pbs[piece_n][PBS_COLUMN] = column
+                piece_n += 1
+    # Restart loop to obtain RED's piece locations
+    for row in range(ROWS):
+        for column in range(COLUMNS):
+            if (piece_n >= INITIAL_ARMY and
+                    red_range_start <= board[row][column] <= red_range_end
+                    and board[row][column] != BLANK):
+                pbs[piece_n][PBS_PLAYER] = RED
+                pbs[piece_n][PBS_ROW] = row
+                pbs[piece_n][PBS_COLUMN] = column
+                piece_n += 1
+    return pbs, pbs_annotation
+
 def print_board(board, color=False, pov=WORLD):
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
@@ -272,99 +363,9 @@ def main():
     if save_game:
         # Save the initial board configuration, initial annotation is always the same
         game_data = [board]
-
-    # Represent initial information states for BLUE and RED
-    # 42 ROWS (21 pieces each) by 19 COLS (Player, p(1...15), row, col, captured)
-    def initial_infostate(player):
-        # Initialize blank matrix for the infostate
-        infostate = [[BLANK for _ in range(INFOCOLS)] for _ in range(INFOROWS)]
-        infostate_annotation = [BLUE, 0, player]
-
-        range_start, range_end = (
-            (FLAG, SPY) if player == BLUE else (FLAG + SPY, 2*SPY)
-        )
-        # Obtain initial probabilities
-        range_offset = 0 if player == BLUE else SPY # for finding the correct columns
-        for piece in range(INITIAL_ARMY):
-            for col in range(INFOCOLS):
-                if col == PLAYER:
-                    infostate[piece][col] = RED if player == BLUE else BLUE
-                elif range_start - range_offset <= col <= range_end - range_offset:
-                    if col == PRIVATE:
-                        infostate[piece][col] = 6/INITIAL_ARMY
-                    elif col == SPY:
-                        infostate[piece][col] = 2/INITIAL_ARMY
-                    else:
-                        infostate[piece][col] = 1/INITIAL_ARMY
-        piece_n = 0
-        # Add locations
-        for row in range(ROWS):
-            for column in range(COLUMNS):
-                # Locations of opponent's pieces
-                if (piece_n < INITIAL_ARMY and
-                    not (range_start <= board[row][column] <= range_end)
-                    and board[row][column] != BLANK):
-                    infostate[piece_n][ROW] = row
-                    infostate[piece_n][COLUMN] = column
-                    # Set initial value range (for evidence pruning)
-                    infostate[piece_n][RANGE_BOT] = FLAG
-                    infostate[piece_n][RANGE_TOP] = SPY
-                    piece_n += 1
-        # Restart loop to obtain the player's piece locations
-        for row in range(ROWS):
-            for column in range(COLUMNS):
-                if (piece_n >= INITIAL_ARMY and
-                      range_start <= board[row][column] <= range_end
-                      and board[row][column] != BLANK):
-                    value = (
-                        board[row][column] if player == BLUE
-                        else board[row][column] - SPY
-                    ) # calculate actual value of the piece
-                    infostate[piece_n][PLAYER] = player
-                    infostate[piece_n][value] = 1
-                    infostate[piece_n][ROW] = row
-                    infostate[piece_n][COLUMN] = column
-                    # Possible value range ends are equal for identified pieces
-                    infostate[piece_n][RANGE_BOT] = value
-                    infostate[piece_n][RANGE_TOP] = value
-                    piece_n += 1
-        return infostate, infostate_annotation
             
-    blue_infostate, blue_infostate_annotation = initial_infostate(BLUE)
-    red_infostate, red_infostate_annotation = initial_infostate(RED)
-
-    # Represent initial public belief state
-    def initial_pbs(board):
-        # Initialize blank matrix for the infostate
-        pbs = [[BLANK for _ in range(PBS_COLS)] for _ in range(PBS_ROWS)]
-        pbs_annotation = [BLUE]
-
-        blue_range_start, blue_range_end = FLAG, SPY
-        red_range_start, red_range_end = SPY + FLAG, 2*SPY
-
-        piece_n = 0
-        # Add locations
-        for row in range(ROWS):
-            for column in range(COLUMNS):
-                # Locations of BLUE's pieces
-                if (piece_n < INITIAL_ARMY and
-                    blue_range_start <= board[row][column] <= blue_range_end
-                    and board[row][column] != BLANK):
-                    pbs[piece_n][PBS_PLAYER] = BLUE
-                    pbs[piece_n][PBS_ROW] = row
-                    pbs[piece_n][PBS_COLUMN] = column
-                    piece_n += 1
-        # Restart loop to obtain RED's piece locations
-        for row in range(ROWS):
-            for column in range(COLUMNS):
-                if (piece_n >= INITIAL_ARMY and
-                      red_range_start <= board[row][column] <= red_range_end
-                      and board[row][column] != BLANK):
-                    pbs[piece_n][PBS_PLAYER] = RED
-                    pbs[piece_n][PBS_ROW] = row
-                    pbs[piece_n][PBS_COLUMN] = column
-                    piece_n += 1
-        return pbs, pbs_annotation
+    blue_infostate, blue_infostate_annotation = initial_infostate(board, BLUE)
+    red_infostate, red_infostate_annotation = initial_infostate(board, RED)
     
     pbs, pbs_annotation = initial_pbs(board)
 
