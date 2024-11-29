@@ -221,6 +221,7 @@ def cfr(board, annotation, blue_probability, red_probability,
     # Return payoff for 'terminal' states
     if current_depth == max_depth:
         if is_terminal(board, annotation):
+            logger.debug("saw terminal state")
             return reward(board, annotation), []
         else:
             return 0, [] # replace with neural network perhaps
@@ -279,7 +280,7 @@ def cfr(board, annotation, blue_probability, red_probability,
 # 42 ROWS (21 pieces each) by 19 COLS (Player, p(1...15), row, col, captured)
 def initial_infostate(board, player):
     logger = logging.getLogger(__name__)
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.WARNING)
     
     # Initialize blank matrix for the infostate
     infostate = [[BLANK for _ in range(INFOCOLS)] for _ in range(INFOROWS)]
@@ -514,7 +515,8 @@ def main():
 
     while not is_terminal(board, annotation):
         print(f"\nTurn: {i + 1}")
-        if mode == RANDOM_VS_RANDOM or mode == CFR_VS_CFR:
+        
+        if mode == RANDOM_VS_RANDOM:
             print_board(board, color=True, pov=WORLD)
             # print_infostate(blue_infostate, blue_infostate_annotation)
             # print_infostate(red_infostate, red_infostate_annotation)
@@ -522,6 +524,9 @@ def main():
         elif mode == HUMAN_VS_RANDOM:
             print_board(board, color=True, pov=human)
             print_pbs(pbs, pbs_annotation)
+        elif mode == CFR_VS_CFR:
+            print_board(board, color=True, pov=WORLD)
+
         print(f"Player: {annotation[CURRENT_PLAYER]}")
         moves = actions(board, annotation)
         print(moves)
@@ -534,7 +539,10 @@ def main():
         elif mode == RANDOM_VS_RANDOM:
             move = random.choice(moves)
         elif mode == CFR_VS_CFR:
-            util, strategy = cfr(board, annotation, 1, 1, 0, 3)
+            util, strategy = cfr(board, annotation, 1, 1, 0, 2)
+            print("Strategy: ")
+            print(strategy)
+            print(f"Utility: {util}")
             move = random.choices(moves, weights=strategy, k=1)[0]
         print(f"Chosen Move: {move}")
 
