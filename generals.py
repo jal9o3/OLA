@@ -51,8 +51,6 @@ def reward(board, annotation):
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
     
-    logger.debug("loaded reward function")
-
     # A non-terminal state is not eligible of assessment
     if not is_terminal(board, annotation):
         logger.debug("state is not terminal")
@@ -219,13 +217,13 @@ def cfr(board, annotation, blue_probability, red_probability,
     opponent = RED if player == BLUE else BLUE
 
     # Return payoff for 'terminal' states
-    if current_depth == max_depth:
-        if is_terminal(board, annotation):
-            logger.debug("saw terminal state")
-            return reward(board, annotation), []
-        else:
-            return 0, [] # replace with neural network perhaps
-        
+    if current_depth == max_depth and is_terminal(board, annotation):
+        logger.debug("saw terminal state")
+        return -reward(board, annotation), []
+    elif current_depth == max_depth and not is_terminal(board, annotation):
+        logger.debug("not terminal")
+        return 0, [] # replace with neural network perhaps
+
     # Initialize strategy
     valid_actions = actions(board, annotation)
     actions_n = len(valid_actions)
@@ -241,13 +239,13 @@ def cfr(board, annotation, blue_probability, red_probability,
     for a, action in enumerate(valid_actions):
         next_board, next_annotation = transition(board, annotation, action)
         if player == BLUE:
-            result = cfr(board, annotation, 
+            result = cfr(next_board, next_annotation, 
             red_probability * strategy[a], blue_probability,
             current_depth + 1, max_depth)
             logger.debug(result)
             util[a] = -(result[0])
         else:
-            result = cfr(board, annotation, 
+            result = cfr(next_board, next_annotation, 
             blue_probability, red_probability * strategy[a],
             current_depth + 1, max_depth)
             logger.debug(result)
@@ -543,6 +541,10 @@ def main():
             print("Strategy: ")
             print(strategy)
             print(f"Utility: {util}")
+            # Set negative weights to zero to avoid errors
+            for a, action in enumerate(strategy):
+                if action < 0:
+                    strategy[a] = 0
             move = random.choices(moves, weights=strategy, k=1)[0]
         print(f"Chosen Move: {move}")
 
