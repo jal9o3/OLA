@@ -12,6 +12,8 @@ from infostate_logic import *
 # Public belief state related functions
 from pbs_logic import *
 
+
+
 # Determine if the current state is a terminal state
 def is_terminal(board, annotation):
 
@@ -42,6 +44,49 @@ def is_terminal(board, annotation):
 
     # If none of the checks have been passed, it is not a terminal state
     return False
+
+# Measure overall reward of terminal states
+# 1 is a blue win, -1 is a red win
+def reward(board, annotation):
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+    
+    logger.debug("loaded reward function")
+
+    # A non-terminal state is not eligible of assessment
+    if not is_terminal(board, annotation):
+        logger.debug("state is not terminal")
+        return None
+    
+    # Blue flag captured
+    elif not any(FLAG in _ for _ in board):
+        return -1
+    
+    # Red flag captured
+    elif not any(SPY + FLAG in _ for _ in board):
+        return 1
+
+    # Blue flag reaches red side
+    elif FLAG in board[-1]:
+        logger.debug("blue flag in red side")
+        # If flag has already survived a turn
+        if annotation[WAITING_BLUE_FLAG]:
+            return 1
+        else:
+            flag_col = board[-1].index(FLAG) # Get the flag's column number
+            if has_none_adjacent(flag_col, board[-1]):
+                return 1
+
+    # Red flag reaches red side
+    if SPY + FLAG in board[0]:
+        if annotation[WAITING_RED_FLAG]:
+            return -1
+        else:
+            flag_col = board[0].index(SPY + FLAG)
+            if has_none_adjacent(flag_col, board[0]):
+                return -1
+    
+
 
 # Obtain all possible actions for each state
 def actions(board, annotation):

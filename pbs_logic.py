@@ -10,7 +10,7 @@ from pbs_constants import *
 
 def public_observation(public_belief_state, pbs_annotation, action, result):
     logger = logging.getLogger(__name__)
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.WARNING)
 
     start_row, start_col, end_row, end_col = map(int, action)
 

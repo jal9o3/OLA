@@ -6,6 +6,27 @@ from world_constants import *
 # Function for setting up PBSs
 from generals import initial_pbs, transition, public_observation
 
+
+# Procedure for saving a particular world state
+def world_state_pumper(game_tag, move_number, state_tag):
+    # Load the game from history/game_tag.json
+    with open(f'history/{game_tag}.json', 'r') as file:
+        game_data = json.load(file)
+    board = game_data[0]
+    annotation = [BLUE, 0, 0]
+    moves = game_data[1]
+
+    # Iterate until the move number
+    for i in range(move_number):
+        move = moves[i]
+        board, annotation = transition(board, annotation, move)
+    
+    # Save the produced world state in world_samples/pbs_tag.json
+    os.makedirs('world_samples', exist_ok=True)
+    with open(f'world_samples/{state_tag}.json', 'w') as file:
+        json.dump([board, annotation], file)
+
+
 # Procedure for saving a particular PBS
 def pbs_pumper(game_tag, move_number, pbs_tag):
     # Load the game from history/game_tag.json
