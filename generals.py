@@ -361,7 +361,8 @@ def main():
     pbs, pbs_annotation = initial_pbs(board)
 
     # Gameplay loop
-    mode = HUMAN_VS_RANDOM
+    mode = RANDOM_VS_RANDOM
+    # mode = HUMAN_VS_RANDOM
     i = 0
     moves_N = 0 # total number of branches found
     if mode == HUMAN_VS_RANDOM:
