@@ -86,8 +86,6 @@ def reward(board, annotation):
             if has_none_adjacent(flag_col, board[0]):
                 return -1
     
-
-
 # Obtain all possible actions for each state
 def actions(board, annotation):
     logger = logging.getLogger(__name__)
@@ -209,6 +207,73 @@ def has_none_adjacent(flag_col, nrow): # nrow is either the first or last row
         return True
     else:
         return False
+
+# Adapt counterfactual regret minimization to GG
+def cfr(board, annotation, blue_probability, red_probability, 
+        current_depth, max_depth):
+    
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+    
+    player = annotation[CURRENT_PLAYER]
+    opponent = RED if player == BLUE else BLUE
+
+    # Return payoff for 'terminal' states
+    if current_depth == max_depth:
+        if is_terminal(board, annotation):
+            return reward(board, annotation), []
+        else:
+            return 0, [] # replace with neural network perhaps
+        
+    # Initialize strategy
+    valid_actions = actions(board, annotation)
+    actions_n = len(valid_actions)
+    strategy = [1.0/actions_n for i in range(actions_n)] # Uniform strategy
+    regret_sum = [0.0 for i in range(actions_n)]
+    
+    # Initialize action utilities
+    util = [0.0 for i in range(actions_n)]
+    # Initialize node utility
+    node_util = 0
+
+    # Iterate over children nodes and recursively call cfr
+    for a, action in enumerate(valid_actions):
+        next_board, next_annotation = transition(board, annotation, action)
+        if player == BLUE:
+            result = cfr(board, annotation, 
+            red_probability * strategy[a], blue_probability,
+            current_depth + 1, max_depth)
+            logger.debug(result)
+            util[a] = -(result[0])
+        else:
+            result = cfr(board, annotation, 
+            blue_probability, red_probability * strategy[a],
+            current_depth + 1, max_depth)
+            logger.debug(result)
+            util[a] = -(result[0])
+        # Calculate node utility
+        node_util += strategy[a] * util[a]
+    
+    # Calculate regret sum
+    for a, action in enumerate(valid_actions):
+        regret = util[a] - node_util
+        regret_sum[a] += (red_probability if player == BLUE else blue_probability) * regret
+
+    # Normalize regret sum to find strategy for this node
+    strategy = [0.0 for i in range(actions_n)]
+    normalizing_sum = 0.0
+    for a, action in enumerate(valid_actions):
+        normalizing_sum += regret_sum[a]
+
+    for a, action in enumerate(valid_actions):
+        if normalizing_sum > 0:
+            strategy[a] = regret_sum[a] / normalizing_sum
+        else:
+            strategy[a] = 1.0 / actions_n
+
+    # Return node utility
+    return node_util, strategy
+
 
 # Represent initial information states for BLUE and RED
 # 42 ROWS (21 pieces each) by 19 COLS (Player, p(1...15), row, col, captured)
@@ -415,8 +480,9 @@ def main():
     pbs, pbs_annotation = initial_pbs(board)
 
     # Gameplay loop
-    mode = RANDOM_VS_RANDOM
+    # mode = RANDOM_VS_RANDOM
     # mode = HUMAN_VS_RANDOM
+    mode = CFR_VS_CFR
     i = 0
     moves_N = 0 # total number of branches found
     if mode == HUMAN_VS_RANDOM:
@@ -430,7 +496,7 @@ def main():
 
     while not is_terminal(board, annotation):
         print(f"\nTurn: {i + 1}")
-        if mode == RANDOM_VS_RANDOM:
+        if mode == RANDOM_VS_RANDOM or mode == CFR_VS_CFR:
             print_board(board, color=True, pov=WORLD)
             # print_infostate(blue_infostate, blue_infostate_annotation)
             # print_infostate(red_infostate, red_infostate_annotation)
@@ -447,8 +513,11 @@ def main():
         if mode == HUMAN_VS_RANDOM and annotation[CURRENT_PLAYER] == human:
             while move not in moves:
                 move = input("Move: ")
-        else:
+        elif mode == RANDOM_VS_RANDOM:
             move = random.choice(moves)
+        elif mode == CFR_VS_CFR:
+            util, strategy = cfr(board, annotation, 1, 1, 0, 3)
+            move = random.choices(moves, weights=strategy, k=1)[0]
         print(f"Chosen Move: {move}")
 
         # Handle the saving of game moves

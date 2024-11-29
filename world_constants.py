@@ -41,6 +41,7 @@ WAITING_RED_FLAG = 2 # Same for the red flag
 # Gameplay modes
 RANDOM_VS_RANDOM = 0
 HUMAN_VS_RANDOM = 1
+CFR_VS_CFR = 2
 
 # State display levels
 WORLD = 0 # Every piece value is visible
