@@ -278,6 +278,9 @@ def cfr(board, annotation, blue_probability, red_probability,
 # Represent initial information states for BLUE and RED
 # 42 ROWS (21 pieces each) by 19 COLS (Player, p(1...15), row, col, captured)
 def initial_infostate(board, player):
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+    
     # Initialize blank matrix for the infostate
     infostate = [[BLANK for _ in range(INFOCOLS)] for _ in range(INFOROWS)]
     infostate_annotation = [BLUE, 0, player]
@@ -322,6 +325,7 @@ def initial_infostate(board, player):
                     board[row][column] if player == BLUE
                     else board[row][column] - SPY
                 ) # calculate actual value of the piece
+                logger.debug(f"{piece_n} {value}")
                 infostate[piece_n][PLAYER] = player
                 infostate[piece_n][value] = 1
                 infostate[piece_n][ROW] = row
@@ -428,11 +432,20 @@ def main():
     blue_formation = [BLANK for _ in range(COLUMNS) for _ in range(3)]
     red_formation = [BLANK for _ in range(COLUMNS) for _ in range(3)]
 
+    formation_components = [0, 0, 0, 0, 0, 0,
+                            1, 2, 2, 2, 2, 2, 2,
+                            3, 4, 5, 6, 7, 8, 9, 10, 
+                            11, 12, 13, 14, 15, 15]
+
+    # Sample random formation
+    blue_formation = list(get_random_permutation(formation_components))
+    red_formation = list(get_random_permutation(formation_components))
+
     # formation_temp = input("BLUE formation: ")
-    formation_temp = "0 15 15 2 2 2 2 0 2 3 4 5 6 7 8 9 10 11 0 13 14 0 0 12 2 0 1"
-    # Preprocess input
-    for i, p in enumerate(formation_temp.split(" ")):
-        blue_formation[i] = int(p)
+    # formation_temp = "0 15 15 2 2 2 2 0 2 3 4 5 6 7 8 9 10 11 0 13 14 0 0 12 2 0 1"
+    # # Preprocess input
+    # for i, p in enumerate(formation_temp.split(" ")):
+    #     blue_formation[i] = int(p)
 
     # Place pieces on blue board
     i = 0
@@ -448,19 +461,22 @@ def main():
     # Flip each blue board row left to right
     blue_board = [row[::-1] for row in blue_board]
 
-    # formation_temp = input("RED formation: ")
-    formation_temp = "0 15 0 2 2 2 2 2 2 3 4 5 6 7 0 9 10 11 12 13 14 0 0 8 15 0 1"
-    # Preprocess input
-    for i, p in enumerate(formation_temp.split(" ")):
-        if int(p) != BLANK:
-            red_formation[i] = int(p) + SPY # Red pieces range from 15 to 30
+    # # formation_temp = input("RED formation: ")
+    # formation_temp = "0 15 0 2 2 2 2 2 2 3 4 5 6 7 0 9 10 11 12 13 14 0 0 8 15 0 1"
+    # # Preprocess input
+    # for i, p in enumerate(formation_temp.split(" ")):
+    #     if int(p) != BLANK:
+    #         red_formation[i] = int(p) + SPY # Red pieces range from 15 to 30
 
     # Place pieces on red board
     i = 0
     for row in range(ROWS-3, ROWS):
         for column in range(COLUMNS):
             if i < len(red_formation):
-                red_board[row][column] = red_formation[i]
+                if red_formation[i] > 0:
+                    red_board[row][column] = red_formation[i] + SPY # take note of this change!
+                elif red_formation[i] == 0:
+                    red_board[row][column] = red_formation[i]
                 i += 1
 
     # Perform matrix addition
@@ -468,6 +484,8 @@ def main():
         [blue_board[i][j] + red_board[i][j] for j in range(COLUMNS)] 
         for i in range(len(board))
         ]
+    
+    print_board(board, annotation)
     
     # Handle game saving
     if save_game:

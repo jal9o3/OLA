@@ -8,12 +8,13 @@ from world_constants import *
 # Infostate constants
 from infostate_constants import *
 
-# Sample n permutations from the set of unique value permutations
-def value_permutation_sample(pieces, n):
-    def get_random_permutation(pieces):
+def get_random_permutation(pieces):
         permuted_list = pieces[:]
         random.shuffle(permuted_list)
         return tuple(permuted_list)
+
+# Sample n permutations from the set of unique value permutations
+def value_permutation_sample(pieces, n):
     
     seen = set()
     for i in range(n):
