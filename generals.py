@@ -1,4 +1,4 @@
-import logging, copy, random, time
+import logging, copy, random, json, os
 
 # Configure the logging
 logging.basicConfig(level=logging.WARNING)
@@ -212,6 +212,9 @@ def main():
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
 
+    # True if game data will be saved
+    save_game = True
+
     # Board for arbiter
     board = [[BLANK for _ in range(COLUMNS)] for _ in range(ROWS)]
     annotation = [BLUE, 0, 0]
@@ -264,6 +267,11 @@ def main():
         [blue_board[i][j] + red_board[i][j] for j in range(COLUMNS)] 
         for i in range(len(board))
         ]
+    
+    # Handle game saving
+    if save_game:
+        # Save the initial board configuration, initial annotation is always the same
+        game_data = [board]
 
     # Represent initial information states for BLUE and RED
     # 42 ROWS (21 pieces each) by 19 COLS (Player, p(1...15), row, col, captured)
@@ -371,6 +379,9 @@ def main():
     else:
         human = 0
 
+    if save_game:
+        move_history = [] # Initialize list of moves
+
     while not is_terminal(board, annotation):
         print(f"\nTurn: {i + 1}")
         if mode == RANDOM_VS_RANDOM:
@@ -393,6 +404,10 @@ def main():
         else:
             move = random.choice(moves)
         print(f"Chosen Move: {move}")
+
+        # Handle the saving of game moves
+        if save_game:
+            move_history.append(move)
 
         # Examine move result (WIN, LOSS, TIE):
         new_board, new_annotation = transition(board, annotation, move)
@@ -435,6 +450,13 @@ def main():
         board, annotation = new_board, new_annotation
         
         i += 1
+    
+    # Handle saving of latest game to a JSON file
+    if save_game:
+        game_data.append(move_history)
+        os.makedirs('history', exist_ok=True)
+        with open('history/latest_game.json', 'w') as file:
+            json.dump(game_data, file)
     print(f"Average branching: {round(moves_N/i)}")
     
 if __name__ == "__main__":
