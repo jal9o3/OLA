@@ -221,11 +221,16 @@ def cfr(board, annotation, blue_probability, red_probability,
     opponent = RED if player == BLUE else BLUE
 
     # Return payoff for 'terminal' states
-    if current_depth == max_depth and is_terminal(board, annotation):
+    if ((current_depth == max_depth and is_terminal(board, annotation))
+         or is_terminal(board, annotation)):
         logger.setLevel(logging.DEBUG)
         # logger.debug("terminal state!")
         # logger.debug(f"Reward: {-reward(board, annotation)}")
-        return reward(board, annotation), []
+        # logger.debug(f"Player: {player}")
+        if player == BLUE:
+            return reward(board, annotation), []
+        else:
+            return -reward(board, annotation), []
     elif current_depth == max_depth and not is_terminal(board, annotation):
         return 0, [] # replace with neural network perhaps
 
@@ -272,9 +277,10 @@ def cfr(board, annotation, blue_probability, red_probability,
     # Normalize regret sum to find strategy for this node
     strategy = [0.0 for i in range(actions_n)]
     normalizing_sum = sum(regret_sum)
-    # for a, action in enumerate(valid_actions):
-    #     logger.debug(f"regret_sum[a]={regret_sum[a]}")
-    #     normalizing_sum += regret_sum[a]
+    for a, action in enumerate(valid_actions):
+        # logger.debug(f"regret_sum[a]={regret_sum[a]}")
+        if regret_sum[a] > 0:
+            normalizing_sum += regret_sum[a]
 
     # logger.setLevel(logging.DEBUG)
     # logger.debug(f"Normalizing Sum: {normalizing_sum}")
@@ -553,7 +559,19 @@ def main():
         elif mode == RANDOM_VS_RANDOM:
             move = random.choice(moves)
         elif mode == CFR_VS_CFR:
-            util, strategy = cfr(board, annotation, 1, 1, 0, 3)
+            piece_count = sum(1 for row in board for element in row if element != 0)
+            max_depth = round(5*(INITIAL_ARMY/piece_count)) + 1
+            # If not even
+            if max_depth % 2 != 0:
+                if max_depth > 1:
+                    max_depth -= 1
+            elif max_depth == 0:
+                max_depth = 2
+            if max_depth > 4:
+                max_depth = 4
+            logger.setLevel(logging.DEBUG)
+            logger.debug(f"Max Depth: {max_depth}")
+            util, strategy = cfr(board, annotation, 1, 1, 0, max_depth)
             print("Strategy: ")
             print(strategy)
             logger.setLevel(logging.DEBUG)
