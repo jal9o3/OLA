@@ -581,6 +581,14 @@ def main():
             for a, action in enumerate(strategy):
                 if action < 0:
                     strategy[a] = 0
+            # Only consider the top three moves
+            sorted_strategy = sorted(strategy, reverse=True) # descending order
+            # Get a list of the top three values
+            top_three = sorted_strategy[:3]
+            # Set all values below top three to zero (removes too suboptimal moves)
+            for a, action in enumerate(strategy):
+                if action not in top_three:
+                    strategy[a] = 0
             print("Sanitized Strategy: ")
             print(strategy)
             move = random.choices(moves, weights=strategy, k=1)[0]
