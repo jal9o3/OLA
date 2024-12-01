@@ -263,6 +263,9 @@ def cfr(board, annotation, blue_probability, red_probability,
         # Calculate node utility
         node_util += strategy[a] * util[a]
     
+    if current_depth == 0:
+        logger.debug(f"Uniform Utility: {node_util}")
+
     # Calculate regret sum
     for a, action in enumerate(valid_actions):
         logger.setLevel(logging.DEBUG)
@@ -291,6 +294,9 @@ def cfr(board, annotation, blue_probability, red_probability,
             strategy[a] = regret_sum[a] / normalizing_sum
         else:
             strategy[a] = 1.0 / actions_n
+
+    # Update node utility with regret-matched strategy
+    node_util += strategy[a] * util[a]
 
     # Return node utility
     return node_util, strategy
