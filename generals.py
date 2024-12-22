@@ -212,10 +212,6 @@ def cfr(board, annotation, blue_probability, red_probability,
     
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
-
-    # logger.debug(f"Depth: {current_depth}")
-    # logger.debug(f"Blue Probability: {blue_probability}")
-    # logger.debug(f"Red Probability: {red_probability}")
     
     player = annotation[CURRENT_PLAYER]
     opponent = RED if player == BLUE else BLUE
@@ -224,9 +220,6 @@ def cfr(board, annotation, blue_probability, red_probability,
     if ((current_depth == max_depth and is_terminal(board, annotation))
          or is_terminal(board, annotation)):
         logger.setLevel(logging.DEBUG)
-        # logger.debug("terminal state!")
-        # logger.debug(f"Reward: {-reward(board, annotation)}")
-        # logger.debug(f"Player: {player}")
         if player == BLUE:
             return reward(board, annotation), []
         else:
@@ -252,13 +245,11 @@ def cfr(board, annotation, blue_probability, red_probability,
             result = cfr(next_board, next_annotation, 
             red_probability * strategy[a], blue_probability,
             current_depth + 1, max_depth)
-            # logger.debug(result)
             util[a] = -(result[0])
         else:
             result = cfr(next_board, next_annotation, 
             blue_probability, red_probability * strategy[a],
             current_depth + 1, max_depth)
-            # logger.debug(result)
             util[a] = -(result[0])
         # Calculate node utility
         node_util += strategy[a] * util[a]
@@ -270,24 +261,14 @@ def cfr(board, annotation, blue_probability, red_probability,
     for a, action in enumerate(valid_actions):
         logger.setLevel(logging.DEBUG)
         regret = util[a] - node_util
-        # logger.debug(f"Regret: {regret}")
         regret_sum[a] += (red_probability if player == BLUE else blue_probability) * regret
-        # logger.debug(f"regret_sum[a]={regret_sum[a]}")
-
-    # print("Regret Sum:")
-    # print(regret_sum)
 
     # Normalize regret sum to find strategy for this node
     strategy = [0.0 for i in range(actions_n)]
     normalizing_sum = sum(regret_sum)
     for a, action in enumerate(valid_actions):
-        # logger.debug(f"regret_sum[a]={regret_sum[a]}")
         if regret_sum[a] > 0:
             normalizing_sum += regret_sum[a]
-
-    # logger.setLevel(logging.DEBUG)
-    # logger.debug(f"Normalizing Sum: {normalizing_sum}")
-    # logger.debug(f"Normalizing Sum > 0: {normalizing_sum > 0}")
 
     for a, action in enumerate(valid_actions):
         if normalizing_sum > 0:
@@ -468,12 +449,6 @@ def main():
     blue_formation = list(get_random_permutation(formation_components))
     red_formation = list(get_random_permutation(formation_components))
 
-    # formation_temp = input("BLUE formation: ")
-    # formation_temp = "0 15 15 2 2 2 2 0 2 3 4 5 6 7 8 9 10 11 0 13 14 0 0 12 2 0 1"
-    # # Preprocess input
-    # for i, p in enumerate(formation_temp.split(" ")):
-    #     blue_formation[i] = int(p)
-
     # Place pieces on blue board
     i = 0
     for row in range(ROWS-3, ROWS):
@@ -487,13 +462,6 @@ def main():
     blue_board = blue_board[::-1]
     # Flip each blue board row left to right
     blue_board = [row[::-1] for row in blue_board]
-
-    # # formation_temp = input("RED formation: ")
-    # formation_temp = "0 15 0 2 2 2 2 2 2 3 4 5 6 7 0 9 10 11 12 13 14 0 0 8 15 0 1"
-    # # Preprocess input
-    # for i, p in enumerate(formation_temp.split(" ")):
-    #     if int(p) != BLANK:
-    #         red_formation[i] = int(p) + SPY # Red pieces range from 15 to 30
 
     # Place pieces on red board
     i = 0
