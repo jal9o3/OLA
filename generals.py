@@ -423,7 +423,8 @@ def print_board(board, color=False, pov=WORLD):
 
 # Parameter save_game=True if game data will be saved
 # available modes: HUMAN_VS_RANDOM, RANDOM_VS_RANDOM, CFR_VS_CFR
-def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR, save_game=True):
+def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR, 
+                  cfr=cfr, save_game=True):
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
 
