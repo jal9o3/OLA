@@ -1,4 +1,4 @@
-import logging, copy, random, json, os
+import logging, copy, random, json, os, ctypes
 
 # Configure the logging
 logging.basicConfig(level=logging.WARNING)
@@ -276,8 +276,8 @@ def cfr(board, annotation, blue_probability, red_probability,
         else:
             strategy[a] = 1.0 / actions_n
 
-    # Update node utility with regret-matched strategy
-    node_util += strategy[a] * util[a]
+        # Update node utility with regret-matched strategy
+        node_util += strategy[a] * util[a]
 
     # Return node utility
     return node_util, strategy
@@ -620,7 +620,9 @@ def main():
     blue_formation = list(get_random_permutation(FORMATION_COMPONENTS))
     red_formation = list(get_random_permutation(FORMATION_COMPONENTS))
 
-    simulate_game(blue_formation, red_formation)
+    faster = ctypes.CDLL('./cfr.so')
+
+    simulate_game(blue_formation, red_formation, cfr=faster.cfr)
 
 if __name__ == "__main__":
     main()

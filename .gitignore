@@ -2,3 +2,4 @@
 *.py~
 history/
 pump_caller.py
+*.so
