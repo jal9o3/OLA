@@ -422,7 +422,8 @@ def print_board(board, color=False, pov=WORLD):
     print()       
 
 # Parameter save_game=True if game data will be saved
-def simulate_game(blue_formation, red_formation, save_game=True):
+# available modes: HUMAN_VS_RANDOM, RANDOM_VS_RANDOM, CFR_VS_CFR
+def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR, save_game=True):
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
 
@@ -480,7 +481,7 @@ def simulate_game(blue_formation, red_formation, save_game=True):
     # Gameplay loop
     # mode = RANDOM_VS_RANDOM
     # mode = HUMAN_VS_RANDOM
-    mode = CFR_VS_CFR
+    # mode = CFR_VS_CFR
     i = 0
     moves_N = 0 # total number of branches found
     if mode == HUMAN_VS_RANDOM:
