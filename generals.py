@@ -421,7 +421,7 @@ def print_board(board, color=False, pov=WORLD):
         print(f"{k:2}", end=' ')
     print()       
 
-def main():
+def simulate_game():
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
 
@@ -624,6 +624,12 @@ def main():
         with open('history/latest_game.json', 'w') as file:
             json.dump(game_data, file)
     print(f"Average branching: {round(moves_N/i)}")
-    
+
+def main():
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+
+    simulate_game()
+
 if __name__ == "__main__":
     main()
