@@ -29,6 +29,13 @@ PIECES = [
     1, 2, 2, 2, 2, 2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 15
 ] # The initial pieces
 
+FORMATION_COMPONENTS = [
+    0, 0, 0, 0, 0, 0,
+    1, 2, 2, 2, 2, 2, 2,
+    3, 4, 5, 6, 7, 8, 9, 10, 
+    11, 12, 13, 14, 15, 15
+    ] # The initial pieces + six spaces
+
 # Designations of players
 BLUE = 1 # Moves first
 RED = 2

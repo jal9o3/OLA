@@ -421,12 +421,10 @@ def print_board(board, color=False, pov=WORLD):
         print(f"{k:2}", end=' ')
     print()       
 
-def simulate_game():
+# Parameter save_game=True if game data will be saved
+def simulate_game(blue_formation, red_formation, save_game=True):
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
-
-    # True if game data will be saved
-    save_game = True
 
     # Board for arbiter
     board = [[BLANK for _ in range(COLUMNS)] for _ in range(ROWS)]
@@ -435,19 +433,6 @@ def simulate_game():
     # Boards for both player POVs
     blue_board = [[BLANK for _ in range(COLUMNS)] for _ in range(ROWS)]
     red_board = [[BLANK for _ in range(COLUMNS)] for _ in range(ROWS)]
-    
-    # Initial formations span three rows
-    blue_formation = [BLANK for _ in range(COLUMNS) for _ in range(3)]
-    red_formation = [BLANK for _ in range(COLUMNS) for _ in range(3)]
-
-    formation_components = [0, 0, 0, 0, 0, 0,
-                            1, 2, 2, 2, 2, 2, 2,
-                            3, 4, 5, 6, 7, 8, 9, 10, 
-                            11, 12, 13, 14, 15, 15]
-
-    # Sample random formation
-    blue_formation = list(get_random_permutation(formation_components))
-    red_formation = list(get_random_permutation(formation_components))
 
     # Place pieces on blue board
     i = 0
@@ -629,7 +614,11 @@ def main():
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
 
-    simulate_game()
+    # Sample random formation
+    blue_formation = list(get_random_permutation(FORMATION_COMPONENTS))
+    red_formation = list(get_random_permutation(FORMATION_COMPONENTS))
+
+    simulate_game(blue_formation, red_formation)
 
 if __name__ == "__main__":
     main()
