@@ -524,16 +524,18 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
         elif mode == RANDOM_VS_RANDOM:
             move = random.choice(moves)
         elif mode == CFR_VS_CFR:
-            piece_count = sum(1 for row in board for element in row if element != 0)
-            max_depth = round(5*(INITIAL_ARMY/piece_count)) + 1
-            # If not even
-            if max_depth % 2 != 0:
-                if max_depth > 1:
-                    max_depth -= 1
-            elif max_depth == 0:
-                max_depth = 2
-            if max_depth > 4:
-                max_depth = 4
+            # piece_count = sum(1 for row in board for element in row if element != 0)
+            # max_depth = round(5*(INITIAL_ARMY/piece_count)) + 1
+            # # If not even
+            # if max_depth % 2 != 0:
+            #     if max_depth > 1:
+            #         max_depth -= 1
+            # elif max_depth == 0:
+            #     max_depth = 2
+            # if max_depth > 4:
+            #     max_depth = 4
+
+            max_depth = 2
             logger.setLevel(logging.DEBUG)
             logger.debug(f"Max Depth: {max_depth}")
 
