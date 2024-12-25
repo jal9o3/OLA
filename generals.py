@@ -1,5 +1,7 @@
 import logging, copy, random, json, os, ctypes
 
+from ctypes import c_int, c_double
+
 # Configure the logging
 logging.basicConfig(level=logging.WARNING)
 
@@ -241,6 +243,7 @@ def cfr(board, annotation, blue_probability, red_probability,
     # Iterate over children nodes and recursively call cfr
     for a, action in enumerate(valid_actions):
         next_board, next_annotation = transition(board, annotation, action)
+        # Prepare C datatypes
         if player == BLUE:
             result = cfr(next_board, next_annotation, 
             red_probability * strategy[a], blue_probability,
@@ -251,6 +254,7 @@ def cfr(board, annotation, blue_probability, red_probability,
             blue_probability, red_probability * strategy[a],
             current_depth + 1, max_depth)
             util[a] = -(result[0])
+        
         # Calculate node utility
         node_util += strategy[a] * util[a]
     
@@ -424,7 +428,7 @@ def print_board(board, color=False, pov=WORLD):
 # Parameter save_game=True if game data will be saved
 # available modes: HUMAN_VS_RANDOM, RANDOM_VS_RANDOM, CFR_VS_CFR
 def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR, 
-                  cfr=cfr, save_game=True):
+                  cfr=cfr, c=False, save_game=True):
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
 
@@ -483,7 +487,7 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
     # mode = RANDOM_VS_RANDOM
     # mode = HUMAN_VS_RANDOM
     # mode = CFR_VS_CFR
-    i = 0
+    t = 0
     moves_N = 0 # total number of branches found
     if mode == HUMAN_VS_RANDOM:
         human = random.choice([BLUE, RED])
@@ -495,7 +499,7 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
         move_history = [] # Initialize list of moves
 
     while not is_terminal(board, annotation):
-        print(f"\nTurn: {i + 1}")
+        print(f"\nTurn: {t + 1}")
         
         if mode == RANDOM_VS_RANDOM:
             print_board(board, color=True, pov=WORLD)
@@ -532,7 +536,30 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
                 max_depth = 4
             logger.setLevel(logging.DEBUG)
             logger.debug(f"Max Depth: {max_depth}")
-            util, strategy = cfr(board, annotation, 1, 1, 0, max_depth)
+
+            if c:
+                # Convert the 2D list to a ctypes array 
+                board_type = (ctypes.c_int * COLUMNS) * ROWS 
+                # Ctypes array for annotation
+                annotation_type = (ctypes.c_int * 3)
+                
+                c_board = board_type() 
+                c_annotation = annotation_type()
+                for i in range(ROWS): 
+                    for j in range(COLUMNS): 
+                        c_board[i][j] = board[i][j] 
+                
+                for i in range(3):
+                    c_annotation[i] = annotation[i]
+
+            if not c:
+                util, strategy = cfr(board, annotation, 1, 1, 0, max_depth)
+            elif c:
+                result = cfr(c_board, c_annotation, 1, 1, 0, max_depth)
+                util = result.node_util
+                c_strategy = result.strategy
+                strategy = [c_strategy[i] for i in range(len(moves))]
+
             print("Strategy: ")
             print(strategy)
             logger.setLevel(logging.DEBUG)
@@ -599,7 +626,7 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
         # Overwrite old state
         board, annotation = new_board, new_annotation
         
-        i += 1
+        t += 1
     
     outcomes = ["DRAW", "BLUE", "RED"]
     print(f"Winner: {outcomes[reward(board, annotation)]}")
@@ -612,6 +639,10 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
             json.dump(game_data, file)
     print(f"Average branching: {round(moves_N/i)}")
 
+class CFRResult(ctypes.Structure): 
+    _fields_ = [("node_util", ctypes.c_double), 
+                ("strategy", ctypes.POINTER(ctypes.c_double))]
+
 def main():
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
@@ -622,7 +653,18 @@ def main():
 
     faster = ctypes.CDLL('./cfr.so')
 
-    simulate_game(blue_formation, red_formation, cfr=faster.cfr)
+    # Ctypes array for annotation
+    annotation = (ctypes.c_int * 3)
+    # Convert the 2D list to a ctypes array 
+    board = (ctypes.c_int * COLUMNS) * ROWS
+    
+    # Define the argument and return types of the C function 
+    faster.cfr.argtypes = [board, annotation, c_double, c_double, c_int, c_int] 
+    faster.cfr.restype = CFRResult
+
+    simulate_game(blue_formation, red_formation, cfr=faster.cfr, c=True)
+
+    # simulate_game(blue_formation, red_formation)
 
 if __name__ == "__main__":
     main()
