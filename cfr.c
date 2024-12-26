@@ -269,9 +269,6 @@ void move_piece(int start_row, int start_col, int end_row, int end_col, int boar
     new_board[start_row][start_col] = BLANK;
 }
 
-// Function to move a piece from one position to another
-void move_piece(int start_row, int start_col, int end_row, int end_col, int board[ROWS][COLUMNS], int new_board[ROWS][COLUMNS]);
-
 // Function to handle challenges between pieces
 void handle_challenges(int challenger_value, int target_value, int start_row, int start_col, int end_row, int end_col, int board[ROWS][COLUMNS], int new_board[ROWS][COLUMNS]) {
     // Edge case where PRIVATE defeats SPY

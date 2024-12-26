@@ -498,6 +498,12 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
     if save_game:
         move_history = [] # Initialize list of moves
 
+    # C standard library
+    libc = ctypes.CDLL("libc.so.6")
+    free = libc.free 
+    free.argtypes = [ctypes.c_void_p]
+
+
     while not is_terminal(board, annotation):
         print(f"\nTurn: {t + 1}")
         
@@ -524,20 +530,18 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
         elif mode == RANDOM_VS_RANDOM:
             move = random.choice(moves)
         elif mode == CFR_VS_CFR:
-            # piece_count = sum(1 for row in board for element in row if element != 0)
-            # max_depth = round(5*(INITIAL_ARMY/piece_count)) + 1
-            # # If not even
-            # if max_depth % 2 != 0:
-            #     if max_depth > 1:
-            #         max_depth -= 1
-            # elif max_depth == 0:
-            #     max_depth = 2
-            # if max_depth > 4:
-            #     max_depth = 4
 
-            max_depth = 2
+            if len(moves) <= 6:
+                max_depth = 4
+            elif len(moves) <= 3:
+                max_depth = 8
+            else:
+                max_depth = 2
+
+
             logger.setLevel(logging.DEBUG)
-            logger.debug(f"Max Depth: {max_depth}")
+            # logger.debug(f"Max Depth: {max_depth}")
+            print(f"Solving to depth {max_depth}...")
 
             if c:
                 # Convert the 2D list to a ctypes array 
@@ -561,12 +565,17 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
                 util = result.node_util
                 c_strategy = result.strategy
                 strategy = [c_strategy[i] for i in range(len(moves))]
+                # Remove strategy array from memory
+                free(result.strategy)
 
             print("Strategy: ")
-            print(strategy)
+            # print(strategy)
+            for i, s in enumerate(strategy):
+                print(f"{round(s*100)}%", end=' ')
+            print()
             logger.setLevel(logging.DEBUG)
-            logger.debug(f"Len: {len(strategy)}")
-            print(f"Utility: {util}")
+            # logger.debug(f"Len: {len(strategy)}")
+            print(f"Utility: {util:.2f}")
             # Set negative weights to zero to avoid errors
             for a, action in enumerate(strategy):
                 if action < 0:
@@ -580,7 +589,10 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
                 if action not in top_three:
                     strategy[a] = 0
             print("Sanitized Strategy: ")
-            print(strategy)
+            # print(strategy)
+            for i, s in enumerate(strategy):
+                print(f"{round(s*100)}%", end=' ')
+            print()
             move = random.choices(moves, weights=strategy, k=1)[0]
         print(f"Chosen Move: {move}")
 
@@ -639,7 +651,7 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
         os.makedirs('history', exist_ok=True)
         with open('history/latest_game.json', 'w') as file:
             json.dump(game_data, file)
-    print(f"Average branching: {round(moves_N/i)}")
+    print(f"Average branching: {round(moves_N/t)}")
 
 class CFRResult(ctypes.Structure): 
     _fields_ = [("node_util", ctypes.c_double), 
