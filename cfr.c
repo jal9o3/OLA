@@ -221,6 +221,7 @@ char** actions(int board[ROWS][COLUMNS], int annotation[], int *move_count) {
 
     // Initialize a dynamic array to store moves
     char **moves = (char **)malloc(100 * sizeof(char *));
+    // printf("Moves ptr: %p\n", (void *)moves);
     for (int i = 0; i < 100; i++) {
         moves[i] = (char *)malloc(5 * sizeof(char)); // Each move will have 4 characters + null terminator
     }
@@ -260,6 +261,15 @@ char** actions(int board[ROWS][COLUMNS], int annotation[], int *move_count) {
             }
         }
     }
+
+    // Free everything that exceeds the move count
+    for (int i = *move_count; i < 100; i++) {
+        free(moves[i]);
+    }
+
+    // Reallocate the array to the actual move count 
+    moves = (char **)realloc(moves, *move_count * sizeof(char *));
+
     return moves;
 }
 
@@ -449,6 +459,7 @@ CFRResult cfr(int board[ROWS][COLUMNS], int annotation[], double blue_probabilit
     for (int i = 0; i < actions_n; i++) {
         free(valid_actions[i]);
     }
+    // printf("valid_actions ptr: %p\n", (void *)valid_actions);
     free(valid_actions);
     free(util);
     free(regret_sum);
@@ -474,6 +485,7 @@ int main() {
 
     for (int i = 0; i < 5; i++) {
         result = cfr(board, annotation, 1, 1, 0, 4);
+        free(result.strategy);
         printf("%d\n", i);
     }
 
