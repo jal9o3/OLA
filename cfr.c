@@ -304,6 +304,8 @@ TransitionResult transition(int board[ROWS][COLUMNS], int annotation[], char act
     memcpy(result.new_board, board, sizeof(int) * ROWS * COLUMNS);
     memcpy(result.new_annotation, annotation, sizeof(int) * 3); // Assuming annotation has 3 elements
 
+    int blue_flag_col, red_flag_col;
+
     // Obtain indices of starting and destination squares
     int start_row = action[0] - '0';
     int start_col = action[1] - '0';
@@ -339,16 +341,28 @@ TransitionResult transition(int board[ROWS][COLUMNS], int annotation[], char act
 
     result.new_annotation[CURRENT_PLAYER] = (current_player == BLUE) ? RED : BLUE;
 
+    // Find the indices of the flags
+    for (int i = 0; i < ROWS; i++) {
+        for (int j = 0; j < COLUMNS; j++) {
+            if (board[i][j] == FLAG) {
+                blue_flag_col = j;
+            }
+            else if (board[i][j] == SPY + FLAG) {
+                red_flag_col = j;
+            }
+        }
+    }
+
     // If the blue flag reaches the other side
     if (memchr(board[ROWS - 1], FLAG, COLUMNS * sizeof(int)) != NULL && 
         !annotation[WAITING_BLUE_FLAG] &&
-        !has_none_adjacent(board[ROWS - 1][FLAG], board[ROWS - 1])) {
+        !has_none_adjacent(board[ROWS - 1][blue_flag_col], board[ROWS - 1])) {
         result.new_annotation[WAITING_BLUE_FLAG] = 1;
     } 
     // Check for the red flag
     else if (memchr(board[0], SPY + FLAG, COLUMNS * sizeof(int)) != NULL &&
              !annotation[WAITING_RED_FLAG] &&
-             !has_none_adjacent(board[0][SPY + FLAG], board[0])) {
+             !has_none_adjacent(board[0][red_flag_col], board[0])) {
         result.new_annotation[WAITING_RED_FLAG] = 1;
     }
 
@@ -440,4 +454,36 @@ CFRResult cfr(int board[ROWS][COLUMNS], int annotation[], double blue_probabilit
     free(regret_sum);
 
     return result;
+}
+
+int main() {
+    int board[8][9] = {
+        {0, 7, 0, 0, 0, 2, 4, 0, 5},
+        {11, 10, 2, 2, 1, 8, 12, 9, 14},
+        {2, 0, 2, 3, 15, 2, 13, 15, 6},
+        {0, 0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0, 0},
+        {28, 0, 20, 0, 16, 21, 24, 17, 26},
+        {30, 22, 0, 0, 23, 30, 25, 29, 17},
+        {17, 17, 18, 0, 17, 17, 27, 0, 19}
+    };
+
+    int annotation[3] = {BLUE, 0, 0};
+
+    CFRResult result;
+
+    for (int i = 0; i < 5; i++) {
+        result = cfr(board, annotation, 1, 1, 0, 4);
+        printf("%d\n", i);
+    }
+
+    // Printing the matrix
+    // for (int i = 0; i < 8; i++) {
+    //     for (int j = 0; j < 9; j++) {
+    //         printf("%3d ", board[i][j]);
+    //     }
+    //     printf("\n");
+    // }
+
+    return 0;
 }

@@ -536,7 +536,7 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
             elif len(moves) <= 3:
                 max_depth = 8
             else:
-                max_depth = 2
+                max_depth = 4
 
 
             logger.setLevel(logging.DEBUG)
