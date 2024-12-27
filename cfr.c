@@ -401,7 +401,7 @@ CFRResult cfr(int board[ROWS][COLUMNS], int annotation[], double blue_probabilit
     }
 
     // Initialize strategy
-    int move_count = 0;
+    int move_count;
     char **valid_actions = actions(board, annotation, &move_count);
     int actions_n = move_count;
     result.strategy = (double *)malloc(actions_n * sizeof(double));
@@ -421,9 +421,13 @@ CFRResult cfr(int board[ROWS][COLUMNS], int annotation[], double blue_probabilit
         if (player == BLUE) {
             CFRResult sub_result = cfr(next.new_board, next.new_annotation, red_probability * result.strategy[a], blue_probability, current_depth + 1, max_depth);
             util[a] = -sub_result.node_util;
+            // Deallocate intermediate strategy result
+            free(sub_result.strategy);
         } else {
             CFRResult sub_result = cfr(next.new_board, next.new_annotation, blue_probability, red_probability * result.strategy[a], current_depth + 1, max_depth);
             util[a] = -sub_result.node_util;
+            // Deallocate intermediate strategy result
+            free(sub_result.strategy);
         }
         // Calculate node utility
         node_util += result.strategy[a] * util[a];
