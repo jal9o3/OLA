@@ -209,8 +209,9 @@ def has_none_adjacent(flag_col, nrow): # nrow is either the first or last row
         return False
 
 # Adapt counterfactual regret minimization to GG
+# For external sampling, set traverser to BLUE or RED
 def cfr(board, annotation, blue_probability, red_probability, 
-        current_depth, max_depth):
+        current_depth, max_depth, traverser=0):
     
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
@@ -240,26 +241,48 @@ def cfr(board, annotation, blue_probability, red_probability,
     # Initialize node utility
     node_util = 0
 
-    # Iterate over children nodes and recursively call cfr
-    for a, action in enumerate(valid_actions):
+    # For external sampling
+    # If the current player is not the traverser, just sample a move
+    if traverser != 0 and player != traverser:
+        # Sample an action
+        action = random.choices(valid_actions, weights=strategy, k=1)[0]
         next_board, next_annotation = transition(board, annotation, action)
-        # Prepare C datatypes
+        
+        # Call CFR on the action
         if player == BLUE:
             result = cfr(next_board, next_annotation, 
-            red_probability * strategy[a], blue_probability,
-            current_depth + 1, max_depth)
-            util[a] = -(result[0])
+            red_probability * strategy[valid_actions.index(action)], blue_probability,
+            current_depth + 1, max_depth, traverser=traverser)
+            util[valid_actions.index(action)] = -(result[0])
         else:
             result = cfr(next_board, next_annotation, 
-            blue_probability, red_probability * strategy[a],
-            current_depth + 1, max_depth)
-            util[a] = -(result[0])
+            blue_probability, red_probability * strategy[valid_actions.index(action)],
+            current_depth + 1, max_depth, traverser=traverser)
+            util[valid_actions.index(action)] = -(result[0])
         
         # Calculate node utility
-        node_util += strategy[a] * util[a]
+        node_util += strategy[valid_actions.index(action)] * util[valid_actions.index(action)]
+    elif traverser == 0 or traverser == player:
+        # Iterate over children nodes and recursively call cfr
+        for a, action in enumerate(valid_actions):
+            next_board, next_annotation = transition(board, annotation, action)
+            # Prepare C datatypes
+            if player == BLUE:
+                result = cfr(next_board, next_annotation, 
+                red_probability * strategy[a], blue_probability,
+                current_depth + 1, max_depth, traverser=traverser)
+                util[a] = -(result[0])
+            else:
+                result = cfr(next_board, next_annotation, 
+                blue_probability, red_probability * strategy[a],
+                current_depth + 1, max_depth, traverser=traverser)
+                util[a] = -(result[0])
+            
+            # Calculate node utility
+            node_util += strategy[a] * util[a]
     
-    if current_depth == 0:
-        logger.debug(f"Uniform Utility: {node_util}")
+    # if current_depth == 0:
+    #     logger.debug(f"Uniform Utility: {node_util}")
 
     # Calculate regret sum
     for a, action in enumerate(valid_actions):
@@ -285,6 +308,46 @@ def cfr(board, annotation, blue_probability, red_probability,
 
     # Return node utility
     return node_util, strategy
+
+# Training loop for CFR
+def cfr_train(board, annotation, blue_probability, red_probability, 
+        current_depth, max_depth, iterations=10):
+    
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+
+    traverser = BLUE
+    utility_sum = 0.0
+    strategy_sum = [0.0 for i in range(len(actions(board, annotation)))]
+
+    for i in range(iterations):
+        # if traverser == BLUE: print(f"{i} Traverser: BLUE")
+        # elif traverser == RED: print(f"{i} Traverser: RED")
+        
+        util, strategy = cfr(board, annotation, blue_probability, red_probability, 
+        current_depth, max_depth, traverser=traverser)
+        # Add strategy to strategy sum
+        for i in range(len(actions(board, annotation))):
+            if strategy[i] > 0:
+                strategy_sum[i] += strategy[i]
+        # Add utility to utility sum
+        utility_sum += util
+        # Switch to next traverser
+        traverser = RED if traverser == BLUE else BLUE
+    
+    # Normalize the strategy sum
+    accumulated = 0.0
+    for i in range(len(actions(board, annotation))):
+        accumulated += strategy_sum[i]
+    for i in range(len(actions(board, annotation))):
+        strategy_sum[i] /= accumulated
+    # Calculate the average utility
+    average_utility = utility_sum / iterations
+    # logger.setLevel(logging.DEBUG)
+    # logger.debug(f"Utility Sum: {utility_sum}")
+    # logger.debug(f"Average Utility: {average_utility}")
+
+    return average_utility, strategy_sum
 
 
 # Represent initial information states for BLUE and RED
@@ -538,7 +601,6 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
             else:
                 max_depth = 2
 
-
             logger.setLevel(logging.DEBUG)
             # logger.debug(f"Max Depth: {max_depth}")
             print(f"Solving to depth {max_depth}...")
@@ -676,7 +738,9 @@ def main():
     faster.cfr.argtypes = [board, annotation, c_double, c_double, c_int, c_int] 
     faster.cfr.restype = CFRResult
 
-    simulate_game(blue_formation, red_formation, cfr=faster.cfr, c=True)
+    # simulate_game(blue_formation, red_formation, cfr=faster.cfr, c=True)
+
+    simulate_game(blue_formation, red_formation, cfr=cfr_train)
 
     # simulate_game(blue_formation, red_formation)
 
