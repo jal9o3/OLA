@@ -91,6 +91,20 @@ class TestInfostateLogic(unittest.TestCase):
             blue_temp = infostate_board(blue_infostate, blue_infostate_annotation)
             red_temp = infostate_board(red_infostate, red_infostate_annotation)
             temp = blue_temp if annotation[CURRENT_PLAYER] == BLUE else red_temp
+
+            # print_board(board)
+            # if annotation[CURRENT_PLAYER] == BLUE:
+            #     # print_infostate(blue_infostate, blue_infostate_annotation)
+            #     # print(blue_infostate)
+            #     for row in blue_infostate: print(row)
+            # else:
+            #     # print_infostate(red_infostate, red_infostate_annotation)
+            #     # print(red_infostate)
+            #     for row in red_infostate: print(row)
+            # print_board(temp[0])
+            # print(move)
+            # print(results[result])
+
             infostate_actions = actions(temp[0], temp[1])
 
             self.assertEqual(len(world_actions), len(infostate_actions))

@@ -95,8 +95,6 @@ def infostate_board(infostate, infostate_annotation):
     
     return board, [infostate_annotation[CURRENT_PLAYER], 0, 0]
 
-
-
 def private_observation(infostate, infostate_annotation, action, result, update_probabilities=False):
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
@@ -105,18 +103,27 @@ def private_observation(infostate, infostate_annotation, action, result, update_
 
     # Determine which piece to update range (attacker or defender)
     for i, piece in enumerate(infostate):
+        # logger.setLevel(logging.DEBUG)
+        # logger.debug(f"i: {i}")
         if ((piece[ROW] == start_row and piece[COLUMN] == start_col 
             or piece[ROW] == end_row and piece[COLUMN] == end_col)
             and piece[CAPTURED] == 0
             ):
+            # logger.setLevel(logging.DEBUG)
+            # logger.debug(f"Current Player: {"RED" if infostate_annotation[CURRENT_PLAYER] == RED else "BLUE"}")
+            # logger.debug(f"{piece[ROW]} {piece[COLUMN]}")
+            # logger.debug(f"i: {i}")
+            # logger.debug(f"piece[RANGE_BOT]: {piece[RANGE_BOT]}")
+            # logger.debug(f"piece[RANGE_TOP]: {piece[RANGE_TOP]}")
             if i < INITIAL_ARMY:
                 piece_to_update = i # current piece
             # Get the identified piece
             elif i >= INITIAL_ARMY:
                 # Get the value of the identified piece
-                for j, value in enumerate(piece):
-                    if 1 <= j <= 15 and value == 1:
-                        identified_value = j
+                # for j, value in enumerate(piece):
+                    # if 1 <= j <= 15 and value == 1:
+                    #     identified_value = j
+                identified_value = piece[RANGE_BOT]
 
     # Update the range of the piece based on the action result
     # Distinguish whether piece to update is the attacker or defender
@@ -215,7 +222,21 @@ def private_observation(infostate, infostate_annotation, action, result, update_
     infostate_annotation[CURRENT_PLAYER] = RED if infostate_annotation[CURRENT_PLAYER] == BLUE else BLUE 
 
     return infostate, infostate_annotation
-            
+
+def infostate_to_string(infostate, infostate_annotation):
+    infostr = ""
+    for row in infostate:
+        for item in row:
+            infostr += str(item)
+    
+    for item in infostate_annotation:
+        infostr += str(item)
+
+    # for i in range():
+    
+    return infostr
+
+
 def print_infostate(infostate, annotation, show_probabilities=False):
     
     # For side by side display of top and bottom half of infostate
@@ -231,8 +252,8 @@ def print_infostate(infostate, annotation, show_probabilities=False):
             else:
                 print(f"{round(split_infostate[half_index][i][j]):2}", end=' ')
         else:
-            if j < 1 or j > 15:
-                print(f"{round(split_infostate[half_index][i][j]):2}", end=' ')
+            # if j < 1 or j > 15:
+            print(f"{round(split_infostate[half_index][i][j]):2}", end=' ')
 
     print("\nInfostate: Opponent Pieces - Allied Pieces")
     if show_probabilities:

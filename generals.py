@@ -363,19 +363,19 @@ def initial_infostate(board, player):
     range_start, range_end = (
         (FLAG, SPY) if player == BLUE else (FLAG + SPY, 2*SPY)
     )
-    # Obtain initial probabilities
+    # # Obtain initial probabilities
     range_offset = 0 if player == BLUE else SPY # for finding the correct columns
     for piece in range(INITIAL_ARMY):
         for col in range(INFOCOLS):
             if col == PLAYER:
                 infostate[piece][col] = RED if player == BLUE else BLUE
-            elif range_start - range_offset <= col <= range_end - range_offset:
-                if col == PRIVATE:
-                    infostate[piece][col] = 6/INITIAL_ARMY
-                elif col == SPY:
-                    infostate[piece][col] = 2/INITIAL_ARMY
-                else:
-                    infostate[piece][col] = 1/INITIAL_ARMY
+            # elif range_start - range_offset <= col <= range_end - range_offset:
+            #     if col == PRIVATE:
+            #         infostate[piece][col] = 6/INITIAL_ARMY
+            #     elif col == SPY:
+            #         infostate[piece][col] = 2/INITIAL_ARMY
+            #     else:
+            #         infostate[piece][col] = 1/INITIAL_ARMY
     piece_n = 0
     # Add locations
     for row in range(ROWS):
@@ -402,7 +402,7 @@ def initial_infostate(board, player):
                 ) # calculate actual value of the piece
                 logger.debug(f"{piece_n} {value}")
                 infostate[piece_n][PLAYER] = player
-                infostate[piece_n][value] = 1
+                # infostate[piece_n][value] = 1
                 infostate[piece_n][ROW] = row
                 infostate[piece_n][COLUMN] = column
                 # Possible value range ends are equal for identified pieces
