@@ -79,6 +79,24 @@ def bayes_theorem(hypothesis, evidence):
     # Recall: p(E|H) = p(E intersection H) / p(H)
     return p_evidence_with_hypothesis/p_evidence
 
+# Create a board representation of the infostate
+def infostate_board(infostate, infostate_annotation):
+    # Instantitiate the empty board
+    board = [[BLANK for _ in range(COLUMNS)] for _ in range(ROWS)]
+    
+    # Iterate through rows of the infostate
+    for piece in infostate:
+    # If current row represents an uncaptured piece, add it to the board 
+        if piece[CAPTURED] != 1:
+            # Add SPY (15) if piece is red
+            offset = SPY if piece[PLAYER] == RED else BLANK
+            # Get the lowest possible value for the piece
+            board[piece[ROW]][piece[COLUMN]] = piece[RANGE_BOT] + offset
+    
+    return board, [infostate_annotation[CURRENT_PLAYER], 0, 0]
+
+
+
 def private_observation(infostate, infostate_annotation, action, result, update_probabilities=False):
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
