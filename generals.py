@@ -210,8 +210,10 @@ def has_none_adjacent(flag_col, nrow): # nrow is either the first or last row
 
 # Adapt counterfactual regret minimization to GG
 # For external sampling, set traverser to BLUE or RED
+# Obtained policies can be stored in a dictionary via the table parameter
+# Set table to None if policies will not be stored
 def cfr(board, annotation, blue_probability, red_probability, 
-        current_depth, max_depth, traverser=0):
+        current_depth, max_depth, traverser=0, table=None):
     
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
@@ -320,12 +322,11 @@ def cfr_train(board, annotation, blue_probability, red_probability,
     utility_sum = 0.0
     strategy_sum = [0.0 for i in range(len(actions(board, annotation)))]
 
-    for i in range(iterations):
-        # if traverser == BLUE: print(f"{i} Traverser: BLUE")
-        # elif traverser == RED: print(f"{i} Traverser: RED")
-        
+    policy_table = dict()
+
+    for i in range(iterations):        
         util, strategy = cfr(board, annotation, blue_probability, red_probability, 
-        current_depth, max_depth, traverser=traverser)
+        current_depth, max_depth, traverser=traverser, table=policy_table)
         # Add strategy to strategy sum
         for i in range(len(actions(board, annotation))):
             if strategy[i] > 0:
@@ -343,9 +344,6 @@ def cfr_train(board, annotation, blue_probability, red_probability,
         strategy_sum[i] /= accumulated
     # Calculate the average utility
     average_utility = utility_sum / iterations
-    # logger.setLevel(logging.DEBUG)
-    # logger.debug(f"Utility Sum: {utility_sum}")
-    # logger.debug(f"Average Utility: {average_utility}")
 
     return average_utility, strategy_sum
 

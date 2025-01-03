@@ -227,7 +227,7 @@ def infostate_to_string(infostate, infostate_annotation):
     infostr = ""
     for row in infostate:
         for item in row:
-            infostr += str(item)
+            infostr += " " + str(item)
     
     for item in infostate_annotation:
         infostr += str(item)
