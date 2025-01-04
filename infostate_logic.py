@@ -263,9 +263,11 @@ def infostate_to_string(infostate, infostate_annotation):
             infostr += " " + str(item)
     
     for item in infostate_annotation:
-        infostr += str(item)
+        infostr += " " + str(item)
 
-    # for i in range():
+    # Extra zeroes to complete the six columns
+    for i in range(3):
+        infostr += " 0"
     
     return infostr
 

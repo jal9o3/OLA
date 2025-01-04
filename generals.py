@@ -237,7 +237,22 @@ def cfr(board, annotation, blue_probability, red_probability,
     # Initialize strategy
     valid_actions = actions(board, annotation)
     actions_n = len(valid_actions)
-    strategy = [1.0/actions_n for i in range(actions_n)] # Uniform strategy
+    
+    # Obtain the current player's infostate
+    if player == BLUE:
+        relevant_infostate, relevant_infostate_annotation = blue_infostate, blue_infostate_annotation
+    else:
+        relevant_infostate, relevant_infostate_annotation = red_infostate, red_infostate_annotation
+
+    # Obtain policy from table if any
+    if table != None:
+        infostate_key = infostate_to_string(relevant_infostate, relevant_infostate_annotation)
+        if infostate_key in table:
+            strategy = table[infostate_key][0]
+        else:
+            strategy = [1.0/actions_n for i in range(actions_n)] # Uniform strategy
+    else:
+        strategy = [1.0/actions_n for i in range(actions_n)] # Uniform strategy
     regret_sum = [0.0 for i in range(actions_n)]
     
     # Initialize action utilities
@@ -248,23 +263,16 @@ def cfr(board, annotation, blue_probability, red_probability,
     # For external sampling
     # If the current player is not the traverser, just sample a move
     if traverser != 0 and player != traverser:
+        # Set negative weights to zero to avoid errors
+        for a, action in enumerate(strategy):
+            if action < 0:
+                strategy[a] = 0
         # Sample an action
         action = random.choices(valid_actions, weights=strategy, k=1)[0]
         next_board, next_annotation = transition(board, annotation, action)
         action_result = get_result(board, annotation, action, next_board, next_annotation)
         next_blue_infostate, next_blue_infostate_annotation = private_observation(blue_infostate, blue_infostate_annotation, action, action_result)
         next_red_infostate, next_red_infostate_annotation = private_observation(red_infostate, red_infostate_annotation, action, action_result)
-
-        # print_board(board)
-        # print_board(next_board)
-        # print("Blue Infostate:")
-        # print_infostate(blue_infostate, blue_infostate_annotation)
-        # print("Red Infostate:")
-        # print_infostate(red_infostate, red_infostate_annotation)
-
-        # logger.setLevel(logging.DEBUG)
-        # logger.debug(f"Move: {action}")
-        # logger.debug(f"Result: {action_result}")
         
         # Call CFR on the action
         if player == BLUE:
@@ -291,17 +299,6 @@ def cfr(board, annotation, blue_probability, red_probability,
             action_result = get_result(board, annotation, action, next_board, next_annotation)
             next_blue_infostate, next_blue_infostate_annotation = private_observation(blue_infostate, blue_infostate_annotation, action, action_result)
             next_red_infostate, next_red_infostate_annotation = private_observation(red_infostate, red_infostate_annotation, action, action_result)
-            
-            # print_board(board)
-            # print_board(next_board)
-            # print("Blue Infostate:")
-            # print_infostate(blue_infostate, blue_infostate_annotation)
-            # print("Red Infostate:")
-            # print_infostate(red_infostate, red_infostate_annotation)
-
-            # logger.setLevel(logging.DEBUG)
-            # logger.debug(f"Move: {action}")
-            # logger.debug(f"Result: {action_result}")
 
             if player == BLUE:
                 result = cfr(next_board, next_annotation, 
@@ -346,6 +343,9 @@ def cfr(board, annotation, blue_probability, red_probability,
         # Update node utility with regret-matched strategy
         node_util += strategy[a] * util[a]
 
+    # Store the policy in the table
+    table[infostate_to_string(relevant_infostate, relevant_infostate_annotation)] = (strategy, valid_actions)
+
     # Return node utility
     return node_util, strategy
 
@@ -378,6 +378,8 @@ def cfr_train(board, annotation, blue_probability, red_probability,
         # Switch to next traverser
         traverser = RED if traverser == BLUE else BLUE
     
+    print(policy_table)
+
     # Normalize the strategy sum
     accumulated = 0.0
     for i in range(len(actions(board, annotation))):
@@ -388,7 +390,6 @@ def cfr_train(board, annotation, blue_probability, red_probability,
     average_utility = utility_sum / iterations
 
     return average_utility, strategy_sum
-
 
 # Represent initial information states for BLUE and RED
 # 42 ROWS (21 pieces each) by 19 COLS (Player, p(1...15), row, col, captured)
