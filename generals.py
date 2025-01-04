@@ -378,7 +378,12 @@ def cfr_train(board, annotation, blue_probability, red_probability,
         # Switch to next traverser
         traverser = RED if traverser == BLUE else BLUE
     
-    print(policy_table)
+    # print(policy_table)
+
+    # for infostate_key in policy_table:
+    #     print(f"{infostate_key[:24]}")
+    #     print(policy_table[infostate_key][0])
+    #     print(policy_table[infostate_key][1])
 
     # Normalize the strategy sum
     accumulated = 0.0
