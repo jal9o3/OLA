@@ -95,6 +95,34 @@ def infostate_board(infostate, infostate_annotation):
     
     return board, [infostate_annotation[CURRENT_PLAYER], 0, 0]
 
+def get_result(board, annotation, move, new_board, new_annotation):
+    # Perform matrix subtraction on old and new boards
+    board_diff = [[board[i][j] - new_board[i][j] for j in range(len(board[0]))] for i in range(len(board))]
+
+    # Examine move result
+    start_row, start_col, end_row, end_col = map(int, move) # get indices
+    challenger, target = board[start_row][start_col], board[end_row][end_col]
+    result = -1 # Placeholder value
+
+    # If the challenge removed both challenger and target (DRAW)
+    if (board_diff[start_row][start_col] == challenger
+        and board_diff[end_row][end_col] == target):
+        result = DRAW
+    elif (board_diff[start_row][start_col] == challenger
+            and board_diff[end_row][end_col] == (target - challenger)):
+        if board[end_row][end_col] == BLANK:
+            result = OCCUPY # if no piece has been displaced
+        else:
+            result = WIN
+    elif (board_diff[start_row][start_col] == challenger
+            and board_diff[end_row][end_col] == BLANK):
+        result = LOSS
+            
+    results = ["DRAW", "WIN", "OCCUPY", "LOSS"]
+    print(f"Result: {results[result]}")
+
+    return result
+
 def private_observation(infostate, infostate_annotation, action, result, update_probabilities=False):
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)

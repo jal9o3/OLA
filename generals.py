@@ -577,6 +577,8 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
             print_board(board, color=True, pov=human)
             print_pbs(pbs, pbs_annotation)
         elif mode == CFR_VS_CFR:
+            print_infostate(blue_infostate, blue_infostate_annotation)
+            print_infostate(red_infostate, red_infostate_annotation)
             print_board(board, color=True, pov=WORLD)
 
         print(f"Player: {annotation[CURRENT_PLAYER]}")
@@ -660,32 +662,9 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
         if save_game:
             move_history.append(move)
 
-        # Examine move result (WIN, LOSS, TIE):
         new_board, new_annotation = transition(board, annotation, move)
-        # Perform matrix subtraction on old and new boards
-        board_diff = [[board[i][j] - new_board[i][j] for j in range(len(board[0]))] for i in range(len(board))]
-
-        # Examine move result
-        start_row, start_col, end_row, end_col = map(int, move) # get indices
-        challenger, target = board[start_row][start_col], board[end_row][end_col]
-        result = -1 # Placeholder value
-
-        # If the challenge removed both challenger and target (DRAW)
-        if (board_diff[start_row][start_col] == challenger
-            and board_diff[end_row][end_col] == target):
-            result = DRAW
-        elif (board_diff[start_row][start_col] == challenger
-              and board_diff[end_row][end_col] == (target - challenger)):
-            if board[end_row][end_col] == BLANK:
-                result = OCCUPY # if no piece has been displaced
-            else:
-                result = WIN
-        elif (board_diff[start_row][start_col] == challenger
-              and board_diff[end_row][end_col] == BLANK):
-            result = LOSS
-              
-        results = ["DRAW", "WIN", "OCCUPY", "LOSS"]
-        print(f"Result: {results[result]}")
+        # Examine move result (WIN, LOSS, TIE)
+        result = get_result(board, annotation, move, new_board, new_annotation)
 
         # Update infostate
         blue_infostate, blue_infostate_annotation = private_observation(
