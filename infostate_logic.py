@@ -1,4 +1,4 @@
-import logging, random
+import logging, random, copy
 
 logging.basicConfig(level=logging.WARNING)
 
@@ -118,15 +118,18 @@ def get_result(board, annotation, move, new_board, new_annotation):
             and board_diff[end_row][end_col] == BLANK):
         result = LOSS
             
-    results = ["DRAW", "WIN", "OCCUPY", "LOSS"]
-    print(f"Result: {results[result]}")
+    # results = ["DRAW", "WIN", "OCCUPY", "LOSS"]
+    # print(f"Result: {results[result]}")
 
     return result
 
-def private_observation(infostate, infostate_annotation, action, result, update_probabilities=False):
+def private_observation(old_infostate, old_infostate_annotation, action, result, update_probabilities=False):
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
     
+    # Create a copy of the old infostate
+    infostate, infostate_annotation = copy.deepcopy(old_infostate), copy.deepcopy(old_infostate_annotation)
+
     start_row, start_col, end_row, end_col = map(int, action)
 
     # Determine which piece to update range (attacker or defender)
@@ -137,10 +140,12 @@ def private_observation(infostate, infostate_annotation, action, result, update_
             or piece[ROW] == end_row and piece[COLUMN] == end_col)
             and piece[CAPTURED] == 0
             ):
-            # logger.setLevel(logging.DEBUG)
+            logger.setLevel(logging.DEBUG)
             # logger.debug(f"Current Player: {"RED" if infostate_annotation[CURRENT_PLAYER] == RED else "BLUE"}")
+            # print_infostate(infostate, infostate_annotation)
             # logger.debug(f"{piece[ROW]} {piece[COLUMN]}")
             # logger.debug(f"i: {i}")
+            # logger.debug(f"action: {action}")
             # logger.debug(f"piece[RANGE_BOT]: {piece[RANGE_BOT]}")
             # logger.debug(f"piece[RANGE_TOP]: {piece[RANGE_TOP]}")
             if i < INITIAL_ARMY:

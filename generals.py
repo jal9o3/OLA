@@ -213,7 +213,9 @@ def has_none_adjacent(flag_col, nrow): # nrow is either the first or last row
 # Obtained policies can be stored in a dictionary via the table parameter
 # Set table to None if policies will not be stored
 def cfr(board, annotation, blue_probability, red_probability, 
-        current_depth, max_depth, traverser=0, table=None):
+        current_depth, max_depth, traverser=0, table=None,
+        blue_infostate=None, blue_infostate_annotation=None,
+        red_infostate=None, red_infostate_annotation=None):
     
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
@@ -249,17 +251,35 @@ def cfr(board, annotation, blue_probability, red_probability,
         # Sample an action
         action = random.choices(valid_actions, weights=strategy, k=1)[0]
         next_board, next_annotation = transition(board, annotation, action)
+        action_result = get_result(board, annotation, action, next_board, next_annotation)
+        next_blue_infostate, next_blue_infostate_annotation = private_observation(blue_infostate, blue_infostate_annotation, action, action_result)
+        next_red_infostate, next_red_infostate_annotation = private_observation(red_infostate, red_infostate_annotation, action, action_result)
+
+        # print_board(board)
+        # print_board(next_board)
+        # print("Blue Infostate:")
+        # print_infostate(blue_infostate, blue_infostate_annotation)
+        # print("Red Infostate:")
+        # print_infostate(red_infostate, red_infostate_annotation)
+
+        # logger.setLevel(logging.DEBUG)
+        # logger.debug(f"Move: {action}")
+        # logger.debug(f"Result: {action_result}")
         
         # Call CFR on the action
         if player == BLUE:
             result = cfr(next_board, next_annotation, 
-            red_probability * strategy[valid_actions.index(action)], blue_probability,
-            current_depth + 1, max_depth, traverser=traverser)
+                red_probability * strategy[valid_actions.index(action)], blue_probability,
+                current_depth + 1, max_depth, traverser=traverser, table=table,
+                blue_infostate=next_blue_infostate, blue_infostate_annotation=next_blue_infostate_annotation,
+                red_infostate=next_red_infostate, red_infostate_annotation=next_red_infostate_annotation)
             util[valid_actions.index(action)] = -(result[0])
         else:
             result = cfr(next_board, next_annotation, 
-            blue_probability, red_probability * strategy[valid_actions.index(action)],
-            current_depth + 1, max_depth, traverser=traverser)
+                blue_probability, red_probability * strategy[valid_actions.index(action)],
+                current_depth + 1, max_depth, traverser=traverser, table=table,
+                blue_infostate=next_blue_infostate, blue_infostate_annotation=next_blue_infostate_annotation,
+                red_infostate=next_red_infostate, red_infostate_annotation=next_red_infostate_annotation)
             util[valid_actions.index(action)] = -(result[0])
         
         # Calculate node utility
@@ -268,16 +288,34 @@ def cfr(board, annotation, blue_probability, red_probability,
         # Iterate over children nodes and recursively call cfr
         for a, action in enumerate(valid_actions):
             next_board, next_annotation = transition(board, annotation, action)
-            # Prepare C datatypes
+            action_result = get_result(board, annotation, action, next_board, next_annotation)
+            next_blue_infostate, next_blue_infostate_annotation = private_observation(blue_infostate, blue_infostate_annotation, action, action_result)
+            next_red_infostate, next_red_infostate_annotation = private_observation(red_infostate, red_infostate_annotation, action, action_result)
+            
+            # print_board(board)
+            # print_board(next_board)
+            # print("Blue Infostate:")
+            # print_infostate(blue_infostate, blue_infostate_annotation)
+            # print("Red Infostate:")
+            # print_infostate(red_infostate, red_infostate_annotation)
+
+            # logger.setLevel(logging.DEBUG)
+            # logger.debug(f"Move: {action}")
+            # logger.debug(f"Result: {action_result}")
+
             if player == BLUE:
                 result = cfr(next_board, next_annotation, 
-                red_probability * strategy[a], blue_probability,
-                current_depth + 1, max_depth, traverser=traverser)
+                    red_probability * strategy[a], blue_probability,
+                    current_depth + 1, max_depth, traverser=traverser, table=table,
+                    blue_infostate=next_blue_infostate, blue_infostate_annotation=next_blue_infostate_annotation,
+                    red_infostate=next_red_infostate, red_infostate_annotation=next_red_infostate_annotation)
                 util[a] = -(result[0])
             else:
                 result = cfr(next_board, next_annotation, 
-                blue_probability, red_probability * strategy[a],
-                current_depth + 1, max_depth, traverser=traverser)
+                    blue_probability, red_probability * strategy[a],
+                    current_depth + 1, max_depth, traverser=traverser, table=table,
+                    blue_infostate=next_blue_infostate, blue_infostate_annotation=next_blue_infostate_annotation,
+                    red_infostate=next_red_infostate, red_infostate_annotation=next_red_infostate_annotation)
                 util[a] = -(result[0])
             
             # Calculate node utility
@@ -313,7 +351,9 @@ def cfr(board, annotation, blue_probability, red_probability,
 
 # Training loop for CFR
 def cfr_train(board, annotation, blue_probability, red_probability, 
-        current_depth, max_depth, iterations=10):
+        current_depth, max_depth, iterations=10,
+        blue_infostate=None, blue_infostate_annotation=None,
+        red_infostate=None, red_infostate_annotation=None):
     
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
@@ -326,7 +366,9 @@ def cfr_train(board, annotation, blue_probability, red_probability,
 
     for i in range(iterations):        
         util, strategy = cfr(board, annotation, blue_probability, red_probability, 
-        current_depth, max_depth, traverser=traverser, table=policy_table)
+            current_depth, max_depth, traverser=traverser, table=policy_table,
+            blue_infostate=blue_infostate, blue_infostate_annotation=blue_infostate_annotation,
+            red_infostate=red_infostate, red_infostate_annotation=red_infostate_annotation)
         # Add strategy to strategy sum
         for i in range(len(actions(board, annotation))):
             if strategy[i] > 0:
@@ -577,8 +619,8 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
             print_board(board, color=True, pov=human)
             print_pbs(pbs, pbs_annotation)
         elif mode == CFR_VS_CFR:
-            print_infostate(blue_infostate, blue_infostate_annotation)
-            print_infostate(red_infostate, red_infostate_annotation)
+            # print_infostate(blue_infostate, blue_infostate_annotation)
+            # print_infostate(red_infostate, red_infostate_annotation)
             print_board(board, color=True, pov=WORLD)
 
         print(f"Player: {annotation[CURRENT_PLAYER]}")
@@ -621,7 +663,9 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
                     c_annotation[i] = annotation[i]
 
             if not c:
-                util, strategy = cfr(board, annotation, 1, 1, 0, max_depth)
+                util, strategy = cfr(board, annotation, 1, 1, 0, max_depth,
+                                     blue_infostate=blue_infostate, blue_infostate_annotation=blue_infostate_annotation,
+                                     red_infostate=red_infostate, red_infostate_annotation=red_infostate_annotation)
             elif c:
                 result = cfr(c_board, c_annotation, 1, 1, 0, max_depth)
                 util = result.node_util
