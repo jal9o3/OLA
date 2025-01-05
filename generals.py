@@ -221,7 +221,6 @@ def cfr(board, annotation, blue_probability, red_probability,
     logger.setLevel(logging.DEBUG)
     
     player = annotation[CURRENT_PLAYER]
-    opponent = RED if player == BLUE else BLUE
 
     # Return payoff for 'terminal' states
     if ((current_depth == max_depth and is_terminal(board, annotation))
@@ -278,14 +277,14 @@ def cfr(board, annotation, blue_probability, red_probability,
         if player == BLUE:
             result = cfr(next_board, next_annotation, 
                 red_probability * strategy[valid_actions.index(action)], blue_probability,
-                current_depth + 1, max_depth, traverser=traverser, policy_table=policy_table,
+                current_depth + 1, max_depth, traverser=traverser, policy_table=policy_table, utility_table=utility_table,
                 blue_infostate=next_blue_infostate, blue_infostate_annotation=next_blue_infostate_annotation,
                 red_infostate=next_red_infostate, red_infostate_annotation=next_red_infostate_annotation)
             util[valid_actions.index(action)] = -(result[0])
         else:
             result = cfr(next_board, next_annotation, 
                 blue_probability, red_probability * strategy[valid_actions.index(action)],
-                current_depth + 1, max_depth, traverser=traverser, policy_table=policy_table,
+                current_depth + 1, max_depth, traverser=traverser, policy_table=policy_table, utility_table=utility_table,
                 blue_infostate=next_blue_infostate, blue_infostate_annotation=next_blue_infostate_annotation,
                 red_infostate=next_red_infostate, red_infostate_annotation=next_red_infostate_annotation)
             util[valid_actions.index(action)] = -(result[0])
@@ -303,14 +302,14 @@ def cfr(board, annotation, blue_probability, red_probability,
             if player == BLUE:
                 result = cfr(next_board, next_annotation, 
                     red_probability * strategy[a], blue_probability,
-                    current_depth + 1, max_depth, traverser=traverser, policy_table=policy_table,
+                    current_depth + 1, max_depth, traverser=traverser, policy_table=policy_table, utility_table=utility_table,
                     blue_infostate=next_blue_infostate, blue_infostate_annotation=next_blue_infostate_annotation,
                     red_infostate=next_red_infostate, red_infostate_annotation=next_red_infostate_annotation)
                 util[a] = -(result[0])
             else:
                 result = cfr(next_board, next_annotation, 
                     blue_probability, red_probability * strategy[a],
-                    current_depth + 1, max_depth, traverser=traverser, policy_table=policy_table,
+                    current_depth + 1, max_depth, traverser=traverser, policy_table=policy_table, utility_table=utility_table,
                     blue_infostate=next_blue_infostate, blue_infostate_annotation=next_blue_infostate_annotation,
                     red_infostate=next_red_infostate, red_infostate_annotation=next_red_infostate_annotation)
                 util[a] = -(result[0])
@@ -348,6 +347,9 @@ def cfr(board, annotation, blue_probability, red_probability,
         policy_table[infostate_key] = (strategy, valid_actions)
         utility_table[infostate_key] = node_util
 
+        # print(len(policy_table))
+        # print(len(utility_table))
+
     # Return node utility
     return node_util, strategy
 
@@ -379,8 +381,8 @@ def cfr_train(board, annotation, blue_probability, red_probability,
         # Switch to next traverser
         traverser = RED if traverser == BLUE else BLUE
     
-    print(policy_table)
-    print(utility_table)
+    print(len(policy_table))
+    print(len(utility_table))
 
     # for infostate_key in policy_table:
     #     print(f"{infostate_key[:24]}")
@@ -655,6 +657,8 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
             else:
                 max_depth = 2
 
+            # max_depth *= 2
+
             logger.setLevel(logging.DEBUG)
             # logger.debug(f"Max Depth: {max_depth}")
             print(f"Solving to depth {max_depth}...")
@@ -752,8 +756,10 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
             json.dump(game_data, file)
     print(f"Average branching: {round(moves_N/t)}")
 
-    print(policy_table)
-    print(utility_table)
+    # print(policy_table)
+    # print(utility_table)
+
+    return policy_table, utility_table
 
 class CFRResult(ctypes.Structure): 
     _fields_ = [("node_util", ctypes.c_double), 
@@ -780,7 +786,10 @@ def main():
 
     # simulate_game(blue_formation, red_formation, cfr=faster.cfr, c=True)
 
-    simulate_game(blue_formation, red_formation, cfr=cfr_train)
+    policy_table, utility_table = simulate_game(blue_formation, red_formation, cfr=cfr_train)
+
+    print(len(policy_table))
+    print(len(utility_table))
 
     # simulate_game(blue_formation, red_formation)
 
