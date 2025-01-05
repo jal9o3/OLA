@@ -1,4 +1,4 @@
-import logging, copy, random, json, os, ctypes
+import logging, copy, random, json, os, ctypes, csv
 
 from ctypes import c_int, c_double
 
@@ -381,8 +381,8 @@ def cfr_train(board, annotation, blue_probability, red_probability,
         # Switch to next traverser
         traverser = RED if traverser == BLUE else BLUE
     
-    print(len(policy_table))
-    print(len(utility_table))
+    # print(len(policy_table))
+    # print(len(utility_table))
 
     # for infostate_key in policy_table:
     #     print(f"{infostate_key[:24]}")
@@ -788,8 +788,45 @@ def main():
 
     policy_table, utility_table = simulate_game(blue_formation, red_formation, cfr=cfr_train)
 
-    print(len(policy_table))
-    print(len(utility_table))
+    # print(len(policy_table))
+    # print(len(utility_table))
+
+    rows = 0
+
+    print("Writing to utility.csv...")
+    # Write utility table contents to utility.csv
+    with open('utility.csv', mode='w', newline='') as file:
+        writer = csv.writer(file)
+        # Write the header
+        writer.writerow(['Infostate', 'Utility'])
+        # Write the data
+        for key, value in utility_table.items():
+            writer.writerow([key, value])
+            rows += 1
+
+    print(f"Utility data ({rows} rows) successfully written to utility.csv")
+
+    rows = 0
+
+    print("Writing to policy.csv...")
+    # Write policy table contents to policy.csv
+    with open('policy.csv', mode='w', newline='') as file:
+        writer = csv.writer(file)
+        # Write the header
+        writer.writerow(['InfostateAction', 'Probability'])
+        # Write the data
+        for key, value in policy_table.items():
+            # Iterate through the actions in the infostate
+            for i in range(len(value[0])): # Size of policy vector
+                infostate_and_action = ""
+                infostate_and_action += key # Infostate representation
+                for j in range(4): # Length of an action representation
+                    infostate_and_action += " " + value[1][i][j] # Concatenate infostate and action representation
+                writer.writerow([infostate_and_action, value[0][i]])
+                rows += 1
+
+    print(f"Policy data ({rows} rows) successfully written to policy.csv")
+
 
     # simulate_game(blue_formation, red_formation)
 
