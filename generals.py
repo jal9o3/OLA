@@ -222,30 +222,39 @@ def cfr(board, annotation, blue_probability, red_probability,
     
     player = annotation[CURRENT_PLAYER]
 
-    # Return payoff for 'terminal' states
-    if ((current_depth == max_depth and is_terminal(board, annotation))
-         or is_terminal(board, annotation)):
-        logger.setLevel(logging.DEBUG)
-        if player == BLUE:
-            return reward(board, annotation), []
-        else:
-            return -reward(board, annotation), []
-    elif current_depth == max_depth and not is_terminal(board, annotation):
-        return 0, [] # replace with neural network perhaps
-
-    # Initialize strategy
-    valid_actions = actions(board, annotation)
-    actions_n = len(valid_actions)
-    
     # Obtain the current player's infostate
     if player == BLUE:
         relevant_infostate, relevant_infostate_annotation = blue_infostate, blue_infostate_annotation
     else:
         relevant_infostate, relevant_infostate_annotation = red_infostate, red_infostate_annotation
 
-    # Obtain policy from policy table if any
+    # Convert the infostate to a string for storage in the dictionary
     if policy_table != None:
         infostate_key = infostate_to_string(relevant_infostate, relevant_infostate_annotation)
+
+    # Return payoff for 'terminal' states
+    if ((current_depth == max_depth and is_terminal(board, annotation))
+         or is_terminal(board, annotation)):
+        logger.setLevel(logging.DEBUG)
+        if player == BLUE:
+            # Store the utility in the utility table
+            if utility_table != None:
+                utility_table[infostate_key] = reward(board, annotation)
+            return reward(board, annotation), []
+        else:
+            # Store the utility in the utility table
+            if utility_table != None:
+                utility_table[infostate_key] = -reward(board, annotation)
+            return -reward(board, annotation), []
+    elif current_depth == max_depth and not is_terminal(board, annotation):
+        return 0, [] # TODO: replace with utility network
+
+    # Initialize strategy
+    valid_actions = actions(board, annotation)
+    actions_n = len(valid_actions)
+
+    # Obtain policy from policy table if any
+    if policy_table != None:
         if infostate_key in policy_table:
             strategy = policy_table[infostate_key][0]
         else:
