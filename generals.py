@@ -208,6 +208,42 @@ def has_none_adjacent(flag_col, nrow): # nrow is either the first or last row
     else:
         return False
 
+
+# Give utility estimates to nonterminal board estimates
+# NOTE: Reward is from the perspective of BLUE (negative values are pro-RED)
+def reward_estimate(board, annotation):
+    # Initialize the utility value
+    utility = 0
+
+    # Estimated rewards for features
+    capture_reward = 0.02 # 0.40/21
+    push_reward = 0.005 # 0.60/8/21
+    
+    # Rewards for captured and pushed pieces
+    blue_pieces = 0
+    red_pieces = 0
+    # Count BLUE and RED pieces
+    for i, row in enumerate(board):
+        for j, square in enumerate(row):
+            # Check if the piece is BLUE or RED
+            if FLAG <= square <= SPY:
+                blue_pieces +=1
+                # Reward based on the piece's row
+                utility += i*push_reward
+            elif FLAG + SPY <= square <= SPY + SPY:
+                red_pieces += 1
+                # Reward based on the piece's row
+                utility += -((ROWS-i)*push_reward)
+
+    
+    # For each missing piece, reward the enemy
+    missing_blue = INITIAL_ARMY - blue_pieces
+    missing_red = INITIAL_ARMY - red_pieces
+    utility += -(missing_blue*capture_reward)
+    utility += missing_red*capture_reward
+
+    return utility
+
 # Adapt counterfactual regret minimization to GG
 # For external sampling, set traverser to BLUE or RED
 # Obtained policies can be stored in a dictionary via the policy_table parameter
@@ -249,19 +285,24 @@ def cfr(board, annotation, blue_probability, red_probability,
                 utility_table[infostate_key] = -reward(board, annotation)
             return -reward(board, annotation), []
     elif current_depth == max_depth and not is_terminal(board, annotation):
-        if utility_model != None:
-          # Convert infostate to list
-          infolist = infostate_key.split()
-          # Convert list to np array
-          infoarray = np.array(infolist, dtype=np.float32)
-          # Convert np array to Pytorch tensor
-          infotensor = torch.tensor(infoarray)
-          infotensor = infotensor.to(device)
-          # Reshape the tensor to what is expected of the utility network
-          infotensor = infotensor.view(1, -1)
-          return utility_model(infotensor).item(), [] # Obtain the utility estimate
+        # if utility_model != None:
+        #   # Convert infostate to list
+        #   infolist = infostate_key.split()
+        #   # Convert list to np array
+        #   infoarray = np.array(infolist, dtype=np.float32)
+        #   # Convert np array to Pytorch tensor
+        #   infotensor = torch.tensor(infoarray)
+        #   infotensor = infotensor.to(device)
+        #   # Reshape the tensor to what is expected of the utility network
+        #   infotensor = infotensor.view(1, -1)
+        #   return utility_model(infotensor).item(), [] # Obtain the utility estimate
+        # else:
+        #   return 0, []
+        if player == BLUE:
+            return reward_estimate(board, annotation), []
         else:
-          return 0, []
+            return -reward_estimate(board, annotation), []
+
 
     # Initialize strategy
     valid_actions = actions(board, annotation)
@@ -420,8 +461,13 @@ def cfr_train(board, annotation, blue_probability, red_probability,
     strategy_sum = [0.0 for i in range(len(actions(board, annotation)))]
 
     for i in range(iterations):
+        # util, strategy = cfr(board, annotation, blue_probability, red_probability,
+        #     current_depth, max_depth, traverser=traverser, policy_table=policy_table, utility_table=utility_table,
+        #     blue_infostate=blue_infostate, blue_infostate_annotation=blue_infostate_annotation,
+        #     red_infostate=red_infostate, red_infostate_annotation=red_infostate_annotation,
+        #     utility_model=utility_model, policy_model=policy_model, turn_number=turn_number)
         util, strategy = cfr(board, annotation, blue_probability, red_probability,
-            current_depth, max_depth, traverser=traverser, policy_table=policy_table, utility_table=utility_table,
+            current_depth, max_depth, policy_table=policy_table, utility_table=utility_table,
             blue_infostate=blue_infostate, blue_infostate_annotation=blue_infostate_annotation,
             red_infostate=red_infostate, red_infostate_annotation=red_infostate_annotation,
             utility_model=utility_model, policy_model=policy_model, turn_number=turn_number)
@@ -681,7 +727,7 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
         elif mode == CFR_VS_CFR:
             # print_infostate(blue_infostate, blue_infostate_annotation)
             # print_infostate(red_infostate, red_infostate_annotation)
-            # print_board(board, color=True, pov=WORLD)
+            print_board(board, color=True, pov=WORLD)
             pass
 
         print(f"Player: {annotation[CURRENT_PLAYER]}")
@@ -705,6 +751,7 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
                 max_depth = 2
 
             # max_depth *= 2
+            # max_depth += 1
 
             logger.setLevel(logging.DEBUG)
             print(f"Solving to depth {max_depth}...")
