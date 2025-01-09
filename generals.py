@@ -213,7 +213,8 @@ def has_none_adjacent(flag_col, nrow): # nrow is either the first or last row
 # Obtained policies can be stored in a dictionary via the policy_table parameter
 # Set policy_table to None if policies will not be stored
 def cfr(board, annotation, blue_probability, red_probability,
-        current_depth, max_depth, traverser=0, policy_table=None, utility_table=None,
+        current_depth, max_depth, turn_number=0, traverser=0,
+        policy_table=None, utility_table=None,
         blue_infostate=None, blue_infostate_annotation=None,
         red_infostate=None, red_infostate_annotation=None,
         utility_model=None, policy_model=None):
@@ -255,6 +256,7 @@ def cfr(board, annotation, blue_probability, red_probability,
           infoarray = np.array(infolist, dtype=np.float32)
           # Convert np array to Pytorch tensor
           infotensor = torch.tensor(infoarray)
+          infotensor = infotensor.to(device)
           # Reshape the tensor to what is expected of the utility network
           infotensor = infotensor.view(1, -1)
           return utility_model(infotensor).item(), [] # Obtain the utility estimate
@@ -287,6 +289,7 @@ def cfr(board, annotation, blue_probability, red_probability,
             concatarray = np.array(concatlist, dtype=np.float32)
             # Convert np array to Pytorch tensor
             concatensor = torch.tensor(concatarray)
+            concatensor = concatensor.to(device)
             # Reshape the tensor to what is expected of the policy network
             concatensor = concatensor.view(1, -1)
             probability = policy_model(concatensor) # Obtain the probability estimate
@@ -371,9 +374,6 @@ def cfr(board, annotation, blue_probability, red_probability,
             # Calculate node utility
             node_util += strategy[a] * util[a]
 
-    # if current_depth == 0:
-    #     logger.debug(f"Uniform Utility: {node_util}")
-
     # Calculate regret sum
     for a, action in enumerate(valid_actions):
         logger.setLevel(logging.DEBUG)
@@ -398,22 +398,19 @@ def cfr(board, annotation, blue_probability, red_probability,
 
     # Store the policy in the policy_table
     if policy_table != None and utility_table != None:
-        policy_table[infostate_key] = (strategy, valid_actions)
+        policy_table[infostate_key] = (strategy, valid_actions, turn_number)
         utility_table[infostate_key] = node_util
-
-        # print(len(policy_table))
-        # print(len(utility_table))
 
     # Return node utility
     return node_util, strategy
 
 # Training loop for CFR
 def cfr_train(board, annotation, blue_probability, red_probability,
-        current_depth, max_depth, iterations=10,
-        policy_table=None, utility_table=None,
-        blue_infostate=None, blue_infostate_annotation=None,
-        red_infostate=None, red_infostate_annotation=None,
-        utility_model=None, policy_model=None):
+              current_depth, max_depth, turn_number=0, iterations=10,
+              policy_table=None, utility_table=None,
+              blue_infostate=None, blue_infostate_annotation=None,
+              red_infostate=None, red_infostate_annotation=None,
+              utility_model=None, policy_model=None):
 
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
@@ -427,7 +424,7 @@ def cfr_train(board, annotation, blue_probability, red_probability,
             current_depth, max_depth, traverser=traverser, policy_table=policy_table, utility_table=utility_table,
             blue_infostate=blue_infostate, blue_infostate_annotation=blue_infostate_annotation,
             red_infostate=red_infostate, red_infostate_annotation=red_infostate_annotation,
-            utility_model=utility_model, policy_model=policy_model)
+            utility_model=utility_model, policy_model=policy_model, turn_number=turn_number)
         # Add strategy to strategy sum
         for i in range(len(actions(board, annotation))):
             if strategy[i] > 0:
@@ -436,14 +433,6 @@ def cfr_train(board, annotation, blue_probability, red_probability,
         utility_sum += util
         # Switch to next traverser
         traverser = RED if traverser == BLUE else BLUE
-
-    # print(len(policy_table))
-    # print(len(utility_table))
-
-    # for infostate_key in policy_table:
-    #     print(f"{infostate_key[:24]}")
-    #     print(policy_table[infostate_key][0])
-    #     print(policy_table[infostate_key][1])
 
     # Normalize the strategy sum
     accumulated = 0.0
@@ -679,7 +668,7 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
         utility_table = dict()
 
     while not is_terminal(board, annotation):
-        print(f"\nTurn: {t + 1}")
+        print(f"Turn: {t + 1}")
 
         if mode == RANDOM_VS_RANDOM:
             print_board(board, color=True, pov=WORLD)
@@ -692,7 +681,8 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
         elif mode == CFR_VS_CFR:
             # print_infostate(blue_infostate, blue_infostate_annotation)
             # print_infostate(red_infostate, red_infostate_annotation)
-            print_board(board, color=True, pov=WORLD)
+            # print_board(board, color=True, pov=WORLD)
+            pass
 
         print(f"Player: {annotation[CURRENT_PLAYER]}")
         moves = actions(board, annotation)
@@ -717,7 +707,6 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
             # max_depth *= 2
 
             logger.setLevel(logging.DEBUG)
-            # logger.debug(f"Max Depth: {max_depth}")
             print(f"Solving to depth {max_depth}...")
 
             if c:
@@ -744,7 +733,8 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
                                      policy_table=policy_table,
                                      utility_table=utility_table,
                                      utility_model=utility_model,
-                                     policy_model=policy_model)
+                                     policy_model=policy_model,
+                                     turn_number=t)
             elif c:
                 result = cfr(c_board, c_annotation, 1, 1, 0, max_depth)
                 util = result.node_util
@@ -754,17 +744,18 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
                 free(result.strategy)
 
             print("Strategy: ")
-            # print(strategy)
-            for i, s in enumerate(strategy):
-                print(f"{round(s*100)}%", end=' ')
-            print()
-            logger.setLevel(logging.DEBUG)
-            # logger.debug(f"Len: {len(strategy)}")
+            # for i, s in enumerate(strategy):
+            #     print(f"{round(s*100)}%", end=' ')
+            # print()
+            print(strategy)
+
             print(f"Utility: {util:.2f}")
+
             # Set negative weights to zero to avoid errors
             for a, action in enumerate(strategy):
                 if action < 0:
                     strategy[a] = 0
+
             # Only consider the top three moves
             sorted_strategy = sorted(strategy, reverse=True) # descending order
             # Get a list of the top three values
@@ -774,11 +765,13 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
                 if action not in top_three:
                     strategy[a] = 0
             print("Sanitized Strategy: ")
-            # print(strategy)
-            for i, s in enumerate(strategy):
-                print(f"{round(s*100)}%", end=' ')
-            print()
+            # for i, s in enumerate(strategy):
+            #     print(f"{round(s*100)}%", end=' ')
+            # print()
+            print(strategy)
+
             move = random.choices(moves, weights=strategy, k=1)[0]
+
         print(f"Chosen Move: {move}")
 
         # Handle the saving of game moves
@@ -789,7 +782,7 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
         # Examine move result (WIN, LOSS, TIE)
         result = get_result(board, annotation, move, new_board, new_annotation)
 
-        # Update infostate
+        # Update infostates
         blue_infostate, blue_infostate_annotation = private_observation(
             blue_infostate, blue_infostate_annotation, move, result)
         red_infostate, red_infostate_annotation = private_observation(
@@ -803,6 +796,19 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
         board, annotation = new_board, new_annotation
 
         t += 1
+
+    outcomes = ["DRAW", "BLUE", "RED"]
+    print(f"Winner: {outcomes[reward(board, annotation)]}")
+
+    # Handle saving of latest game to a JSON file
+    if save_game:
+        game_data.append(move_history)
+        os.makedirs('history', exist_ok=True)
+        with open('history/latest_game.json', 'w') as file:
+            json.dump(game_data, file)
+    print(f"Average branching: {round(moves_N/t)}")
+
+    return policy_table, utility_table, t
 
     outcomes = ["DRAW", "BLUE", "RED"]
     print(f"Winner: {outcomes[reward(board, annotation)]}")
@@ -845,7 +851,7 @@ def main():
 
     # simulate_game(blue_formation, red_formation, cfr=faster.cfr, c=True)
 
-    policy_table, utility_table = simulate_game(blue_formation, red_formation, cfr=cfr_train)
+    policy_table, utility_table, turns_taken = simulate_game(blue_formation, red_formation, cfr=cfr_train)
 
     # print(len(policy_table))
     # print(len(utility_table))
