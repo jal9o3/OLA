@@ -219,7 +219,8 @@ def reward_estimate(board, annotation):
 
     # Estimated rewards for features
     capture_reward = 0.02 # 0.40/21
-    push_reward = 0.005 # 0.60/8/21
+    push_reward = 0.005 # 0.30/8/21
+    flag_safety_reward = 0.02 # 0.30/(ROWS - 1 + COLUMNS - 1)
     
     # Rewards for captured and pushed pieces
     blue_pieces = 0
@@ -236,13 +237,28 @@ def reward_estimate(board, annotation):
                 red_pieces += 1
                 # Reward based on the piece's row
                 utility += -((ROWS-i)*push_reward)
-
     
     # For each missing piece, reward the enemy
     missing_blue = INITIAL_ARMY - blue_pieces
     missing_red = INITIAL_ARMY - red_pieces
     utility += -(missing_blue*capture_reward)
     utility += missing_red*capture_reward
+
+    # Reward estimates for flag safety
+    blue_flag = find_integer(board, FLAG)
+    red_flag = find_integer(board, FLAG + SPY)
+    nearest_red = find_nearest_in_range_bfs(
+        board, blue_flag[0], blue_flag[1], FLAG + SPY, SPY*2)
+    nearest_blue = find_nearest_in_range_bfs(
+        board, red_flag[0], red_flag[1], FLAG, SPY)
+    # Calculate the Manhattan distance of nearest enemy to each flag
+    blue_manhattan = abs(
+        nearest_red[0] - blue_flag[0]) + abs(nearest_red[1] - blue_flag[1])
+    red_manhattan = abs(
+        nearest_blue[0] - red_flag[0]) + abs(nearest_blue[1] - red_flag[1])
+    
+    utility += blue_manhattan*flag_safety_reward
+    utility += -(red_manhattan*flag_safety_reward)
 
     return utility
 
