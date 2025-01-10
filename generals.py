@@ -218,9 +218,13 @@ def reward_estimate(board, annotation):
     utility = 0
 
     # Estimated rewards for features
-    capture_reward = 0.02 # 0.40/21
+    capture_reward = 0.40
     push_reward = 0.005 # 0.30/8/21
     flag_safety_reward = 0.02 # 0.30/(ROWS - 1 + COLUMNS - 1)
+
+    total_firepower = 145 # Sum of rankings of all pieces in an army
+    blue_firepower = 0
+    red_firepower = 0
     
     # Rewards for captured and pushed pieces
     blue_pieces = 0
@@ -230,19 +234,26 @@ def reward_estimate(board, annotation):
         for j, square in enumerate(row):
             # Check if the piece is BLUE or RED
             if FLAG <= square <= SPY:
-                blue_pieces +=1
+                # blue_pieces +=1
+                blue_firepower += square
                 # Reward based on the piece's row
                 utility += i*push_reward
             elif FLAG + SPY <= square <= SPY + SPY:
-                red_pieces += 1
+                # red_pieces += 1
+                red_firepower = square - SPY
                 # Reward based on the piece's row
                 utility += -((ROWS-i)*push_reward)
     
     # For each missing piece, reward the enemy
-    missing_blue = INITIAL_ARMY - blue_pieces
-    missing_red = INITIAL_ARMY - red_pieces
-    utility += -(missing_blue*capture_reward)
-    utility += missing_red*capture_reward
+    # missing_blue = INITIAL_ARMY - blue_pieces
+    # missing_red = INITIAL_ARMY - red_pieces
+    # utility += -(missing_blue*capture_reward)
+    # utility += missing_red*capture_reward
+
+    # Reward the player based on their remaining firepower
+    utility += (blue_firepower/total_firepower)*capture_reward
+    utility += -((red_firepower/total_firepower)*capture_reward)
+
 
     # Reward estimates for flag safety
     blue_flag = find_integer(board, FLAG)
@@ -888,6 +899,7 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
             #     print(f"{round(s*100)}%", end=' ')
             # print()
             print(strategy)
+            # print(f"Strategy Sum: {sum(strategy):.2f}")
 
             print(f"Utility: {util:.2f}")
 
@@ -904,6 +916,10 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
             for a, action in enumerate(strategy):
                 if action not in top_three:
                     strategy[a] = 0
+            # Renormalize the sanitized strategy
+            strategy_sum = sum(strategy)
+            for a, action in enumerate(strategy):
+                strategy[a] = strategy[a]/strategy_sum
             print("Sanitized Strategy: ")
             # for i, s in enumerate(strategy):
             #     print(f"{round(s*100)}%", end=' ')
