@@ -892,6 +892,14 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
             #     print(f"{round(s*100)}%", end=' ')
             # print()
             print(strategy)
+            # Print the remaining moves in sanitized strategy
+            print("Remaining Moves:")
+            for i, action in enumerate(moves):
+                if strategy[i] > 0:
+                    print(f"{action}", end=" ")
+                else:
+                    print("XXXX", end=" ")
+            print()
 
             move = random.choices(moves, weights=strategy, k=1)[0]
 
