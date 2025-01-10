@@ -247,6 +247,18 @@ def reward_estimate(board, annotation):
     return utility
 
 
+"""
+Example usage
+matrix = [
+    [10, 20, 30],
+    [40, 50, 60],
+    [70, 80, 90]
+]
+target = 50
+
+result = find_integer(matrix, target)
+print(result)  # Output: (1, 1) because 50 is located at row 1, column 1
+"""
 def find_integer(matrix, target):
     for row in range(len(matrix)):
         for col in range(len(matrix[row])):
@@ -254,18 +266,22 @@ def find_integer(matrix, target):
                 return (row, col)
     return None
 
-# # Example usage
-# matrix = [
-#     [10, 20, 30],
-#     [40, 50, 60],
-#     [70, 80, 90]
-# ]
-# target = 50
+"""
+Example usage
+matrix = [
+    [10, 20, 30],
+    [40, 50, 60],
+    [70, 80, 90]
+]
+target_row = 1
+target_column = 1
+MIN = 35
+MAX = 75
 
-# result = find_integer(matrix, target)
-# print(result)  # Output: (1, 1) because 50 is located at row 1, column 1
-
-
+result = find_nearest_in_range_bfs(matrix, target_row, target_column, MIN, MAX)
+print(result)  # Output: (2, 0) because 70 is the nearest element in range [35, 75] 
+               # to element (1, 1)
+"""
 def find_nearest_in_range_bfs(matrix, target_row, target_column, MIN, MAX):
     def is_in_range(value):
         return MIN <= value <= MAX
@@ -291,21 +307,6 @@ def find_nearest_in_range_bfs(matrix, target_row, target_column, MIN, MAX):
                 queue.append((nr, nc, dist + 1))
     
     return None
-
-# # Example usage
-# matrix = [
-#     [10, 20, 30],
-#     [40, 50, 60],
-#     [70, 80, 90]
-# ]
-# target_row = 1
-# target_column = 1
-# MIN = 35
-# MAX = 75
-
-# result = find_nearest_in_range_bfs(matrix, target_row, target_column, MIN, MAX)
-# print(result)  # Output: (2, 0) because 70 is the nearest element in range [35, 75] to element (1, 1)
-
 
 
 # Adapt counterfactual regret minimization to GG
