@@ -1,4 +1,4 @@
-import logging, random, copy, itertools
+import logging, random, copy, itertools, time
 
 logging.basicConfig(level=logging.WARNING)
 
@@ -166,6 +166,8 @@ def infostate_board(infostate, infostate_annotation):
     return board, [infostate_annotation[CURRENT_PLAYER], 0, 0]
 
 def private_observation(old_infostate, old_infostate_annotation, action, result, update_probabilities=False):
+    # start_time = time.time()
+    
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
     
@@ -282,6 +284,9 @@ def private_observation(old_infostate, old_infostate_annotation, action, result,
                     piece[j] = bayes_theorem(hypothesis, evidence)
 
     infostate_annotation[CURRENT_PLAYER] = RED if infostate_annotation[CURRENT_PLAYER] == BLUE else BLUE 
+
+    # end_time = time.time()
+    # print(f"Runtime: {end_time - start_time} seconds")
 
     return infostate, infostate_annotation
 

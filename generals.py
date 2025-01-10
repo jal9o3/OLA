@@ -1,4 +1,4 @@
-import logging, copy, random, json, os, ctypes, csv
+import logging, copy, random, json, os, ctypes, csv, time
 
 from ctypes import c_int, c_double
 
@@ -453,6 +453,8 @@ def cfr_train(board, annotation, blue_probability, red_probability,
               red_infostate=None, red_infostate_annotation=None,
               utility_model=None, policy_model=None):
 
+    start_time = time.time()
+
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
 
@@ -466,11 +468,18 @@ def cfr_train(board, annotation, blue_probability, red_probability,
         #     blue_infostate=blue_infostate, blue_infostate_annotation=blue_infostate_annotation,
         #     red_infostate=red_infostate, red_infostate_annotation=red_infostate_annotation,
         #     utility_model=utility_model, policy_model=policy_model, turn_number=turn_number)
+
+        # start_time = time.time()
+
         util, strategy = cfr(board, annotation, blue_probability, red_probability,
             current_depth, max_depth, policy_table=policy_table, utility_table=utility_table,
             blue_infostate=blue_infostate, blue_infostate_annotation=blue_infostate_annotation,
             red_infostate=red_infostate, red_infostate_annotation=red_infostate_annotation,
             utility_model=utility_model, policy_model=policy_model, turn_number=turn_number)
+        
+        # end_time = time.time()
+        # print(f"Runtime: {end_time - start_time} seconds")
+
         # Add strategy to strategy sum
         for i in range(len(actions(board, annotation))):
             if strategy[i] > 0:
@@ -488,6 +497,9 @@ def cfr_train(board, annotation, blue_probability, red_probability,
         strategy_sum[i] /= accumulated
     # Calculate the average utility
     average_utility = utility_sum / iterations
+
+    end_time = time.time()
+    print(f"Runtime: {end_time - start_time} seconds")
 
     return average_utility, strategy_sum
 
