@@ -2,6 +2,8 @@ import logging, copy, random, json, os, ctypes, csv, time
 
 from ctypes import c_int, c_double
 
+from collections import deque
+
 # Configure the logging
 logging.basicConfig(level=logging.WARNING)
 
@@ -244,6 +246,68 @@ def reward_estimate(board, annotation):
 
     return utility
 
+
+def find_integer(matrix, target):
+    for row in range(len(matrix)):
+        for col in range(len(matrix[row])):
+            if matrix[row][col] == target:
+                return (row, col)
+    return None
+
+# # Example usage
+# matrix = [
+#     [10, 20, 30],
+#     [40, 50, 60],
+#     [70, 80, 90]
+# ]
+# target = 50
+
+# result = find_integer(matrix, target)
+# print(result)  # Output: (1, 1) because 50 is located at row 1, column 1
+
+
+def find_nearest_in_range_bfs(matrix, target_row, target_column, MIN, MAX):
+    def is_in_range(value):
+        return MIN <= value <= MAX
+    
+    rows = len(matrix)
+    cols = len(matrix[0])
+    visited = [[False] * cols for _ in range(rows)]
+    directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]
+    
+    queue = deque([(target_row, target_column, 0)])  # (row, column, distance)
+    visited[target_row][target_column] = True
+    
+    while queue:
+        r, c, dist = queue.popleft()
+        
+        if is_in_range(matrix[r][c]):
+            return (r, c)
+        
+        for dr, dc in directions:
+            nr, nc = r + dr, c + dc
+            if 0 <= nr < rows and 0 <= nc < cols and not visited[nr][nc]:
+                visited[nr][nc] = True
+                queue.append((nr, nc, dist + 1))
+    
+    return None
+
+# # Example usage
+# matrix = [
+#     [10, 20, 30],
+#     [40, 50, 60],
+#     [70, 80, 90]
+# ]
+# target_row = 1
+# target_column = 1
+# MIN = 35
+# MAX = 75
+
+# result = find_nearest_in_range_bfs(matrix, target_row, target_column, MIN, MAX)
+# print(result)  # Output: (2, 0) because 70 is the nearest element in range [35, 75] to element (1, 1)
+
+
+
 # Adapt counterfactual regret minimization to GG
 # For external sampling, set traverser to BLUE or RED
 # Obtained policies can be stored in a dictionary via the policy_table parameter
@@ -458,25 +522,25 @@ def cfr_train(board, annotation, blue_probability, red_probability,
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
 
+    # Print the nearest enemy pieces to the flags
+    # blue_flag = find_integer(board, FLAG)
+    # red_flag = find_integer(board, SPY + FLAG)
+    # print("Nearest to BLUE flag:")
+    # print(find_nearest_in_range_bfs(board, blue_flag[0], blue_flag[1], FLAG + SPY, SPY*2))
+    # print("Nearest to RED flag:")
+    # print(find_nearest_in_range_bfs(board, red_flag[0], red_flag[1], FLAG, SPY))
+
     traverser = BLUE
     utility_sum = 0.0
     strategy_sum = [0.0 for i in range(len(actions(board, annotation)))]
 
     for i in range(iterations):
-        # util, strategy = cfr(board, annotation, blue_probability, red_probability,
-        #     current_depth, max_depth, traverser=traverser, policy_table=policy_table, utility_table=utility_table,
-        #     blue_infostate=blue_infostate, blue_infostate_annotation=blue_infostate_annotation,
-        #     red_infostate=red_infostate, red_infostate_annotation=red_infostate_annotation,
-        #     utility_model=utility_model, policy_model=policy_model, turn_number=turn_number)
-
         # start_time = time.time()
-
         util, strategy = cfr(board, annotation, blue_probability, red_probability,
             current_depth, max_depth, policy_table=policy_table, utility_table=utility_table,
             blue_infostate=blue_infostate, blue_infostate_annotation=blue_infostate_annotation,
             red_infostate=red_infostate, red_infostate_annotation=red_infostate_annotation,
             utility_model=utility_model, policy_model=policy_model, turn_number=turn_number)
-        
         # end_time = time.time()
         # print(f"Runtime: {end_time - start_time} seconds")
 
