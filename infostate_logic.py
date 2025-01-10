@@ -1,4 +1,4 @@
-import logging, random, copy
+import logging, random, copy, itertools
 
 logging.basicConfig(level=logging.WARNING)
 
@@ -7,6 +7,46 @@ from world_constants import *
 
 # Infostate constants
 from infostate_constants import *
+
+# Class for the 3D infostate
+class Infostate3D:
+    def __init__(self, owner, board, player_to_move, waiting_flag=False):
+        self.owner = owner
+        self.board = board
+        self.player_to_move = player_to_move
+        self.waiting_flag = waiting_flag
+    
+    def start(self, board, owner):
+        obscured_board = copy.deepcopy(board)
+        # Add value ranges for the pieces
+        for i, row in enumerate(board):
+            for j, square in enumerate(row):
+                if owner == BLUE and (FLAG + SPY <= square <= SPY*2):
+                    obscured_board[i][j] = [RED_UNKNOWN, FLAG, SPY]
+                elif owner == BLUE and (FLAG <= square <= SPY):
+                    obscured_board[i][j] = [board[i][j], board[i][j], board[i][j]]
+                elif owner == RED and (FLAG <= square <= SPY):
+                    obscured_board[i][j] = [BLUE_UNKNOWN, FLAG, SPY]
+                elif owner == RED and (FLAG + SPY <= square <= SPY*2):
+                    obscured_board[i][j] = [board[i][j], board[i][j], board[i][j]]
+                elif square == BLANK:
+                    obscured_board[i][j] = [BLANK, BLANK, BLANK] 
+        starting_infostate = Infostate3D(owner, obscured_board, 
+                                         player_to_move=BLUE)
+        return starting_infostate
+    
+    def private_observation(old_infostate, action, result):
+        start_row, start_col, end_row, end_col = map(int, action)
+
+        # Determine which piece to update range (attacker or defender)
+        # Check if attacker or defender is unknown
+
+        # Update the range of the piece based on the action result
+
+        new_infostate = Infostate3D()
+        return new_infostate
+
+
 
 def get_random_permutation(pieces):
         permuted_list = pieces[:]
@@ -24,6 +64,36 @@ def value_permutation_sample(pieces, n):
         seen.add(permutation)
     
     return seen
+
+def get_result(board, annotation, move, new_board, new_annotation):
+    # Perform matrix subtraction on old and new boards
+    board_diff = [[board[i][j] - new_board[i][j] for j in range(len(board[0]))] for i in range(len(board))]
+
+    # Examine move result
+    start_row, start_col, end_row, end_col = map(int, move) # get indices
+    challenger, target = board[start_row][start_col], board[end_row][end_col]
+    result = -1 # Placeholder value
+
+    # If the challenge removed both challenger and target (DRAW)
+    if (board_diff[start_row][start_col] == challenger
+        and board_diff[end_row][end_col] == target):
+        result = DRAW
+    elif (board_diff[start_row][start_col] == challenger
+            and board_diff[end_row][end_col] == (target - challenger)):
+        if board[end_row][end_col] == BLANK:
+            result = OCCUPY # if no piece has been displaced
+        else:
+            result = WIN
+    elif (board_diff[start_row][start_col] == challenger
+            and board_diff[end_row][end_col] == BLANK):
+        result = LOSS
+            
+    # results = ["DRAW", "WIN", "OCCUPY", "LOSS"]
+    # print(f"Result: {results[result]}")
+
+    return result
+
+# Functions for the 2D infostate
 
 # Define the usage of bayes theorem
 def bayes_theorem(hypothesis, evidence):
@@ -95,34 +165,6 @@ def infostate_board(infostate, infostate_annotation):
     
     return board, [infostate_annotation[CURRENT_PLAYER], 0, 0]
 
-def get_result(board, annotation, move, new_board, new_annotation):
-    # Perform matrix subtraction on old and new boards
-    board_diff = [[board[i][j] - new_board[i][j] for j in range(len(board[0]))] for i in range(len(board))]
-
-    # Examine move result
-    start_row, start_col, end_row, end_col = map(int, move) # get indices
-    challenger, target = board[start_row][start_col], board[end_row][end_col]
-    result = -1 # Placeholder value
-
-    # If the challenge removed both challenger and target (DRAW)
-    if (board_diff[start_row][start_col] == challenger
-        and board_diff[end_row][end_col] == target):
-        result = DRAW
-    elif (board_diff[start_row][start_col] == challenger
-            and board_diff[end_row][end_col] == (target - challenger)):
-        if board[end_row][end_col] == BLANK:
-            result = OCCUPY # if no piece has been displaced
-        else:
-            result = WIN
-    elif (board_diff[start_row][start_col] == challenger
-            and board_diff[end_row][end_col] == BLANK):
-        result = LOSS
-            
-    # results = ["DRAW", "WIN", "OCCUPY", "LOSS"]
-    # print(f"Result: {results[result]}")
-
-    return result
-
 def private_observation(old_infostate, old_infostate_annotation, action, result, update_probabilities=False):
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
@@ -140,22 +182,10 @@ def private_observation(old_infostate, old_infostate_annotation, action, result,
             or piece[ROW] == end_row and piece[COLUMN] == end_col)
             and piece[CAPTURED] == 0
             ):
-            logger.setLevel(logging.DEBUG)
-            # logger.debug(f"Current Player: {"RED" if infostate_annotation[CURRENT_PLAYER] == RED else "BLUE"}")
-            # print_infostate(infostate, infostate_annotation)
-            # logger.debug(f"{piece[ROW]} {piece[COLUMN]}")
-            # logger.debug(f"i: {i}")
-            # logger.debug(f"action: {action}")
-            # logger.debug(f"piece[RANGE_BOT]: {piece[RANGE_BOT]}")
-            # logger.debug(f"piece[RANGE_TOP]: {piece[RANGE_TOP]}")
             if i < INITIAL_ARMY:
                 piece_to_update = i # current piece
             # Get the identified piece
             elif i >= INITIAL_ARMY:
-                # Get the value of the identified piece
-                # for j, value in enumerate(piece):
-                    # if 1 <= j <= 15 and value == 1:
-                    #     identified_value = j
                 identified_value = piece[RANGE_BOT]
 
     # Update the range of the piece based on the action result
@@ -233,7 +263,6 @@ def private_observation(old_infostate, old_infostate_annotation, action, result,
             # No defender in occupation
             # No location update for winning defender
 
-
     # Update the probabilities of piece identities
     if result != OCCUPY and update_probabilities:
         # Accumulate all gathered relevant evidence
@@ -258,16 +287,26 @@ def private_observation(old_infostate, old_infostate_annotation, action, result,
 
 def infostate_to_string(infostate, infostate_annotation):
     infostr = ""
-    for row in infostate:
-        for item in row:
-            infostr += " " + str(item)
+    # for row in infostate:
+    #     for item in row:
+    #         infostr += " " + str(item)
+
+    # Flatten the infostate
+    flat_infostate = list(itertools.chain.from_iterable(infostate))
     
-    for item in infostate_annotation:
-        infostr += " " + str(item)
+    # for item in infostate_annotation:
+    #     infostr += " " + str(item)
 
     # Extra zeroes to complete the six columns
-    for i in range(3):
-        infostr += " 0"
+    # for i in range(3):
+    #     infostr += " 0"
+
+    # Combine the flat infostate and the infostate annotation into a string
+    # Include a padding of three zeroes at the end of the string (might remove later)
+    infostr = " ".join(
+        map(str, flat_infostate)) + " " + " ".join(
+            map(str, infostate_annotation)) + " ".join(
+                map(str, [0, 0, 0]))
     
     return infostr
 

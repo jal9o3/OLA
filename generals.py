@@ -686,7 +686,7 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
     blue_infostate, blue_infostate_annotation = initial_infostate(board, BLUE)
     red_infostate, red_infostate_annotation = initial_infostate(board, RED)
 
-    pbs, pbs_annotation = initial_pbs(board)
+    # pbs, pbs_annotation = initial_pbs(board)
 
     # Gameplay loop
     # mode = RANDOM_VS_RANDOM
@@ -837,7 +837,7 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
         )
 
         # Update PBS
-        pbs, pbs_annotation = public_observation(pbs, pbs_annotation, move, result)
+        # pbs, pbs_annotation = public_observation(pbs, pbs_annotation, move, result)
 
         # Overwrite old state
         board, annotation = new_board, new_annotation
@@ -856,22 +856,6 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
     print(f"Average branching: {round(moves_N/t)}")
 
     return policy_table, utility_table, t
-
-    outcomes = ["DRAW", "BLUE", "RED"]
-    print(f"Winner: {outcomes[reward(board, annotation)]}")
-
-    # Handle saving of latest game to a JSON file
-    if save_game:
-        game_data.append(move_history)
-        os.makedirs('history', exist_ok=True)
-        with open('history/latest_game.json', 'w') as file:
-            json.dump(game_data, file)
-    print(f"Average branching: {round(moves_N/t)}")
-
-    # print(policy_table)
-    # print(utility_table)
-
-    return policy_table, utility_table
 
 class CFRResult(ctypes.Structure): 
     _fields_ = [("node_util", ctypes.c_double), 
