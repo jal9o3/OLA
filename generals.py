@@ -1,4 +1,4 @@
-import logging, copy, random, json, os, ctypes, csv, time
+import logging, copy, random, json, os, ctypes, csv, time, itertools
 
 from ctypes import c_int, c_double
 
@@ -268,8 +268,15 @@ def reward_estimate(board, annotation):
     red_manhattan = abs(
         nearest_blue[0] - red_flag[0]) + abs(nearest_blue[1] - red_flag[1])
     
-    utility += blue_manhattan*flag_safety_reward
-    utility += -(red_manhattan*flag_safety_reward)
+    utility += blue_manhattan*flag_safety_reward + 0.30
+    utility += -(red_manhattan*flag_safety_reward + 0.30)
+
+    # Find the value of the flag's "protector"
+    blue_protector = max_in_range(board, blue_flag, nearest_red, PRIVATE, SPY)
+    red_protector = max_in_range(board, red_flag, nearest_blue, 
+                                 PRIVATE + SPY, SPY*2) - SPY
+    utility += blue_protector*flag_safety_reward
+    utility += -(red_protector*flag_safety_reward)
 
     return utility
 
@@ -335,6 +342,46 @@ def find_nearest_in_range_bfs(matrix, target_row, target_column, MIN, MAX):
     
     return None
 
+"""
+Example Usage
+matrix = [
+    [1, 2, 3],
+    [4, 5, 6],
+    [7, 8, 9]
+]
+square_a = (0, 0)  # Row 0, Column 0
+square_b = (2, 2)  # Row 2, Column 2
+min_val = 4
+max_val = 8
+
+result = max_in_range(matrix, square_a, square_b, min_val, max_val)
+print(f"Maximum value in range [{min_val}, {max_val}]: {result}")
+"""
+def max_in_range(matrix, square_a, square_b, min_val, max_val):
+    # Extract the row and column indices
+    row1, col1 = square_a
+    row2, col2 = square_b
+
+    # Determine the bounds of the sub-matrix
+    top = min(row1, row2)
+    bottom = max(row1, row2)
+    left = min(col1, col2)
+    right = max(col1, col2)
+
+    # Flatten the sub-matrix using itertools.chain
+    flattened_sub_matrix = itertools.chain.from_iterable(
+        row[left:right + 1] for row in matrix[top:bottom + 1]
+    )
+    flattened_list = list(flattened_sub_matrix)
+    # print(flattened_list)
+
+    # Filter values within the range [min_val, max_val]
+    filtered_values = [value for value in flattened_list if min_val <= value <= max_val]
+    # print(filtered_values)
+    
+
+    # Find the maximum value, or return None if no values are in range
+    return max(filtered_values, default=0)
 
 # Adapt counterfactual regret minimization to GG
 # For external sampling, set traverser to BLUE or RED
