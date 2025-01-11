@@ -244,7 +244,7 @@ def reward_estimate(board, annotation):
                 utility += i*push_reward
             elif FLAG + SPY <= square <= SPY + SPY:
                 # red_pieces += 1
-                red_firepower = square - SPY
+                red_firepower += square - SPY
                 # Reward based on the piece's row
                 utility += -((ROWS-i)*push_reward)
 
@@ -254,40 +254,40 @@ def reward_estimate(board, annotation):
 
 
     # Reward estimates for flag safety
-    # blue_flag = find_integer(board, FLAG)
-    # red_flag = find_integer(board, FLAG + SPY)
-    # nearest_red = find_nearest_in_range_bfs(
-    #     board, blue_flag[0], blue_flag[1], FLAG + SPY, SPY*2)
-    # nearest_blue = find_nearest_in_range_bfs(
-    #     board, red_flag[0], red_flag[1], FLAG, SPY)
-    # # Calculate the Manhattan distance of nearest enemy to each flag
-    # blue_manhattan = abs(
-    #     nearest_red[0] - blue_flag[0]) + abs(nearest_red[1] - blue_flag[1])
-    # red_manhattan = abs(
-    #     nearest_blue[0] - red_flag[0]) + abs(nearest_blue[1] - red_flag[1])
+    blue_flag = find_integer(board, FLAG)
+    red_flag = find_integer(board, FLAG + SPY)
+    nearest_red = find_nearest_in_range_bfs(
+        board, blue_flag[0], blue_flag[1], FLAG + SPY, SPY*2)
+    nearest_blue = find_nearest_in_range_bfs(
+        board, red_flag[0], red_flag[1], FLAG, SPY)
+    # Calculate the Manhattan distance of nearest enemy to each flag
+    blue_manhattan = abs(
+        nearest_red[0] - blue_flag[0]) + abs(nearest_red[1] - blue_flag[1])
+    red_manhattan = abs(
+        nearest_blue[0] - red_flag[0]) + abs(nearest_blue[1] - red_flag[1])
     
-    # utility += blue_manhattan*flag_safety_reward + 0.30
-    # utility += -(red_manhattan*flag_safety_reward + 0.30)
+    utility += blue_manhattan*flag_safety_reward + 0.30
+    utility += -(red_manhattan*flag_safety_reward + 0.30)
 
-    # # Find the value of the flag's "protector"
-    # blue_protector = max_in_range(board, blue_flag, nearest_red, PRIVATE, SPY)
-    # red_protector = max_in_range(board, red_flag, nearest_blue, 
-    #                              PRIVATE + SPY, SPY*2) - SPY
-    # utility += blue_protector*flag_safety_reward
-    # utility += -(red_protector*flag_safety_reward)
+    # Find the value of the flag's "protector"
+    blue_protector = max_in_range(board, blue_flag, nearest_red, PRIVATE, SPY)
+    red_protector = max_in_range(board, red_flag, nearest_blue, 
+                                 PRIVATE + SPY, SPY*2) - SPY
+    utility += blue_protector*flag_safety_reward
+    utility += -(red_protector*flag_safety_reward)
 
-    # # Measure flag "freedom"
-    # # Check count of pieces in the flag's direct path
-    # blue_flagblocks = count_nonzero_neighbors(board, blue_flag[0], blue_flag[1])
-    # red_flagblocks = count_nonzero_neighbors(board, red_flag[0], red_flag[1])
-    # # If the flag is not at the starting edge, check neighbors of square behind it
-    # if blue_flag[0] > 0:
-    #     blue_flagblocks += count_nonzero_neighbors(board, blue_flag[0] - 1, blue_flag[1])
-    # if red_flag[0] < 7:
-    #     red_flagblocks += count_nonzero_neighbors(board, red_flag[0] + 1, red_flag[1])
+    # Measure flag "freedom"
+    # Check count of pieces in the flag's direct path
+    blue_flagblocks = count_nonzero_neighbors(board, blue_flag[0], blue_flag[1])
+    red_flagblocks = count_nonzero_neighbors(board, red_flag[0], red_flag[1])
+    # If the flag is not at the starting edge, check neighbors of square behind it
+    if blue_flag[0] > 0:
+        blue_flagblocks += count_nonzero_neighbors(board, blue_flag[0] - 1, blue_flag[1])
+    if red_flag[0] < 7:
+        red_flagblocks += count_nonzero_neighbors(board, red_flag[0] + 1, red_flag[1])
 
-    # utility += -(blue_flagblocks*flag_safety_reward)
-    # utility += red_flagblocks*flag_safety_reward
+    utility += -(blue_flagblocks*flag_safety_reward)
+    utility += red_flagblocks*flag_safety_reward
 
 
     return utility
@@ -958,6 +958,8 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
             # print_infostate(blue_infostate, blue_infostate_annotation)
             # print_infostate(red_infostate, red_infostate_annotation)
             print_board(board, color=True, pov=WORLD)
+            magnitude = -1 if annotation[CURRENT_PLAYER] == RED else 1
+            print(f"Estimate: {magnitude*reward_estimate(board, annotation)}")
             pass
 
         print(f"Player: {annotation[CURRENT_PLAYER]}")
