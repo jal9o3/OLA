@@ -271,8 +271,8 @@ def reward_estimate(board, annotation):
 
     # Find the value of the flag's "protector"
     blue_protector = max_in_range(board, blue_flag, nearest_red, PRIVATE, SPY)
-    red_protector = max_in_range(board, red_flag, nearest_blue, 
-                                 PRIVATE + SPY, SPY*2) - SPY
+    red_protector = max(max_in_range(board, red_flag, nearest_blue, 
+                                 PRIVATE + SPY, SPY*2) - SPY, 0)
     utility += blue_protector*flag_safety_reward
     utility += -(red_protector*flag_safety_reward)
 
@@ -452,7 +452,6 @@ def cfr(board, annotation, blue_probability, red_probability,
     # Return payoff for 'terminal' states
     if ((current_depth == max_depth and is_terminal(board, annotation))
          or is_terminal(board, annotation)):
-        logger.setLevel(logging.DEBUG)
         if player == BLUE:
             # Store the utility in the utility table
             if utility_table != None:
@@ -546,8 +545,8 @@ def cfr(board, annotation, blue_probability, red_probability,
     def assign_probabilities(strategy_weight, player=None):
         if player == BLUE:
             # probability_A = red_probability * strategy[a]
-            probability_A = red_probability * strategy_weight
-            probability_B = blue_probability
+            probability_A = blue_probability * strategy_weight
+            probability_B = red_probability
         else:
             probability_A = blue_probability
             # probability_B = red_probability * strategy[a]
@@ -959,8 +958,7 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
             # print_infostate(red_infostate, red_infostate_annotation)
             print_board(board, color=True, pov=WORLD)
             magnitude = -1 if annotation[CURRENT_PLAYER] == RED else 1
-            print(f"Estimate: {magnitude*reward_estimate(board, annotation)}")
-            pass
+            # print(f"Estimate: {magnitude*reward_estimate(board, annotation)}")
 
         print(f"Player: {annotation[CURRENT_PLAYER]}")
         moves = actions(board, annotation)
