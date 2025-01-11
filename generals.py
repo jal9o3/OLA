@@ -466,24 +466,10 @@ def cfr(board, annotation, blue_probability, red_probability,
                 utility_table[infostate_key] = -reward(board, annotation)
             return -reward(board, annotation), []
     elif current_depth == max_depth and not is_terminal(board, annotation):
-        # if utility_model != None:
-        #   # Convert infostate to list
-        #   infolist = infostate_key.split()
-        #   # Convert list to np array
-        #   infoarray = np.array(infolist, dtype=np.float32)
-        #   # Convert np array to Pytorch tensor
-        #   infotensor = torch.tensor(infoarray)
-        #   infotensor = infotensor.to(device)
-        #   # Reshape the tensor to what is expected of the utility network
-        #   infotensor = infotensor.view(1, -1)
-        #   return utility_model(infotensor).item(), [] # Obtain the utility estimate
-        # else:
-        #   return 0, []
         if player == BLUE:
             return reward_estimate(board, annotation), []
         else:
             return -reward_estimate(board, annotation), []
-
 
     # Initialize strategy
     valid_actions = actions(board, annotation)
@@ -534,67 +520,34 @@ def cfr(board, annotation, blue_probability, red_probability,
     # Initialize node utility
     node_util = 0
 
-    # For external sampling
-    # If the current player is not the traverser, just sample a move
-    if traverser != 0 and player != traverser:
-        # Set negative weights to zero to avoid errors
-        for a, action in enumerate(strategy):
-            if action < 0:
-                strategy[a] = 0
-        # Sample an action
-        action = random.choices(valid_actions, weights=strategy, k=1)[0]
+    # Iterate over children nodes and recursively call cfr
+    for a, action in enumerate(valid_actions):
         next_board, next_annotation = transition(board, annotation, action)
         action_result = get_result(board, annotation, action, next_board, next_annotation)
         next_blue_infostate, next_blue_infostate_annotation = private_observation(blue_infostate, blue_infostate_annotation, action, action_result)
         next_red_infostate, next_red_infostate_annotation = private_observation(red_infostate, red_infostate_annotation, action, action_result)
-
-        # Call CFR on the action
+        
         if player == BLUE:
-            result = cfr(next_board, next_annotation,
-                red_probability * strategy[valid_actions.index(action)], blue_probability,
-                current_depth + 1, max_depth, traverser=traverser, policy_table=policy_table, utility_table=utility_table,
-                blue_infostate=next_blue_infostate, blue_infostate_annotation=next_blue_infostate_annotation,
-                red_infostate=next_red_infostate, red_infostate_annotation=next_red_infostate_annotation,
-                utility_model=utility_model, policy_model=policy_model)
-            util[valid_actions.index(action)] = -(result[0])
+            probability_A = red_probability * strategy[a]
+            probability_B = blue_probability
         else:
-            result = cfr(next_board, next_annotation,
-                blue_probability, red_probability * strategy[valid_actions.index(action)],
-                current_depth + 1, max_depth, traverser=traverser, policy_table=policy_table, utility_table=utility_table,
-                blue_infostate=next_blue_infostate, blue_infostate_annotation=next_blue_infostate_annotation,
-                red_infostate=next_red_infostate, red_infostate_annotation=next_red_infostate_annotation,
-                utility_model=utility_model, policy_model=policy_model)
-            util[valid_actions.index(action)] = -(result[0])
+            probability_A = blue_probability
+            probability_B = red_probability * strategy[a]
+
+        result = cfr(next_board, next_annotation,
+                    probability_A, probability_B,
+                    current_depth + 1, max_depth, 
+                    traverser=traverser, 
+                    policy_table=policy_table, utility_table=utility_table,
+                    blue_infostate=next_blue_infostate, 
+                    blue_infostate_annotation=next_blue_infostate_annotation,
+                    red_infostate=next_red_infostate, 
+                    red_infostate_annotation=next_red_infostate_annotation,
+                    utility_model=utility_model, policy_model=policy_model)
+        util[a] = -(result[0])
 
         # Calculate node utility
-        node_util += strategy[valid_actions.index(action)] * util[valid_actions.index(action)]
-    elif traverser == 0 or traverser == player:
-        # Iterate over children nodes and recursively call cfr
-        for a, action in enumerate(valid_actions):
-            next_board, next_annotation = transition(board, annotation, action)
-            action_result = get_result(board, annotation, action, next_board, next_annotation)
-            next_blue_infostate, next_blue_infostate_annotation = private_observation(blue_infostate, blue_infostate_annotation, action, action_result)
-            next_red_infostate, next_red_infostate_annotation = private_observation(red_infostate, red_infostate_annotation, action, action_result)
-
-            if player == BLUE:
-                result = cfr(next_board, next_annotation,
-                    red_probability * strategy[a], blue_probability,
-                    current_depth + 1, max_depth, traverser=traverser, policy_table=policy_table, utility_table=utility_table,
-                    blue_infostate=next_blue_infostate, blue_infostate_annotation=next_blue_infostate_annotation,
-                    red_infostate=next_red_infostate, red_infostate_annotation=next_red_infostate_annotation,
-                    utility_model=utility_model, policy_model=policy_model)
-                util[a] = -(result[0])
-            else:
-                result = cfr(next_board, next_annotation,
-                    blue_probability, red_probability * strategy[a],
-                    current_depth + 1, max_depth, traverser=traverser, policy_table=policy_table, utility_table=utility_table,
-                    blue_infostate=next_blue_infostate, blue_infostate_annotation=next_blue_infostate_annotation,
-                    red_infostate=next_red_infostate, red_infostate_annotation=next_red_infostate_annotation,
-                    utility_model=utility_model, policy_model=policy_model)
-                util[a] = -(result[0])
-
-            # Calculate node utility
-            node_util += strategy[a] * util[a]
+        node_util += strategy[a] * util[a]
 
     # Calculate regret sum
     for a, action in enumerate(valid_actions):
