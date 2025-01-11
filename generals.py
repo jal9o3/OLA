@@ -278,7 +278,49 @@ def reward_estimate(board, annotation):
     utility += blue_protector*flag_safety_reward
     utility += -(red_protector*flag_safety_reward)
 
+    # Measure flag "freedom"
+    # Check count of pieces in the flag's direct path
+    blue_flagblocks = count_nonzero_neighbors(board, blue_flag[0], blue_flag[1])
+    red_flagblocks = count_nonzero_neighbors(board, red_flag[0], red_flag[1])
+    # If the flag is not at the starting edge, check neighbors of square behind it
+    if blue_flag[0] > 0:
+        blue_flagblocks += count_nonzero_neighbors(board, blue_flag[0] - 1, blue_flag[1])
+    if red_flag[0] < 7:
+        red_flagblocks += count_nonzero_neighbors(board, red_flag[0] + 1, red_flag[1])
+
+    utility += -(blue_flagblocks*flag_safety_reward)
+    utility += red_flagblocks*flag_safety_reward
+
+
     return utility
+
+"""
+Example usage
+matrix = [
+    [1, 0, 3],
+    [0, 5, 0],
+    [7, 0, 9]
+]
+row, col = 1, 1  # position (1, 1) in the matrix
+
+print(count_nonzero_neighbors(matrix, row, col))  # Output will be 0
+"""
+def count_nonzero_neighbors(matrix, row, col):
+    rows = len(matrix)
+    cols = len(matrix[0])
+    nonzero_count = 0
+
+    # Define the directions for up, down, left, and right
+    directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+
+    for dr, dc in directions:
+        new_row, new_col = row + dr, col + dc
+        # Check if the new position is within bounds
+        if 0 <= new_row < rows and 0 <= new_col < cols:
+            if matrix[new_row][new_col] != 0:
+                nonzero_count += 1
+
+    return nonzero_count
 
 
 """
