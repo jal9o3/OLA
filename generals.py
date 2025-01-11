@@ -72,7 +72,6 @@ def reward(board, annotation):
 
     # Blue flag reaches red side
     elif FLAG in board[-1]:
-        logger.debug("blue flag in red side")
         # If flag has already survived a turn
         if annotation[WAITING_BLUE_FLAG]:
             return 1
@@ -222,9 +221,10 @@ def reward_estimate(board, annotation):
     utility = 0
 
     # Estimated rewards for features
-    capture_reward = 0.40
+    capture_reward = 0.10
     push_reward = 0.0375 # 0.30/8
-    flag_safety_reward = 0.02 # 0.30/(ROWS - 1 + COLUMNS - 1)
+    # flag_safety_reward = 0.02 # 0.30/(ROWS - 1 + COLUMNS - 1)
+    flag_safety_reward = 0.10 # Often difference between winning and losing!
 
     total_firepower = 145 # Sum of rankings of all pieces in an army
     blue_firepower = 0
@@ -468,12 +468,12 @@ def cfr(board, annotation, blue_probability, red_probability,
             # Store the utility in the utility table
             if utility_table != None:
                 utility_table[infostate_key] = -reward(board, annotation)
-            return -reward(board, annotation), []
+            return -(reward(board, annotation)), []
     elif current_depth == max_depth and not is_terminal(board, annotation):
         if player == BLUE:
             return reward_estimate(board, annotation), []
         else:
-            return -reward_estimate(board, annotation), []
+            return -(reward_estimate(board, annotation)), []
 
     # Initialize strategy
     valid_actions = actions(board, annotation)
@@ -1039,14 +1039,25 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
                 if action < 0:
                     strategy[a] = 0
 
-            # Only consider the top three moves
-            sorted_strategy = sorted(strategy, reverse=True) # descending order
-            # Get a list of the top three values
-            top_three = sorted_strategy[:3]
-            # Set all values below top three to zero (removes too suboptimal moves)
-            for a, action in enumerate(strategy):
-                if action not in top_three:
-                    strategy[a] = 0
+            # # Only consider the top three moves
+            # sorted_strategy = sorted(strategy, reverse=True) # descending order
+            # # Get a list of the top three values
+            # top_three = sorted_strategy[:3]
+            # # Set all values below top three to zero (removes too suboptimal moves)
+            # for a, action in enumerate(strategy):
+            #     if action not in top_three:
+            #         strategy[a] = 0
+
+            # Set probability to zero if not within a standard deviation of max
+            mean = sum(strategy) / len(strategy)
+            variance = sum((p - mean) ** 2 for p in strategy) / len(strategy)
+            std_dev = variance ** 0.5
+            max_prob = max(strategy)
+            # Set a threshold for "within a standard deviation" of the highest probability
+            threshold = std_dev
+            # Zero out probabilities not within the threshold
+            strategy = [prob if abs(prob - max_prob) <= threshold else 0 for prob in strategy]
+
             # Renormalize the sanitized strategy
             strategy_sum = sum(strategy)
             for a, action in enumerate(strategy):
