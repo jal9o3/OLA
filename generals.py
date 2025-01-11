@@ -221,10 +221,10 @@ def reward_estimate(board, annotation):
     utility = 0
 
     # Estimated rewards for features
-    capture_reward = 0.10
-    push_reward = 0.0375 # 0.30/8
+    capture_reward = 0.008
+    push_reward = 0.00375
     # flag_safety_reward = 0.02 # 0.30/(ROWS - 1 + COLUMNS - 1)
-    flag_safety_reward = 0.10 # Often difference between winning and losing!
+    flag_safety_reward = 0.009 # Often difference between winning and losing!
 
     total_firepower = 145 # Sum of rankings of all pieces in an army
     blue_firepower = 0
@@ -247,12 +247,6 @@ def reward_estimate(board, annotation):
                 red_firepower = square - SPY
                 # Reward based on the piece's row
                 utility += -((ROWS-i)*push_reward)
-    
-    # For each missing piece, reward the enemy
-    # missing_blue = INITIAL_ARMY - blue_pieces
-    # missing_red = INITIAL_ARMY - red_pieces
-    # utility += -(missing_blue*capture_reward)
-    # utility += missing_red*capture_reward
 
     # Reward the player based on their remaining firepower
     utility += (blue_firepower/total_firepower)*capture_reward
@@ -260,40 +254,40 @@ def reward_estimate(board, annotation):
 
 
     # Reward estimates for flag safety
-    blue_flag = find_integer(board, FLAG)
-    red_flag = find_integer(board, FLAG + SPY)
-    nearest_red = find_nearest_in_range_bfs(
-        board, blue_flag[0], blue_flag[1], FLAG + SPY, SPY*2)
-    nearest_blue = find_nearest_in_range_bfs(
-        board, red_flag[0], red_flag[1], FLAG, SPY)
-    # Calculate the Manhattan distance of nearest enemy to each flag
-    blue_manhattan = abs(
-        nearest_red[0] - blue_flag[0]) + abs(nearest_red[1] - blue_flag[1])
-    red_manhattan = abs(
-        nearest_blue[0] - red_flag[0]) + abs(nearest_blue[1] - red_flag[1])
+    # blue_flag = find_integer(board, FLAG)
+    # red_flag = find_integer(board, FLAG + SPY)
+    # nearest_red = find_nearest_in_range_bfs(
+    #     board, blue_flag[0], blue_flag[1], FLAG + SPY, SPY*2)
+    # nearest_blue = find_nearest_in_range_bfs(
+    #     board, red_flag[0], red_flag[1], FLAG, SPY)
+    # # Calculate the Manhattan distance of nearest enemy to each flag
+    # blue_manhattan = abs(
+    #     nearest_red[0] - blue_flag[0]) + abs(nearest_red[1] - blue_flag[1])
+    # red_manhattan = abs(
+    #     nearest_blue[0] - red_flag[0]) + abs(nearest_blue[1] - red_flag[1])
     
-    utility += blue_manhattan*flag_safety_reward + 0.30
-    utility += -(red_manhattan*flag_safety_reward + 0.30)
+    # utility += blue_manhattan*flag_safety_reward + 0.30
+    # utility += -(red_manhattan*flag_safety_reward + 0.30)
 
-    # Find the value of the flag's "protector"
-    blue_protector = max_in_range(board, blue_flag, nearest_red, PRIVATE, SPY)
-    red_protector = max_in_range(board, red_flag, nearest_blue, 
-                                 PRIVATE + SPY, SPY*2) - SPY
-    utility += blue_protector*flag_safety_reward
-    utility += -(red_protector*flag_safety_reward)
+    # # Find the value of the flag's "protector"
+    # blue_protector = max_in_range(board, blue_flag, nearest_red, PRIVATE, SPY)
+    # red_protector = max_in_range(board, red_flag, nearest_blue, 
+    #                              PRIVATE + SPY, SPY*2) - SPY
+    # utility += blue_protector*flag_safety_reward
+    # utility += -(red_protector*flag_safety_reward)
 
-    # Measure flag "freedom"
-    # Check count of pieces in the flag's direct path
-    blue_flagblocks = count_nonzero_neighbors(board, blue_flag[0], blue_flag[1])
-    red_flagblocks = count_nonzero_neighbors(board, red_flag[0], red_flag[1])
-    # If the flag is not at the starting edge, check neighbors of square behind it
-    if blue_flag[0] > 0:
-        blue_flagblocks += count_nonzero_neighbors(board, blue_flag[0] - 1, blue_flag[1])
-    if red_flag[0] < 7:
-        red_flagblocks += count_nonzero_neighbors(board, red_flag[0] + 1, red_flag[1])
+    # # Measure flag "freedom"
+    # # Check count of pieces in the flag's direct path
+    # blue_flagblocks = count_nonzero_neighbors(board, blue_flag[0], blue_flag[1])
+    # red_flagblocks = count_nonzero_neighbors(board, red_flag[0], red_flag[1])
+    # # If the flag is not at the starting edge, check neighbors of square behind it
+    # if blue_flag[0] > 0:
+    #     blue_flagblocks += count_nonzero_neighbors(board, blue_flag[0] - 1, blue_flag[1])
+    # if red_flag[0] < 7:
+    #     red_flagblocks += count_nonzero_neighbors(board, red_flag[0] + 1, red_flag[1])
 
-    utility += -(blue_flagblocks*flag_safety_reward)
-    utility += red_flagblocks*flag_safety_reward
+    # utility += -(blue_flagblocks*flag_safety_reward)
+    # utility += red_flagblocks*flag_safety_reward
 
 
     return utility
@@ -668,7 +662,7 @@ def cfr(board, annotation, blue_probability, red_probability,
 def cfr_train(board, annotation, blue_probability, red_probability,
               blue_infostate, blue_infostate_annotation,
               red_infostate, red_infostate_annotation,
-              current_depth=0, max_depth=0, turn_number=0, iterations=10,
+              current_depth=0, max_depth=0, turn_number=0, iterations=3,
               policy_table=None, utility_table=None,
               utility_model=None, policy_model=None):
 
@@ -707,6 +701,8 @@ def cfr_train(board, annotation, blue_probability, red_probability,
             if strategy[i] > 0:
                 strategy_sum[i] += strategy[i]
         # Add utility to utility sum
+        # if annotation[CURRENT_PLAYER] == RED:
+        #     util *= -1
         utility_sum += util
         # Switch to next traverser
         traverser = RED if traverser == BLUE else BLUE
