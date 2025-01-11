@@ -990,7 +990,9 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
             print(strategy)
             # print(f"Strategy Sum: {sum(strategy):.2f}")
 
-            print(f"Utility: {util:.2f}")
+            player_tags = ["ARBITER", "BLUE", "RED"]
+
+            print(f"{player_tags[annotation[CURRENT_PLAYER]]}'s Utility: {util:.2f}")
 
             # Set negative weights to zero to avoid errors
             for a, action in enumerate(strategy):
