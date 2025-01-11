@@ -962,7 +962,7 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
 
         print(f"Player: {annotation[CURRENT_PLAYER]}")
         moves = actions(board, annotation)
-        print(moves)
+        # print(moves)
         moves_N += len(moves)
         print(f"Possible Moves: {len(moves)}")
         move = ""
@@ -1019,11 +1019,11 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
                 # Remove strategy array from memory
                 free(result.strategy)
 
-            print("Strategy: ")
+            # print("Strategy: ")
             # for i, s in enumerate(strategy):
             #     print(f"{round(s*100)}%", end=' ')
             # print()
-            print(strategy)
+            # print(strategy)
             # print(f"Strategy Sum: {sum(strategy):.2f}")
 
             player_tags = ["ARBITER", "BLUE", "RED"]
@@ -1058,19 +1058,19 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
             strategy_sum = sum(strategy)
             for a, action in enumerate(strategy):
                 strategy[a] = strategy[a]/strategy_sum
-            print("Sanitized Strategy: ")
+            # print("Sanitized Strategy: ")
             # for i, s in enumerate(strategy):
             #     print(f"{round(s*100)}%", end=' ')
             # print()
-            print(strategy)
+            # print(strategy)
             # Print the remaining moves in sanitized strategy
-            print("Remaining Moves:")
-            for i, action in enumerate(moves):
-                if strategy[i] > 0:
-                    print(f"{action}", end=" ")
-                else:
-                    print("XXXX", end=" ")
-            print()
+            # print("Remaining Moves:")
+            # for i, action in enumerate(moves):
+            #     if strategy[i] > 0:
+            #         print(f"{action}", end=" ")
+            #     else:
+            #         print("XXXX", end=" ")
+            # print()
 
             move = random.choices(moves, weights=strategy, k=1)[0]
 
