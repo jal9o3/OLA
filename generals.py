@@ -4,6 +4,8 @@ from ctypes import c_int, c_double
 
 from collections import deque
 
+from functools import partial
+
 # Configure the logging
 logging.basicConfig(level=logging.WARNING)
 
@@ -124,7 +126,7 @@ def actions(board, annotation):
                         moves.append(f"{row}{column}{row}{column - 1}")
     return moves            
 
-def transition(board, annotation, action):
+def transition(action, board=None, annotation=None):
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
 
@@ -152,6 +154,8 @@ def transition(board, annotation, action):
             new_board[end_row][end_col] = BLANK
     
     new_board, new_annotation = copy.deepcopy(board), copy.deepcopy(annotation)
+
+    # print(action)
 
     # Obtain indices of starting and destination squares
     start_row, start_col, end_row, end_col = map(int, action)
@@ -520,12 +524,46 @@ def cfr(board, annotation, blue_probability, red_probability,
     # Initialize node utility
     node_util = 0
 
+    # Map CFR to list of children nodes
+    # Create a partial transition function that sets the current state as constant
+    # transition_current = partial(transition, board=board, annotation=annotation)
+    # # Map transition function to all valid actions to obtain the children nodes
+    # next_states = list(map(transition_current, valid_actions))
+    # # Create a partial result function, current state as constant
+    # get_result_current = partial(get_result, board=board, annotation=annotation)
+    # # Map result function to the children nodes
+    # results = list(map(get_result_current, valid_actions, 
+    #               [state[0] for state in next_states], 
+    #               [state[1] for state in next_states]))
+    # # Create partial private observation functions for BLUE and RED
+    # blue_private_observation = partial(private_observation, 
+    #                                    old_infostate=blue_infostate, 
+    #                                    old_infostate_annotation=blue_infostate_annotation)
+    # red_private_observation = partial(private_observation,
+    #                                   old_infostate=red_infostate,
+    #                                   old_infostate_annotation=red_infostate_annotation)
+    # # Map private observation functions to infostates and actions and results
+    # next_blue_infostates = list(map(blue_private_observation, valid_actions, results))
+    # next_red_infostates = list(map(red_private_observation, valid_actions, results))
+
+
+    # print(valid_actions)
+
     # Iterate over children nodes and recursively call cfr
     for a, action in enumerate(valid_actions):
-        next_board, next_annotation = transition(board, annotation, action)
-        action_result = get_result(board, annotation, action, next_board, next_annotation)
-        next_blue_infostate, next_blue_infostate_annotation = private_observation(blue_infostate, blue_infostate_annotation, action, action_result)
-        next_red_infostate, next_red_infostate_annotation = private_observation(red_infostate, red_infostate_annotation, action, action_result)
+        next_board, next_annotation = transition(board=board, 
+                                                 annotation=annotation, action=action)
+        action_result = get_result(board=board, annotation=annotation, 
+                                   move=action, new_board=next_board, 
+                                   new_annotation=next_annotation)
+        next_blue_infostate, next_blue_infostate_annotation = private_observation(
+            old_infostate=blue_infostate, 
+            old_infostate_annotation=blue_infostate_annotation, 
+            action=action, result=action_result)
+        next_red_infostate, next_red_infostate_annotation = private_observation(
+            old_infostate=red_infostate, 
+            old_infostate_annotation=red_infostate_annotation, 
+            action=action, result=action_result)
         
         if player == BLUE:
             probability_A = red_probability * strategy[a]
@@ -986,15 +1024,22 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
         if save_game:
             move_history.append(move)
 
-        new_board, new_annotation = transition(board, annotation, move)
+        new_board, new_annotation = transition(board=board, 
+                                               annotation=annotation, 
+                                               action=move)
         # Examine move result (WIN, LOSS, TIE)
-        result = get_result(board, annotation, move, new_board, new_annotation)
+        result = get_result(board=board, annotation=annotation, move=move, 
+                            new_board=new_board, new_annotation=new_annotation)
 
         # Update infostates
         blue_infostate, blue_infostate_annotation = private_observation(
-            blue_infostate, blue_infostate_annotation, move, result)
+            old_infostate=blue_infostate, 
+            old_infostate_annotation=blue_infostate_annotation, 
+            action=move, result=result)
         red_infostate, red_infostate_annotation = private_observation(
-            red_infostate, red_infostate_annotation, move, result
+            old_infostate=red_infostate, 
+            old_infostate_annotation=red_infostate_annotation, 
+            action=move, result=result
         )
 
         # Update PBS

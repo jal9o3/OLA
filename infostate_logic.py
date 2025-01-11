@@ -65,7 +65,7 @@ def value_permutation_sample(pieces, n):
     
     return seen
 
-def get_result(board, annotation, move, new_board, new_annotation):
+def get_result(move, new_board, new_annotation, board=None, annotation=None):
     # Perform matrix subtraction on old and new boards
     board_diff = [[board[i][j] - new_board[i][j] for j in range(len(board[0]))] for i in range(len(board))]
 
@@ -165,7 +165,7 @@ def infostate_board(infostate, infostate_annotation):
     
     return board, [infostate_annotation[CURRENT_PLAYER], 0, 0]
 
-def private_observation(old_infostate, old_infostate_annotation, action, result, update_probabilities=False):
+def private_observation(action, result, update_probabilities=False, old_infostate=None, old_infostate_annotation=None):
     # start_time = time.time()
     
     logger = logging.getLogger(__name__)
