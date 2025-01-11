@@ -434,10 +434,10 @@ def max_in_range(matrix, square_a, square_b, min_val, max_val):
 # Obtained policies can be stored in a dictionary via the policy_table parameter
 # Set policy_table to None if policies will not be stored
 def cfr(board, annotation, blue_probability, red_probability,
-        current_depth, max_depth, turn_number=0, traverser=0,
+        blue_infostate, blue_infostate_annotation,
+        red_infostate, red_infostate_annotation,
+        current_depth=0, max_depth=0, turn_number=0, traverser=0,
         policy_table=None, utility_table=None,
-        blue_infostate=None, blue_infostate_annotation=None,
-        red_infostate=None, red_infostate_annotation=None,
         utility_model=None, policy_model=None):
 
     logger = logging.getLogger(__name__)
@@ -524,31 +524,79 @@ def cfr(board, annotation, blue_probability, red_probability,
     # Initialize node utility
     node_util = 0
 
-    # Map CFR to list of children nodes
+    
     # Create a partial transition function that sets the current state as constant
-    # transition_current = partial(transition, board=board, annotation=annotation)
-    # # Map transition function to all valid actions to obtain the children nodes
-    # next_states = list(map(transition_current, valid_actions))
-    # # Create a partial result function, current state as constant
-    # get_result_current = partial(get_result, board=board, annotation=annotation)
-    # # Map result function to the children nodes
-    # results = list(map(get_result_current, valid_actions, 
-    #               [state[0] for state in next_states], 
-    #               [state[1] for state in next_states]))
-    # # Create partial private observation functions for BLUE and RED
-    # blue_private_observation = partial(private_observation, 
-    #                                    old_infostate=blue_infostate, 
-    #                                    old_infostate_annotation=blue_infostate_annotation)
-    # red_private_observation = partial(private_observation,
-    #                                   old_infostate=red_infostate,
-    #                                   old_infostate_annotation=red_infostate_annotation)
-    # # Map private observation functions to infostates and actions and results
-    # next_blue_infostates = list(map(blue_private_observation, valid_actions, results))
-    # next_red_infostates = list(map(red_private_observation, valid_actions, results))
+    transition_current = partial(transition, board=board, annotation=annotation)
+    # Map transition function to all valid actions to obtain the children nodes
+    next_states = list(map(transition_current, valid_actions))
+    # Create a partial result function, current state as constant
+    get_result_current = partial(get_result, board=board, annotation=annotation)
+    # Map result function to the children nodes
+    action_results = list(map(get_result_current, valid_actions, 
+                  [state[0] for state in next_states], 
+                  [state[1] for state in next_states]))
+    # Create partial private observation functions for BLUE and RED
+    blue_private_observation = partial(private_observation, 
+                                       old_infostate=blue_infostate, 
+                                       old_infostate_annotation=blue_infostate_annotation)
+    red_private_observation = partial(private_observation,
+                                      old_infostate=red_infostate,
+                                      old_infostate_annotation=red_infostate_annotation)
+    # Map private observation functions to infostates and actions and results
+    next_blue_infostates = list(map(blue_private_observation, valid_actions, 
+                                    action_results))
+    next_red_infostates = list(map(red_private_observation, valid_actions, 
+                                   action_results))
+
+    # Assign probabilities
+    def assign_probabilities(strategy_weight, player=None):
+        if player == BLUE:
+            # probability_A = red_probability * strategy[a]
+            probability_A = red_probability * strategy_weight
+            probability_B = blue_probability
+        else:
+            probability_A = blue_probability
+            # probability_B = red_probability * strategy[a]
+            probability_B = red_probability * strategy_weight
+        
+        return probability_A, probability_B
+    
+    # Create partial probability assignment function
+    assign_probabilities_current = partial(assign_probabilities, player=player)
+
+    # Map probability assignment function to list of strategy probabilities
+    probabilities = list(map(assign_probabilities_current, strategy))
+
+    # Create partial CFR that sets some parameters constant
+    cfr_current = partial(cfr, 
+                          current_depth=current_depth + 1, max_depth=max_depth,
+                          traverser=traverser, 
+                          policy_table=policy_table, utility_table=utility_table,
+                          utility_model=utility_model, policy_model=policy_model)    
+    # Map CFR to list of children nodes
+    results = list(map(cfr_current, 
+                       [state[0] for state in next_states], 
+                       [state[1] for state in next_states],
+                       [probability_pair[0] for probability_pair in probabilities],
+                       [probability_pair[1] for probability_pair in probabilities],
+                       [infostate[0] for infostate in next_blue_infostates],
+                       [infostate[1] for infostate in next_blue_infostates],
+                       [infostate[0] for infostate in next_red_infostates],
+                       [infostate[1] for infostate in next_red_infostates]))
+
+    # Obtain the calculated utilities for each child node
+    util = [-(result[0]) for result in results]
+    
+    # Weighting by strategy
+    def weight_utility(strategy_weight, utility_value):
+        return strategy_weight*utility_value
+    
+    node_sub_utilities = list(map(weight_utility, util, strategy))
+    node_util = sum(node_sub_utilities)
 
 
-    # print(valid_actions)
-
+    # ORIGINAL IMPLEMENTATION OF RECURSION:
+    """
     # Iterate over children nodes and recursively call cfr
     for a, action in enumerate(valid_actions):
         next_board, next_annotation = transition(board=board, 
@@ -574,18 +622,17 @@ def cfr(board, annotation, blue_probability, red_probability,
 
         result = cfr(next_board, next_annotation,
                     probability_A, probability_B,
-                    current_depth + 1, max_depth, 
+                    next_blue_infostate, next_blue_infostate_annotation,
+                    next_red_infostate, next_red_infostate_annotation,
+                    current_depth=current_depth + 1, max_depth=max_depth, 
                     traverser=traverser, 
                     policy_table=policy_table, utility_table=utility_table,
-                    blue_infostate=next_blue_infostate, 
-                    blue_infostate_annotation=next_blue_infostate_annotation,
-                    red_infostate=next_red_infostate, 
-                    red_infostate_annotation=next_red_infostate_annotation,
                     utility_model=utility_model, policy_model=policy_model)
         util[a] = -(result[0])
 
         # Calculate node utility
         node_util += strategy[a] * util[a]
+    """
 
     # Calculate regret sum
     for a, action in enumerate(valid_actions):
@@ -619,10 +666,10 @@ def cfr(board, annotation, blue_probability, red_probability,
 
 # Training loop for CFR
 def cfr_train(board, annotation, blue_probability, red_probability,
-              current_depth, max_depth, turn_number=0, iterations=10,
+              blue_infostate, blue_infostate_annotation,
+              red_infostate, red_infostate_annotation,
+              current_depth=0, max_depth=0, turn_number=0, iterations=10,
               policy_table=None, utility_table=None,
-              blue_infostate=None, blue_infostate_annotation=None,
-              red_infostate=None, red_infostate_annotation=None,
               utility_model=None, policy_model=None):
 
     start_time = time.time()
@@ -644,11 +691,14 @@ def cfr_train(board, annotation, blue_probability, red_probability,
 
     for i in range(iterations):
         # start_time = time.time()
-        util, strategy = cfr(board, annotation, blue_probability, red_probability,
-            current_depth, max_depth, policy_table=policy_table, utility_table=utility_table,
-            blue_infostate=blue_infostate, blue_infostate_annotation=blue_infostate_annotation,
-            red_infostate=red_infostate, red_infostate_annotation=red_infostate_annotation,
-            utility_model=utility_model, policy_model=policy_model, turn_number=turn_number)
+        util, strategy = cfr(board, annotation, 
+                             blue_probability, red_probability,
+                             blue_infostate, blue_infostate_annotation,
+                             red_infostate, red_infostate_annotation,
+                             current_depth=current_depth, max_depth=max_depth, 
+                             policy_table=policy_table, utility_table=utility_table,
+                             utility_model=utility_model, policy_model=policy_model, 
+                             turn_number=turn_number)
         # end_time = time.time()
         # print(f"Runtime: {end_time - start_time} seconds")
 
@@ -956,11 +1006,10 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
                     c_annotation[i] = annotation[i]
 
             if not c:
-                util, strategy = cfr(board, annotation, 1, 1, 0, max_depth,
-                                     blue_infostate=blue_infostate,
-                                     blue_infostate_annotation=blue_infostate_annotation,
-                                     red_infostate=red_infostate,
-                                     red_infostate_annotation=red_infostate_annotation,
+                util, strategy = cfr(board, annotation, 1, 1,
+                                     blue_infostate, blue_infostate_annotation,
+                                     red_infostate, red_infostate_annotation, 
+                                     current_depth=0, max_depth=max_depth,
                                      policy_table=policy_table,
                                      utility_table=utility_table,
                                      utility_model=utility_model,
