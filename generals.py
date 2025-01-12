@@ -631,7 +631,7 @@ def cfr(board, annotation, blue_probability, red_probability,
     for a, action in enumerate(valid_actions):
         logger.setLevel(logging.DEBUG)
         regret = util[a] - node_util
-        regret_sum[a] += (red_probability if player == BLUE else blue_probability) * regret
+        regret_sum[a] += (red_probability if player == RED else blue_probability) * regret
 
     # Normalize regret sum to find strategy for this node
     strategy = [0.0 for i in range(actions_n)]
