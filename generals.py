@@ -221,10 +221,10 @@ def reward_estimate(board, annotation):
     utility = 0
 
     # Estimated rewards for features
-    capture_reward = 0.008
-    push_reward = 0.00375
+    capture_reward = 0.08
+    push_reward = 0.08
     # flag_safety_reward = 0.02 # 0.30/(ROWS - 1 + COLUMNS - 1)
-    flag_safety_reward = 0.009 # Often difference between winning and losing!
+    flag_safety_reward = 0.09 # Often difference between winning and losing!
 
     total_firepower = 145 # Sum of rankings of all pieces in an army
     blue_firepower = 0
