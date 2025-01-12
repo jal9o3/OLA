@@ -863,6 +863,9 @@ def print_board(board, color=False, pov=WORLD):
 def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
                   cfr=cfr, c=False, save_game=True,
                   utility_model=None, policy_model=None):
+    
+    start_time = time.time()
+    
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
 
@@ -1116,6 +1119,9 @@ def simulate_game(blue_formation, red_formation, mode=CFR_VS_CFR,
         with open('history/latest_game.json', 'w') as file:
             json.dump(game_data, file)
     print(f"Average branching: {round(moves_N/t)}")
+
+    end_time = time.time()
+    print(f"Game Runtime: {((end_time - start_time)/60):.2f} minutes")
 
     return policy_table, utility_table, t
 
