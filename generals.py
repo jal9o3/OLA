@@ -661,7 +661,7 @@ def cfr(board, annotation, blue_probability, red_probability,
 def cfr_train(board, annotation, blue_probability, red_probability,
               blue_infostate, blue_infostate_annotation,
               red_infostate, red_infostate_annotation,
-              current_depth=0, max_depth=0, turn_number=0, iterations=3,
+              current_depth=0, max_depth=0, turn_number=0, iterations=7,
               policy_table=None, utility_table=None,
               utility_model=None, policy_model=None):
 
