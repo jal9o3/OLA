@@ -137,7 +137,7 @@ class MatchSimulator:
 
         return combined_matrix
 
-    def prepare_starting_matrices(self):
+    def setup_arbiter_matrix(self):
         blue_player_matrix, red_player_matrix = (
             MatchSimulator._prepare_empty_matrices()
         )
@@ -151,14 +151,14 @@ class MatchSimulator:
         arbiter_matrix = MatchSimulator._combine_player_matrices(
             blue_player_matrix, red_player_matrix)
         
-        return arbiter_matrix, blue_player_matrix, red_player_matrix
+        return arbiter_matrix
 
     def start(self):
         logger = logging.getLogger(__name__)
         logger.setLevel(logging.DEBUG)
 
-        arbiter_matrix, blue_player_matrix, red_player_matrix = (
-            self.prepare_starting_matrices()
+        arbiter_matrix = (
+            self.setup_arbiter_matrix()
         )
         # TODO: set other arbiter board attributes (formerly annotation)
         
