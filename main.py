@@ -13,7 +13,8 @@ def main():
     blue_formation = list(Player.get_random_formation(Ranking.SORTED_FORMATION))
     red_formation = list(Player.get_random_formation(Ranking.SORTED_FORMATION))
 
-    simulator = MatchSimulator(blue_formation, red_formation, 1, False)
+    simulator = MatchSimulator(blue_formation, red_formation, mode=1, 
+                               save_data=False)
     print(simulator.start())
 
 if __name__ == "__main__":
