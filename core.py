@@ -98,15 +98,12 @@ class MatchSimulator:
         self.save_data = save_data
 
     def _prepare_empty_matrices():
-        arbiter_matrix = get_blank_matrix(rows=Board.ROWS, 
-                                                columns=Board.COLUMNS)
-        # TODO: set other arbiter board attributes (formerly annotation)
         blue_player_matrix = get_blank_matrix(rows=Board.ROWS, 
                                              columns=Board.COLUMNS)
         red_player_matrix = get_blank_matrix(rows=Board.ROWS, 
                                             columns=Board.COLUMNS)
         
-        return arbiter_matrix, blue_player_matrix, red_player_matrix
+        return blue_player_matrix, red_player_matrix
 
     def _place_formation_on_matrix(formation: list[int], 
                                    matrix: list[list[int]]):
@@ -144,7 +141,7 @@ class MatchSimulator:
         logger = logging.getLogger(__name__)
         logger.setLevel(logging.DEBUG)
 
-        arbiter_matrix, blue_player_matrix, red_player_matrix = (
+        blue_player_matrix, red_player_matrix = (
             MatchSimulator._prepare_empty_matrices()
         )
         blue_player_matrix = MatchSimulator._place_formation_on_matrix(
@@ -156,6 +153,7 @@ class MatchSimulator:
         
         arbiter_matrix = MatchSimulator._combine_player_matrices(
             blue_player_matrix, red_player_matrix)
+        # TODO: set other arbiter board attributes (formerly annotation)
         
         return arbiter_matrix
         
