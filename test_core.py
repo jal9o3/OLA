@@ -1,4 +1,3 @@
-# test_player.py
 import unittest
 from core import Player, get_random_permutation
 from unittest.mock import patch
@@ -14,6 +13,19 @@ class TestPlayer(unittest.TestCase):
         piece_list = [1, 2, 3]
         self.assertEqual(Player.get_random_formation(piece_list), [2, 1, 3])
         mock_get_random_permutation.assert_called_once_with(piece_list)
+
+class TestGetRandomPermutation(unittest.TestCase):
+    @patch('core.random.shuffle')
+    def test_get_random_permutation(self, mock_shuffle):
+        elements = [1, 2, 3]
+        mock_shuffle.side_effect = lambda x: x.reverse()  # Mocking shuffle to reverse the list
+        result = get_random_permutation(elements)
+        self.assertEqual(result, (3, 2, 1))
+
+    def test_get_random_permutation_type(self):
+        elements = [1, 2, 3]
+        result = get_random_permutation(elements)
+        self.assertIsInstance(result, tuple)
 
 if __name__ == '__main__':
     unittest.main()
