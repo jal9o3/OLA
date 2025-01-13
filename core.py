@@ -157,12 +157,11 @@ class MatchSimulator:
         logger = logging.getLogger(__name__)
         logger.setLevel(logging.DEBUG)
 
-        arbiter_matrix = (
-            self.setup_arbiter_matrix()
-        )
-        # TODO: set other arbiter board attributes (formerly annotation)
+        arbiter_board = Board(self.setup_arbiter_matrix(), 
+                              player_to_move=Board.BLUE_PLAYER, 
+                              blue_anticipating=False, red_anticipating=False)
         
-        return arbiter_matrix
+        return arbiter_board.matrix
         
 
         
