@@ -120,20 +120,28 @@ class Board:
 
 class MatchSimulator:
     """
-    The mode parameter sets whether humans or algorithms choose the moves for
-    either or both sides of the simulated match (see constant definitions 
-    above).
+    This class handles the simulation of a GG match.
     """
     # TODO: Define the mode designations
 
     def __init__(self, blue_formation: list[int], red_formation: list[int],
                  mode: int, save_data: bool):
+        """
+        The mode parameter sets whether a human or an algorithm chooses the 
+        moves for either or both sides of the simulated match (see constant 
+        definitions in the (to be implemented) class).
+        """
         self.blue_formation = blue_formation
         self.red_formation = red_formation
         self.mode = mode
         self.save_data = save_data
 
+    @staticmethod
     def _prepare_empty_matrices():
+        """
+        This helper method prepares a blank starting matrix for each of the two
+        players.
+        """
         blue_player_matrix = get_blank_matrix(rows=Board.ROWS,
                                               columns=Board.COLUMNS)
         red_player_matrix = get_blank_matrix(rows=Board.ROWS,
@@ -141,12 +149,14 @@ class MatchSimulator:
 
         return blue_player_matrix, red_player_matrix
 
+    @staticmethod
     def _place_formation_on_matrix(formation: list[int],
                                    matrix: list[list[int]]):
-        # The formation is placed on the first three rows of the player's side
-        # of the board. The formation list must enumerate from the furthermost
-        # row (from the player's perspective) to the nearest, from left to
-        # right.
+        """
+        The formation is placed on the first three rows of the player's side
+        of the board. The formation list must enumerate from the furthermost
+        row (from the player's perspective) to the nearest, from left to right.
+        """
         i = 0
         for row in range(Board.ROWS-3, Board.ROWS):
             for column in range(Board.COLUMNS):
@@ -156,7 +166,12 @@ class MatchSimulator:
 
         return matrix
 
+    @staticmethod
     def _flip_matrix(matrix: list[list[int]]):
+        """
+        This helper method is for placing the blue pieces in their starting
+        positions from (0,0) to (2,8).
+        """
         # Flip the matrix upside down
         matrix = matrix[::-1]
         # Flip each blue board row left to right
@@ -164,8 +179,13 @@ class MatchSimulator:
 
         return matrix
 
+    @staticmethod
     def _combine_player_matrices(blue_player_matrix: list[list[int]],
                                  red_player_matrix: list[list[int]]):
+        """
+        This helper method is for joining the blue and red starting matrices
+        into one matrix for the arbiter.
+        """
         combined_matrix = [
             [blue_player_matrix[i][j] + red_player_matrix[i][j] for j in range(
                 Board.COLUMNS)] for i in range(Board.ROWS)
@@ -174,6 +194,10 @@ class MatchSimulator:
         return combined_matrix
 
     def setup_arbiter_matrix(self):
+        """
+        This instance method takes the provided blue and red formations and
+        returns a matrix for the arbiter that represents the initial game state.
+        """
         blue_player_matrix, red_player_matrix = (
             MatchSimulator._prepare_empty_matrices()
         )
@@ -190,6 +214,10 @@ class MatchSimulator:
         return arbiter_matrix
 
     def start(self):
+        """
+        This method simulates a GG match in the terminal, either taking input
+        from humans or choosing moves based on an algorithm or even both.
+        """
         logger = logging.getLogger(__name__)
         logger.setLevel(logging.DEBUG)
 
