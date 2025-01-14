@@ -1,9 +1,15 @@
+"""
+This is the entry point for interacting with the OLA engine.
+"""
 import logging
 
-from core import Player, Board, Ranking, MatchSimulator
+from core import Player, Ranking, MatchSimulator
 
 
 def main():
+    """
+    Here we simulate a GG match.
+    """
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
 
