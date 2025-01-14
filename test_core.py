@@ -93,6 +93,7 @@ class TestBoard(unittest.TestCase):
     arbiter, and handles all related functionality such as managing clashes
     between opposing pieces.
     """
+
     def test_blue_player(self):
         """
         Check if affiliations are correctly identified for the blue ranking 
@@ -100,7 +101,7 @@ class TestBoard(unittest.TestCase):
         """
         for piece in range(1, 16):
             self.assertEqual(Board.get_piece_affiliation(piece), Player.BLUE)
-    
+
     def test_red_player(self):
         """
         Check if affiliations are correctly identified for the red ranking 
@@ -108,6 +109,7 @@ class TestBoard(unittest.TestCase):
         """
         for piece in range(16, 31):
             self.assertEqual(Board.get_piece_affiliation(piece), Player.RED)
+
 
 if __name__ == '__main__':
     unittest.main()
