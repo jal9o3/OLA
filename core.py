@@ -92,6 +92,17 @@ class Ranking:
         pass
 
 
+class POV:
+    """
+    This class contains constants for the possible board printing POVs.
+    """
+
+    WORLD = 0
+
+    def __init__(self):
+        pass
+
+
 class Board:
     """
     This class represents the current game state as seen by the arbiter.
@@ -117,6 +128,79 @@ class Board:
         self.blue_anticipating = blue_anticipating
         self.red_anticipating = red_anticipating
 
+    @staticmethod
+    def _get_colored(text: str, color_code: str):
+        """
+        This helper method attaches a color code to the provided text string to
+        embue the text with color when printed in the terminal.
+        """
+        return f"\033[{color_code}m{text:2}\033[0m"
+
+    @staticmethod
+    def _print_number_of_row(i: int):
+        """
+        This is for labelling the row with its number.
+        """
+        print(f"{i:2}", end='  ')
+
+    @staticmethod
+    def _print_square(contents: str):
+        """
+        This is for printing the contents of a square on the board.
+        """
+        print(contents, end=' ')
+
+    @staticmethod
+    def _print_blank_square():
+        """
+        This is for representing blank squares in the printed board.
+        """
+        Board._print_square(" -")
+
+    @staticmethod
+    def _print_column_numbers():
+        """
+        This is for printing the column numbers below the board.
+        """
+        print("\n    ", end='')
+        for k in range(Board.COLUMNS):
+            print(f"{k:2}", end=' ')
+
+    def print_state(self, pov: int, with_color: bool):
+        """
+        This displays the state represented by the Board instance to the 
+        terminal. The pov parameter determines which of the pieces have visible
+        rank numbers (see constant definitions in POV class). The with_color 
+        parameter determines whether the blue and red flags are colored 
+        appropriately for easier identification. 
+        """
+        logger = logging.getLogger(__name__)
+        logger.setLevel(logging.DEBUG)
+
+        # Color codes for printing colored text
+        blue = "34"
+        red = "31"
+
+        # Shorthands for piece rankings
+        blue_flag = Ranking.FLAG
+        red_flag = Ranking.FLAG + Ranking.SPY  # See Ranking class for details
+
+        print()  # Starts the board to a new line
+        for i, row in enumerate(self.matrix):
+            self._print_number_of_row(i)
+            for entry in row:
+                if entry == Ranking.BLANK:
+                    self._print_blank_square()
+                elif entry == blue_flag and pov == POV.WORLD and with_color:
+                    self._print_square(self._get_colored(entry, blue))
+                elif entry == red_flag and pov == POV.WORLD and with_color:
+                    self._print_square(self._get_colored(entry, red))
+                elif pov == POV.WORLD:
+                    self._print_square(f"{entry:2}")  # Prints two chars wide
+            print()  # Moves the next row to the next line
+        self._print_column_numbers()
+        print()  # Move the output after the board to a new line
+
 
 class MatchSimulator:
     """
@@ -132,9 +216,22 @@ class MatchSimulator:
         definitions in the (to be implemented) class).
         """
         self.blue_formation = blue_formation
-        self.red_formation = red_formation
+        self.red_formation = self._place_in_red_range(red_formation)
         self.mode = mode
         self.save_data = save_data
+
+    @staticmethod
+    def _place_in_red_range(formation: list[int]):
+        """
+        This is to ensure that the red player's pieces are between 16 and 30 
+        (see Ranking class for details).
+        """
+
+        for i, entry in enumerate(formation):
+            if entry > Ranking.BLANK:
+                formation[i] += Ranking.SPY
+
+        return formation
 
     @staticmethod
     def _prepare_empty_matrices():
@@ -207,7 +304,6 @@ class MatchSimulator:
         blue_player_matrix = MatchSimulator._flip_matrix(blue_player_matrix)
         red_player_matrix = MatchSimulator._place_formation_on_matrix(
             self.red_formation, red_player_matrix)
-
         arbiter_matrix = MatchSimulator._combine_player_matrices(
             blue_player_matrix, red_player_matrix)
 
@@ -225,4 +321,4 @@ class MatchSimulator:
                               player_to_move=Player.BLUE,
                               blue_anticipating=False, red_anticipating=False)
 
-        return arbiter_board.matrix
+        arbiter_board.print_state(POV.WORLD, with_color=True)
