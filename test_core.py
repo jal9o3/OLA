@@ -13,6 +13,7 @@ class TestPlayer(unittest.TestCase):
     This tests the Player class, which handles player related functions such as
     sampling valid formations.
     """
+
     def test_initial_color(self):
         """
         This makes sure that the Player instance can be designated to a valid
