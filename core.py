@@ -280,6 +280,7 @@ class MatchSimulator:
         self.red_formation = self._place_in_red_range(red_formation)
         self.mode = mode
         self.save_data = save_data
+        self.game_history = []
 
     @staticmethod
     def _place_in_red_range(formation: list[int]):
@@ -381,5 +382,6 @@ class MatchSimulator:
         arbiter_board = Board(self.setup_arbiter_matrix(),
                               player_to_move=Player.BLUE,
                               blue_anticipating=False, red_anticipating=False)
-
         arbiter_board.print_state(POV.WORLD, with_color=True)
+        if self.save_data:
+            self.game_history.append(arbiter_board.matrix)
