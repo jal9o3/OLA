@@ -65,10 +65,6 @@ class Player:
             formation = Player.get_random_formation(piece_list)
             front_line = formation[:Board.COLUMNS]
 
-        logger.setLevel(logging.DEBUG)
-        logger.debug(formation)
-        logger.debug(formation.index(Ranking.FLAG))
-
         return formation
 
 

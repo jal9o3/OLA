@@ -5,7 +5,7 @@ operational throughout continued development.
 import unittest
 from unittest.mock import patch
 
-from core import Player, Ranking, get_random_permutation, get_blank_matrix
+from core import Board, Player, Ranking, get_random_permutation, get_blank_matrix
 
 
 class TestGetRandomPermutation(unittest.TestCase):
@@ -83,6 +83,19 @@ class TestPlayer(unittest.TestCase):
         piece_list = Ranking.SORTED_FORMATION
         self.assertEqual(len(Player.get_random_formation(
             piece_list)), len(Ranking.SORTED_FORMATION))
+
+    def test_get_sensible_random_formation(self):
+        """
+        This ensures that the sampled random formation does not assign the flag
+        in the front line.
+        """
+        piece_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]  # example piece list
+
+        formation = Player.get_sensible_random_formation(piece_list)
+        front_line = formation[:Board.COLUMNS]
+
+        self.assertNotIn(
+            Ranking.FLAG, front_line, "FLAG should not be in the front line")
 
 
 if __name__ == '__main__':
