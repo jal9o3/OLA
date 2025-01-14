@@ -110,6 +110,19 @@ class TestBoard(unittest.TestCase):
         for piece in range(16, 31):
             self.assertEqual(Board.get_piece_affiliation(piece), Player.RED)
 
+    def test_label_piece_by_team(self):
+        """
+        This tests if the pieces are correctly labelled according to their rank
+        and team.
+        """
+        for piece in range(1, 16):
+            expected = "b" + get_hex_uppercase_string(piece)
+            self.assertEqual(Board.label_piece_by_team(piece), expected)
+
+        for piece in range(16, 31):
+            expected = "r" + get_hex_uppercase_string(piece - Ranking.SPY)
+            self.assertEqual(Board.label_piece_by_team(piece), expected)
+
 
 if __name__ == '__main__':
     unittest.main()

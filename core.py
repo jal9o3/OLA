@@ -203,7 +203,7 @@ class Board:
         """
         This identifies whether a piece belongs to the blue or red player.
         """
-        affiliation = None # Initialize affiliation variable
+        affiliation = None # Initialize return value
         if Ranking.FLAG <= piece <= Ranking.SPY:
             affiliation = Player.BLUE
         elif Ranking.FLAG + Ranking.SPY <= piece <= Ranking.SPY*2:
@@ -211,7 +211,7 @@ class Board:
         return affiliation
 
     @staticmethod
-    def _label_piece_by_team(piece: int):
+    def label_piece_by_team(piece: int):
         """
         This method returns the string that will be printed in the terminal to
         represent the piece.
@@ -248,7 +248,7 @@ class Board:
         for i, row in enumerate(self.matrix):
             self._print_number_of_row(i)
             for entry in row:
-                labelled_entry = self._label_piece_by_team(piece=entry)
+                labelled_entry = self.label_piece_by_team(piece=entry)
                 if entry == Ranking.BLANK:
                     self._print_blank_square()
                 elif entry == blue_flag and pov == POV.WORLD and with_color:
