@@ -26,6 +26,15 @@ def get_blank_matrix(rows: int, columns: int):
     return [[Ranking.BLANK for col in range(columns)] for row in range(rows)]
 
 
+def get_hex_uppercase_string(number: int):
+    """
+    This is for saving print space for pieces with ranks above 9.
+    """
+    hex_string = hex(number)[2:].upper()
+
+    return hex_string
+
+
 class Player:
     """
     This class handles player related functionality such as sampling valid
@@ -189,6 +198,31 @@ class Board:
         for k in range(Board.COLUMNS):
             print(f"{k:2}", end=' ')
 
+    @staticmethod
+    def _get_piece_affiliation(piece: int):
+        """
+        This identifies whether a piece belongs to the blue or red player.
+        """
+        if Ranking.FLAG <= piece <= Ranking.SPY:
+            return Player.BLUE
+        elif Ranking.FLAG + Ranking.SPY <= piece <= Ranking.SPY*2:
+            return Player.RED
+
+    @staticmethod
+    def _label_piece_by_team(piece: int):
+        """
+        This method returns the string that will be printed in the terminal to
+        represent the piece.
+        """
+        labelled_piece = None  # Initialize return value
+        if Board._get_piece_affiliation(piece) == Player.BLUE:
+            labelled_piece = "b" + get_hex_uppercase_string(piece)
+        elif Board._get_piece_affiliation(piece) == Player.RED:
+            labelled_piece = "r" + get_hex_uppercase_string(
+                piece - Ranking.SPY)
+
+        return labelled_piece
+
     def print_state(self, pov: int, with_color: bool):
         """
         This displays the state represented by the Board instance to the 
@@ -212,14 +246,16 @@ class Board:
         for i, row in enumerate(self.matrix):
             self._print_number_of_row(i)
             for entry in row:
+                labelled_entry = self._label_piece_by_team(piece=entry)
                 if entry == Ranking.BLANK:
                     self._print_blank_square()
                 elif entry == blue_flag and pov == POV.WORLD and with_color:
-                    self._print_square(self._get_colored(entry, blue))
+                    self._print_square(self._get_colored(labelled_entry, blue))
                 elif entry == red_flag and pov == POV.WORLD and with_color:
-                    self._print_square(self._get_colored(entry, red))
+                    self._print_square(self._get_colored(labelled_entry, red))
                 elif pov == POV.WORLD:
-                    self._print_square(f"{entry:2}")  # Prints two chars wide
+                    # Prints two chars wide
+                    self._print_square(f"{labelled_entry:2}")
             print()  # Moves the next row to the next line
         self._print_column_numbers()
         print()  # Move the output after the board to a new line

@@ -5,7 +5,10 @@ operational throughout continued development.
 import unittest
 from unittest.mock import patch
 
-from core import Board, Player, Ranking, get_random_permutation, get_blank_matrix
+from core import (
+    Board, Player, Ranking, get_random_permutation, get_blank_matrix,
+    get_hex_uppercase_string
+)
 
 
 class TestGetRandomPermutation(unittest.TestCase):
@@ -57,6 +60,31 @@ class TestGetBlankMatrix(unittest.TestCase):
         matrix = get_blank_matrix(rows, columns)
         for row in matrix:
             self.assertTrue(all(entry == 0 for entry in row))
+
+
+class TestHexUppercaseString(unittest.TestCase):
+    """
+    This test ensures that the conversion to uppercase hex representations
+    works as expected.
+    """
+
+    def test_single_digit(self):
+        """
+        Try to convert the number 5.
+        """
+        self.assertEqual(get_hex_uppercase_string(5), '5')
+
+    def test_double_digit(self):
+        """
+        Try to convert the number 15.
+        """
+        self.assertEqual(get_hex_uppercase_string(15), 'F')
+
+    def test_triple_digit(self):
+        """
+        Try to convert the number 255.
+        """
+        self.assertEqual(get_hex_uppercase_string(255), 'FF')
 
 
 class TestPlayer(unittest.TestCase):
