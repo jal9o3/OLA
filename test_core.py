@@ -5,33 +5,7 @@ operational throughout continued development.
 import unittest
 from unittest.mock import patch
 
-from core import Player, Ranking, get_random_permutation
-
-
-class TestPlayer(unittest.TestCase):
-    """
-    This tests the Player class, which handles player related functions such as
-    sampling valid formations.
-    """
-
-    def test_initial_color(self):
-        """
-        This makes sure that the Player instance can be designated to a valid
-        side.
-        """
-        player = Player(Player.BLUE)
-        self.assertEqual(player.color, Player.BLUE)
-        player = Player(Player.RED)
-        self.assertEqual(player.color, Player.RED)
-
-    def test_get_random_formation(self):
-        """
-        This test makes sure that the random formation has the required number 
-        of pieces and spaces.
-        """
-        piece_list = Ranking.SORTED_FORMATION
-        self.assertEqual(len(Player.get_random_formation(
-            piece_list)), len(Ranking.SORTED_FORMATION))
+from core import Player, Ranking, get_random_permutation, get_blank_matrix
 
 
 class TestGetRandomPermutation(unittest.TestCase):
@@ -58,6 +32,57 @@ class TestGetRandomPermutation(unittest.TestCase):
         result = get_random_permutation(elements)
         self.assertIsInstance(result, tuple)
         self.assertEqual(len(elements), len(result))
+
+
+class TestGetBlankMatrix(unittest.TestCase):
+    """
+    This tests whether the get_blank_matrix function returns a matrix with the
+    correct number of rows and columns, with all entries set to zero.
+    """
+
+    def test_matrix_size(self):
+        """
+        This checks the number of rows and columns.
+        """
+        rows, columns = 3, 4
+        matrix = get_blank_matrix(rows, columns)
+        self.assertEqual(len(matrix), rows)
+        self.assertTrue(all(len(row) == columns for row in matrix))
+
+    def test_matrix_entries(self):
+        """
+        This checks whether all the entries are set to zero.    `
+        """
+        rows, columns = 3, 4
+        matrix = get_blank_matrix(rows, columns)
+        for row in matrix:
+            self.assertTrue(all(entry == 0 for entry in row))
+
+
+class TestPlayer(unittest.TestCase):
+    """
+    This tests the Player class, which handles player related functions such as
+    sampling valid formations.
+    """
+
+    def test_initial_color(self):
+        """
+        This makes sure that the Player instance can be designated to a valid
+        side.
+        """
+        player = Player(Player.BLUE)
+        self.assertEqual(player.color, Player.BLUE)
+        player = Player(Player.RED)
+        self.assertEqual(player.color, Player.RED)
+
+    def test_get_random_formation(self):
+        """
+        This test makes sure that the random formation has the required number 
+        of pieces and spaces.
+        """
+        piece_list = Ranking.SORTED_FORMATION
+        self.assertEqual(len(Player.get_random_formation(
+            piece_list)), len(Ranking.SORTED_FORMATION))
 
 
 if __name__ == '__main__':
