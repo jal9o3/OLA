@@ -34,8 +34,14 @@ class TestPlayer(unittest.TestCase):
 
 
 class TestGetRandomPermutation(unittest.TestCase):
+    """
+    This tests the function that shuffles any given list.
+    """
     @patch('core.random.shuffle')
     def test_get_random_permutation(self, mock_shuffle):
+        """
+        This test simulates a random shuffle.
+        """
         elements = [1, 2, 3]
         # Mocking shuffle to reverse the list
         mock_shuffle.side_effect = lambda x: x.reverse()
@@ -43,9 +49,14 @@ class TestGetRandomPermutation(unittest.TestCase):
         self.assertEqual(result, (3, 2, 1))
 
     def test_get_random_permutation_type(self):
+        """
+        This test verifies that the function returns a result of the proper
+        type and length.
+        """
         elements = [1, 2, 3]
         result = get_random_permutation(elements)
         self.assertIsInstance(result, tuple)
+        self.assertEqual(len(elements), len(result))
 
 
 if __name__ == '__main__':
