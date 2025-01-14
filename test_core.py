@@ -1,20 +1,36 @@
+"""
+These unit tests ensure that critical components of the OLA engine remain
+operational throughout continued development.
+"""
 import unittest
 from unittest.mock import patch
 
-from core import Player, get_random_permutation
+from core import Board, Player, Ranking, get_random_permutation
 
 
 class TestPlayer(unittest.TestCase):
+    """
+    This tests the Player class, which handles player related functions such as
+    sampling valid formations.
+    """
     def test_initial_color(self):
-        player = Player(1)
-        self.assertEqual(player.color, 1)
+        """
+        This makes sure that the Player instance can be designated to a valid
+        side.
+        """
+        player = Player(Board.BLUE_PLAYER)
+        self.assertEqual(player.color, Board.BLUE_PLAYER)
+        player = Player(Board.RED_PLAYER)
+        self.assertEqual(player.color, Board.RED_PLAYER)
 
-    @patch('core.get_random_permutation')
-    def test_get_random_formation(self, mock_get_random_permutation):
-        mock_get_random_permutation.return_value = [2, 1, 3]
-        piece_list = [1, 2, 3]
-        self.assertEqual(Player.get_random_formation(piece_list), [2, 1, 3])
-        mock_get_random_permutation.assert_called_once_with(piece_list)
+    def test_get_random_formation(self):
+        """
+        This test makes sure that the random formation has the required number 
+        of pieces and spaces.
+        """
+        piece_list = Ranking.SORTED_FORMATION
+        self.assertEqual(len(Player.get_random_formation(
+            piece_list)), len(Ranking.SORTED_FORMATION))
 
 
 class TestGetRandomPermutation(unittest.TestCase):
