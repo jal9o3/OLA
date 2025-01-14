@@ -1,8 +1,14 @@
+"""
+Here we define the core components of the OLA engine.
+"""
 import random
 import logging
 
 
 def get_random_permutation(elements: list):
+    """
+    This function receives a list and returns a shuffled copy of it.
+    """
     list_to_shuffle = elements[:]
     random.shuffle(list_to_shuffle)
     shuffled_list = list_to_shuffle
@@ -10,14 +16,28 @@ def get_random_permutation(elements: list):
 
 
 def get_blank_matrix(rows: int, columns: int):
+    """
+    This function returns a matrix of the specified number of rows and columns,
+    with all entries set to 0 (aka BLANK).
+    """
     return [[Ranking.BLANK for col in range(columns)] for row in range(rows)]
 
 
 class Player:
+    """
+    This class handles player related functionality such as sampling valid
+    formations.
+    """
     def __init__(self, color: int):
         self.color = color
 
+    @staticmethod
     def get_random_formation(piece_list: list[int]):
+        """
+        This function receives a list of pieces and returns a shuffled copy of
+        it. Ideally, it should receive Ranking.SORTED_FORMATION to obtain a
+        random valid formation.
+        """
         return get_random_permutation(piece_list)
 
 
