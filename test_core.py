@@ -5,7 +5,7 @@ operational throughout continued development.
 import unittest
 from unittest.mock import patch
 
-from core import Board, Player, Ranking, get_random_permutation
+from core import Player, Ranking, get_random_permutation
 
 
 class TestPlayer(unittest.TestCase):
@@ -19,10 +19,10 @@ class TestPlayer(unittest.TestCase):
         This makes sure that the Player instance can be designated to a valid
         side.
         """
-        player = Player(Board.BLUE_PLAYER)
-        self.assertEqual(player.color, Board.BLUE_PLAYER)
-        player = Player(Board.RED_PLAYER)
-        self.assertEqual(player.color, Board.RED_PLAYER)
+        player = Player(Player.BLUE)
+        self.assertEqual(player.color, Player.BLUE)
+        player = Player(Player.RED)
+        self.assertEqual(player.color, Player.RED)
 
     def test_get_random_formation(self):
         """

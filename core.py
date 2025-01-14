@@ -28,6 +28,10 @@ class Player:
     This class handles player related functionality such as sampling valid
     formations.
     """
+
+    BLUE = 1
+    RED = 2
+
     def __init__(self, color: int):
         self.color = color
 
@@ -42,6 +46,9 @@ class Player:
 
 
 class Ranking:
+    """
+    This class contains constants related to the designation of piece rankings.
+    """
     # PIECE RANKINGS
     BLANK = 0
     # To reduce the dimensionality of the board matrix,
@@ -86,25 +93,25 @@ class Ranking:
 
 
 class Board:
+    """
+    This class represents the current game state as seen by the arbiter.
+    """
     ROWS = 8
     COLUMNS = 9
 
-    BLUE_PLAYER = 1
-    RED_PLAYER = 2
-
-    """
-    The matrix is simply a representation of the current piece positions and
-    ranks, with the rank designations being 0 to 30 (see constant definitions 
-    in the Ranking class).
-
-    blue_anticipating is True when the blue player's flag has reached the eighth
-    row, but can still be challenged in the next turn by a red piece. If red 
-    fails to challenge, blue wins. The same logic applies to red_anticipating,
-    except that the red player's flag must reach the first row.
-    """
-
     def __init__(self, matrix: list[list[int]], player_to_move: int,
                  blue_anticipating: bool, red_anticipating: bool):
+        """
+        The matrix is simply a representation of the current piece positions and
+        ranks, with the rank designations being 0 to 30 (see constant 
+        definitions in the Ranking class).
+
+        blue_anticipating is True when the blue player's flag has reached the 
+        eighth row, but can still be challenged in the next turn by a red piece. 
+        If red fails to challenge, blue wins. The same logic applies to 
+        red_anticipating, except that the red player's flag must reach the 
+        first row.
+        """
         self.matrix = matrix
         self.player_to_move = player_to_move
         self.blue_anticipating = blue_anticipating
@@ -187,7 +194,7 @@ class MatchSimulator:
         logger.setLevel(logging.DEBUG)
 
         arbiter_board = Board(self.setup_arbiter_matrix(),
-                              player_to_move=Board.BLUE_PLAYER,
+                              player_to_move=Player.BLUE,
                               blue_anticipating=False, red_anticipating=False)
 
         return arbiter_board.matrix
