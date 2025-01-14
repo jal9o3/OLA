@@ -124,10 +124,6 @@ class TestBoard(unittest.TestCase):
             self.assertEqual(Board.label_piece_by_team(piece), expected)
 
 
-if __name__ == '__main__':
-    unittest.main()
-
-
 class TestPlayer(unittest.TestCase):
     """
     This tests the Player class, which handles player related functions such as
