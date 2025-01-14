@@ -199,14 +199,16 @@ class Board:
             print(f"{k:2}", end=' ')
 
     @staticmethod
-    def _get_piece_affiliation(piece: int):
+    def get_piece_affiliation(piece: int):
         """
         This identifies whether a piece belongs to the blue or red player.
         """
+        affiliation = None # Initialize affiliation variable
         if Ranking.FLAG <= piece <= Ranking.SPY:
-            return Player.BLUE
+            affiliation = Player.BLUE
         elif Ranking.FLAG + Ranking.SPY <= piece <= Ranking.SPY*2:
-            return Player.RED
+            affiliation = Player.RED
+        return affiliation
 
     @staticmethod
     def _label_piece_by_team(piece: int):
@@ -215,9 +217,9 @@ class Board:
         represent the piece.
         """
         labelled_piece = None  # Initialize return value
-        if Board._get_piece_affiliation(piece) == Player.BLUE:
+        if Board.get_piece_affiliation(piece) == Player.BLUE:
             labelled_piece = "b" + get_hex_uppercase_string(piece)
-        elif Board._get_piece_affiliation(piece) == Player.RED:
+        elif Board.get_piece_affiliation(piece) == Player.RED:
             labelled_piece = "r" + get_hex_uppercase_string(
                 piece - Ranking.SPY)
 

@@ -87,6 +87,32 @@ class TestHexUppercaseString(unittest.TestCase):
         self.assertEqual(get_hex_uppercase_string(255), 'FF')
 
 
+class TestBoard(unittest.TestCase):
+    """
+    This tests the Board class, which represents the game state as seen by the
+    arbiter, and handles all related functionality such as managing clashes
+    between opposing pieces.
+    """
+    def test_blue_player(self):
+        """
+        Check if affiliations are correctly identified for the blue ranking 
+        range.
+        """
+        for piece in range(1, 16):
+            self.assertEqual(Board.get_piece_affiliation(piece), Player.BLUE)
+    
+    def test_red_player(self):
+        """
+        Check if affiliations are correctly identified for the red ranking 
+        range.
+        """
+        for piece in range(16, 31):
+            self.assertEqual(Board.get_piece_affiliation(piece), Player.RED)
+
+if __name__ == '__main__':
+    unittest.main()
+
+
 class TestPlayer(unittest.TestCase):
     """
     This tests the Player class, which handles player related functions such as
