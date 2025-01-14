@@ -23,7 +23,7 @@ def main():
 
     match_simulator = MatchSimulator(blue_formation, red_formation, mode=1,
                                      save_data=False)
-    print(match_simulator.start())
+    match_simulator.start()
 
 
 if __name__ == "__main__":
