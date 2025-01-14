@@ -15,10 +15,12 @@ def main():
 
     # Sample random formations
     blue_formation = list(
-        Player.get_random_formation(piece_list=Ranking.SORTED_FORMATION)
+        Player.get_sensible_random_formation(
+            piece_list=Ranking.SORTED_FORMATION)
     )
     red_formation = list(
-        Player.get_random_formation(piece_list=Ranking.SORTED_FORMATION)
+        Player.get_sensible_random_formation(
+            piece_list=Ranking.SORTED_FORMATION)
     )
 
     match_simulator = MatchSimulator(blue_formation, red_formation, mode=1,

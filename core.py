@@ -4,6 +4,9 @@ Here we define the core components of the OLA engine.
 import random
 import logging
 
+# Configure the logging
+logging.basicConfig(level=logging.WARNING)
+
 
 def get_random_permutation(elements: list):
     """
@@ -43,6 +46,30 @@ class Player:
         random valid formation.
         """
         return get_random_permutation(piece_list)
+
+    @staticmethod
+    def get_sensible_random_formation(piece_list: list[int]):
+        """
+        This is to ensure that the sampled random formation does not have the
+        flag in the front line.
+        """
+        logger = logging.getLogger(__name__)
+        logger.setLevel(logging.DEBUG)
+
+        # Sample initial formation
+        formation = Player.get_random_formation(piece_list)
+        # The front line pieces are listed first in the formation
+        front_line = formation[:Board.COLUMNS]
+
+        while Ranking.FLAG in front_line:
+            formation = Player.get_random_formation(piece_list)
+            front_line = formation[:Board.COLUMNS]
+
+        logger.setLevel(logging.DEBUG)
+        logger.debug(formation)
+        logger.debug(formation.index(Ranking.FLAG))
+
+        return formation
 
 
 class Ranking:
