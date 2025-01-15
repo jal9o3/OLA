@@ -262,6 +262,168 @@ class Board:
         self._print_column_numbers()
         print()  # Move the output after the board to a new line
 
+    def piece_not_found(self, piece: int):
+        """
+        This checks if a particular piece is missing in the board's matrix.
+        """
+        return not any(piece in row for row in self.matrix)
+
+    @staticmethod
+    def has_at_edge_column(column_number: int):
+        """
+        This checks if a given column number is at the leftmost or rightmost
+        edge of the board.
+        """
+        leftmost_column_number = 0
+        rightmost_column_number = Board.COLUMNS - 1
+        return (column_number in (leftmost_column_number,
+                                  rightmost_column_number))
+
+    @staticmethod
+    def is_vacant_to_the_right(column_number: int, end_row: list[int]):
+        """
+        Checks if the square to the right of a given column in a row is blank.
+        """
+        go_right = 1
+        return not end_row[column_number + go_right]
+
+    @staticmethod
+    def is_vacant_to_the_left(column_number: int, end_row: list[int]):
+        """
+        Checks if the square to the left of a given column in a row is blank.
+        """
+        go_left = -1
+        return not end_row[column_number + go_left]
+
+    @staticmethod
+    def has_none_adjacent(column_number: int, end_row: list[int]):
+        """
+        This checks if a given column in a row has blank square neighbors.
+        """
+        logger = logging.getLogger(__name__)
+        logger.setLevel(logging.DEBUG)
+
+        has_adjacent = False  # Initialize return value
+        leftmost_column_number = 0
+        rightmost_column_number = Board.COLUMNS - 1
+        if (Board.has_at_edge_column(column_number)
+            and column_number == leftmost_column_number
+                and Board.is_vacant_to_the_right(column_number, end_row)):
+            has_adjacent = True
+        elif (Board.has_at_edge_column(column_number)
+              and column_number == rightmost_column_number
+              and Board.is_vacant_to_the_left(column_number, end_row)):
+            has_adjacent = True
+        elif (not Board.has_at_edge_column(column_number)
+              and Board.is_vacant_to_the_right(column_number, end_row)
+              and Board.is_vacant_to_the_left(column_number, end_row)):
+            has_adjacent = True
+
+        return has_adjacent
+
+    def is_terminal(self):
+        """
+        This determines if the current game state is a terminal state.
+        """
+        logger = logging.getLogger(__name__)
+        logger.setLevel(logging.DEBUG)
+
+        terminality = False  # Initialize return value
+
+        blue_flag = Ranking.FLAG
+        red_flag = Ranking.FLAG + Ranking.SPY  # See ranking class for details
+        if (self.piece_not_found(blue_flag) or self.piece_not_found(red_flag)):
+            terminality = True
+            return terminality
+
+        blue_end = 0
+        red_end = -1  # The first and last row numbers, respectively
+        if blue_flag in self.matrix[red_end] and self.blue_anticipating:
+            # If the flag has already survived a turn in the board's red end
+            terminality = True
+        elif blue_flag in self.matrix[red_end] and not self.blue_anticipating:
+            flag_column_number = self.matrix[red_end].index(blue_flag)
+            terminality = Board.has_none_adjacent(flag_column_number,
+                                                  self.matrix[red_end])
+        elif red_flag in self.matrix[blue_end] and self.red_anticipating:
+            # If the flag has already survived a turn in the board's blue end
+            terminality = True
+        elif red_flag in self.matrix[blue_end] and not self.red_anticipating:
+            terminality = Board.has_none_adjacent(flag_column_number,
+                                                  self.matrix[blue_end])
+        else:
+            terminality = False
+
+        return terminality
+
+    @staticmethod
+    def get_piece_range(player: int):
+        """
+        This obtains the highest and lowest possible value representations of a 
+        player's pieces.
+        """
+        blue_flag, blue_spy, red_flag, red_spy = (
+            Ranking.FLAG, Ranking.SPY, Ranking.FLAG + Ranking.SPY,
+            Ranking.SPY*2
+        )  # See Ranking class for details
+        piece_range_start, piece_range_end = (
+            (blue_flag, blue_spy) if player == Player.BLUE
+            else (red_flag, red_spy)
+        )
+
+        return piece_range_start, piece_range_end
+
+    def not_allied_piece(self, entry: int):
+        """
+        This checks if the given board entry does not contain an allied piece of
+        the player to move.
+        """
+        piece_range_start, piece_range_end = Board.get_piece_range(
+            self.player_to_move)
+        return (
+            not (piece_range_start <= entry <= piece_range_end)
+            or entry == Ranking.BLANK)
+
+    def is_allied_piece(self, entry: int):
+        """
+        This checks if the given board entry contains an allied piece of the 
+        player to move.
+        """
+        return not self.not_allied_piece(entry)
+
+    def actions(self):
+        """
+        This enumerates the possible actions of the player to move in the game
+        state.
+        """
+        logger = logging.getLogger(__name__)
+        logger.setLevel(logging.DEBUG)
+
+        valid_actions = []  # Initialize return value
+        bottom_row_number = leftmost_column_number = 0
+
+        for row in range(Board.ROWS):
+            for column in range(Board.COLUMNS):
+                entry = self.matrix[row][column]
+                # Define change in coordinates per direction (up, down, left,
+                # and right)
+                directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+                for direction in directions:
+                    direction_row, direction_column = direction
+                    new_row, new_column = (row + direction_row,
+                                           column + direction_column)
+
+                    if (bottom_row_number <= new_row < Board.ROWS
+                        and leftmost_column_number <= new_column < Board.COLUMNS
+                        and entry != Ranking.BLANK
+                        and self.is_allied_piece(entry)
+                            and self.not_allied_piece(
+                                self.matrix[new_row][new_column])):
+                        valid_actions.append(
+                            f"{row}{column}{new_row}{new_column}")
+
+        return valid_actions
+
 
 class MatchSimulator:
     """
@@ -382,6 +544,15 @@ class MatchSimulator:
         arbiter_board = Board(self.setup_arbiter_matrix(),
                               player_to_move=Player.BLUE,
                               blue_anticipating=False, red_anticipating=False)
-        arbiter_board.print_state(POV.WORLD, with_color=True)
         if self.save_data:
             self.game_history.append(arbiter_board.matrix)
+
+        # TODO: Initialize initial blue and red infostates
+
+        turn_number = 1
+        branches_encountered = 0
+        while not arbiter_board.is_terminal():
+            print(f"Turn Number: {turn_number}")
+            arbiter_board.print_state(POV.WORLD, with_color=True)
+            print(f"Player to move: {arbiter_board.player_to_move}")
+            valid_actions = arbiter_board.actions()
