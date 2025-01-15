@@ -203,7 +203,7 @@ class Board:
         """
         This identifies whether a piece belongs to the blue or red player.
         """
-        affiliation = None # Initialize return value
+        affiliation = None  # Initialize return value
         if Ranking.FLAG <= piece <= Ranking.SPY:
             affiliation = Player.BLUE
         elif Ranking.FLAG + Ranking.SPY <= piece <= Ranking.SPY*2:
