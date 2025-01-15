@@ -123,6 +123,26 @@ class TestBoard(unittest.TestCase):
             expected = "r" + get_hex_uppercase_string(piece - Ranking.SPY)
             self.assertEqual(Board.label_piece_by_team(piece), expected)
 
+    def test_transition(self):
+        """
+        This verifies that the next state can be determined given the current
+        state and a given (presumably) valid action.
+        """
+        sample_state_matrix = [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 2, 0, 0],
+            [0, 0, 15, 0, 0, 9, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 23, 0, 29, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 16, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        ]
+        sample_board = Board(sample_state_matrix, player_to_move=Player.BLUE,
+                             blue_anticipating=False, red_anticipating=False)
+        next_board = sample_board.transition(action="2535")
+        self.assertEqual(next_board.matrix[3][5], 9)  # Verify piece movement
+
 
 class TestPlayer(unittest.TestCase):
     """
