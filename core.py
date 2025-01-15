@@ -510,7 +510,7 @@ class Board:
             new_matrix = self.arbitrate_challenge(new_matrix, action,
                                                   piece_to_move, red_piece_value
                                                   )
-        elif self.player_to_move == Player.BLUE:
+        elif self.player_to_move == Player.RED:
             red_piece_value = piece_to_move - Ranking.SPY
             new_matrix = self.arbitrate_challenge(new_matrix, action,
                                                   red_piece_value,

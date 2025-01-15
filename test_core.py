@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 from core import (
     Board, Player, Ranking, get_random_permutation, get_blank_matrix,
-    get_hex_uppercase_string
+    get_hex_uppercase_string, POV
 )
 
 
@@ -142,6 +142,18 @@ class TestBoard(unittest.TestCase):
                              blue_anticipating=False, red_anticipating=False)
         next_board = sample_board.transition(action="2535")
         self.assertEqual(next_board.matrix[3][5], 9)  # Verify piece movement
+        
+        sample_state_matrix[3][2] = 16 # Place red flag in front of blue spy
+        sample_state_matrix[6][5] = Ranking.BLANK # Remove former red flag
+        sample_board = Board(sample_state_matrix, player_to_move=Player.BLUE,
+                             blue_anticipating=False, red_anticipating=False)
+        next_board = sample_board.transition(action="2232")
+        self.assertTrue(next_board.is_terminal())
+        sample_board = Board(sample_state_matrix, player_to_move=Player.RED,
+                             blue_anticipating=False, red_anticipating=False)
+        next_board = sample_board.transition(action="3222")
+        self.assertTrue(next_board.is_terminal())
+
 
 
 class TestPlayer(unittest.TestCase):
