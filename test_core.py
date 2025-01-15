@@ -145,7 +145,6 @@ class TestBoard(unittest.TestCase):
                              blue_anticipating=False, red_anticipating=False)
         self.assertEqual(len(sample_board.actions()), 12)
 
-
     def test_transition(self):
         """
         This verifies that the next state can be determined given the current
