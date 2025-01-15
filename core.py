@@ -493,9 +493,6 @@ class Board:
         This determines the next state based on the current state and the chosen
         action.
         """
-        logger = logging.getLogger(__name__)
-        logger.setLevel(logging.DEBUG)
-
         # Initialize the new game state
         new_matrix = copy.deepcopy(self.matrix)
         starting_row, starting_column, destination_row, destination_column = (
@@ -519,18 +516,17 @@ class Board:
                                                   red_piece_value,
                                                   destination_square
                                                   )
-        blue_end, red_end, blue_flag, red_flag = (0, -1, Ranking.FLAG,
-                                                  Ranking.FLAG + Ranking.SPY)
+        blue_flag, red_flag = Ranking.FLAG, Ranking.FLAG + Ranking.SPY
         next_to_move = (
             Player.RED if self.player_to_move == Player.BLUE else Player.BLUE)
         blue_anticipating = red_anticipating = False
-        if (blue_flag in self.matrix[red_end] and not self.blue_anticipating
+        if (blue_flag in self.matrix[-1] and not self.blue_anticipating
             and not self.has_none_adjacent(
-                self.matrix[red_end].index(blue_flag), self.matrix[red_end])):
+                self.matrix[-1].index(blue_flag), self.matrix[-1])):
             blue_anticipating = True
-        elif (red_flag in self.matrix[blue_end] and not self.red_anticipating
+        elif (red_flag in self.matrix[0] and not self.red_anticipating
               and not self.has_none_adjacent(
-                  self.matrix[blue_end].index(red_flag), self.matrix[blue_end]
+                  self.matrix[0].index(0), self.matrix[0]
         )):
             red_anticipating = True
 
@@ -678,4 +674,3 @@ class MatchSimulator:
 
             arbiter_board = arbiter_board.transition(action)
             turn_number += 1
-            time.sleep(0.5)
