@@ -642,6 +642,12 @@ class MatchSimulator:
 
         return arbiter_matrix
 
+    @staticmethod
+    def _print_game_status(turn_number: int, arbiter_board: Board):
+        print(f"Turn Number: {turn_number}")
+        arbiter_board.print_state(POV.WORLD, with_color=True)
+        print(f"Player to move: {arbiter_board.player_to_move}")
+
     def start(self):
         """
         This method simulates a GG match in the terminal, either taking input
@@ -661,9 +667,7 @@ class MatchSimulator:
         turn_number = 1
         branches_encountered = 0
         while not arbiter_board.is_terminal():
-            print(f"Turn Number: {turn_number}")
-            arbiter_board.print_state(POV.WORLD, with_color=True)
-            print(f"Player to move: {arbiter_board.player_to_move}")
+            MatchSimulator._print_game_status(turn_number, arbiter_board)
             valid_actions = arbiter_board.actions()
             branches_encountered += len(valid_actions)
             action = random.choice(valid_actions)
