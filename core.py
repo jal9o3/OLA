@@ -3,6 +3,8 @@ Here we define the core components of the OLA engine.
 """
 import random
 import logging
+import copy
+import time
 
 # Configure the logging
 logging.basicConfig(level=logging.WARNING)
@@ -424,6 +426,117 @@ class Board:
 
         return valid_actions
 
+    @staticmethod
+    def remove_piece(board_matrix: list[list[int]], row: int,
+                     column: int):
+        """
+        This removes a piece entry from a given board matrix.
+        """
+        board_matrix[row][column] = Ranking.BLANK
+
+        return board_matrix
+
+    def arbitrate_challenge(self, new_matrix: list[list[int]],
+                            action: str, challenger_value: int,
+                            target_value: int):
+        """
+        This reflects challenge moves in a new matrix by arbitrating the
+        relative values of the opposing pieces.
+        """
+        starting_row, starting_column, destination_row, destination_column = (
+            map(int, action)
+        )
+        if challenger_value == Ranking.PRIVATE and target_value == Ranking.SPY:
+            new_matrix = self.move_piece_in_matrix_copy(new_matrix, action)
+            return new_matrix
+
+        if challenger_value == Ranking.SPY and target_value == Ranking.PRIVATE:
+            new_matrix = self.remove_piece(new_matrix, starting_row,
+                                           starting_column)
+            return new_matrix
+
+        if (challenger_value > target_value
+            or (challenger_value == Ranking.FLAG
+                and target_value == Ranking.FLAG)):
+            new_matrix = self.move_piece_in_matrix_copy(new_matrix, action)
+        elif challenger_value < target_value:
+            new_matrix = self.remove_piece(new_matrix, starting_row,
+                                           starting_column)
+            return new_matrix
+        elif challenger_value == target_value:
+            new_matrix = self.remove_piece(new_matrix, starting_row,
+                                           starting_column)
+            new_matrix = self.remove_piece(new_matrix, destination_row,
+                                           destination_column)
+            return new_matrix
+
+        return new_matrix
+
+    def move_piece_in_matrix_copy(self, new_matrix: list[list[int]],
+                                  action: str):
+        """
+        This reflects non-challenge moves in a new matrix by moving the selected
+        piece in the presumably unoccupied destination square.
+        """
+
+        starting_row, starting_column, destination_row, destination_column = (
+            map(int, action)
+        )
+        new_matrix[destination_row][destination_column] = (
+            self.matrix[starting_row][starting_column])
+        new_matrix[starting_row][starting_column] = Ranking.BLANK
+
+        return new_matrix
+
+    def transition(self, action: str):
+        """
+        This determines the next state based on the current state and the chosen
+        action.
+        """
+        logger = logging.getLogger(__name__)
+        logger.setLevel(logging.DEBUG)
+
+        # Initialize the new game state
+        new_matrix = copy.deepcopy(self.matrix)
+        starting_row, starting_column, destination_row, destination_column = (
+            map(int, action)
+        )
+        piece_to_move = self.matrix[starting_row][starting_column]
+        destination_square = self.matrix[destination_row][destination_column]
+
+        if destination_square == Ranking.BLANK:
+            new_matrix = self.move_piece_in_matrix_copy(new_matrix, action)
+        elif self.player_to_move == Player.BLUE:
+            # The Ranking.SPY offset allows the flattening of the board state
+            # (see Ranking class for more details).
+            red_piece_value = destination_square - Ranking.SPY
+            new_matrix = self.arbitrate_challenge(new_matrix, action,
+                                                  piece_to_move, red_piece_value
+                                                  )
+        elif self.player_to_move == Player.BLUE:
+            red_piece_value = piece_to_move - Ranking.SPY
+            new_matrix = self.arbitrate_challenge(new_matrix, action,
+                                                  red_piece_value,
+                                                  destination_square
+                                                  )
+        blue_end, red_end, blue_flag, red_flag = (0, -1, Ranking.FLAG,
+                                                  Ranking.FLAG + Ranking.SPY)
+        next_to_move = (
+            Player.RED if self.player_to_move == Player.BLUE else Player.BLUE)
+        blue_anticipating = red_anticipating = False
+        if (blue_flag in self.matrix[red_end] and not self.blue_anticipating
+            and not self.has_none_adjacent(
+                self.matrix[red_end].index(blue_flag), self.matrix[red_end])):
+            blue_anticipating = True
+        elif (red_flag in self.matrix[blue_end] and not self.red_anticipating
+              and not self.has_none_adjacent(
+                  self.matrix[blue_end].index(red_flag), self.matrix[blue_end]
+        )):
+            red_anticipating = True
+
+        return Board(new_matrix, next_to_move, blue_anticipating,
+                     red_anticipating)
+
 
 class MatchSimulator:
     """
@@ -556,3 +669,13 @@ class MatchSimulator:
             arbiter_board.print_state(POV.WORLD, with_color=True)
             print(f"Player to move: {arbiter_board.player_to_move}")
             valid_actions = arbiter_board.actions()
+            branches_encountered += len(valid_actions)
+            action = random.choice(valid_actions)
+            print(f"Chosen Move: {action}")
+
+            if self.save_data:
+                self.game_history.append(action)
+
+            arbiter_board = arbiter_board.transition(action)
+            turn_number += 1
+            time.sleep(0.5)
