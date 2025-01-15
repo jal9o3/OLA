@@ -3,7 +3,7 @@ This is the entry point for interacting with the OLA engine.
 """
 import logging
 
-from core import Player, Ranking, MatchSimulator
+from core import Player, Ranking, Controller, MatchSimulator
 
 
 def main():
@@ -23,7 +23,9 @@ def main():
             piece_list=Ranking.SORTED_FORMATION)
     )
 
-    match_simulator = MatchSimulator(blue_formation, red_formation, mode=1,
+    match_simulator = MatchSimulator(blue_formation, red_formation,
+                                     controllers=[
+                                         Controller.HUMAN, Controller.RANDOM],
                                      save_data=False)
     match_simulator.start()
 

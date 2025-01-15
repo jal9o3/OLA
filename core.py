@@ -534,22 +534,37 @@ class Board:
                      red_anticipating)
 
 
+class Controller:
+    """
+    This class contains constants that set a MatchSimulator's input (game move)
+    sources.
+    """
+    HUMAN = 0
+    RANDOM = 1
+
+    def __init__(self):
+        pass
+
+
 class MatchSimulator:
     """
     This class handles the simulation of a GG match.
     """
-    # TODO: Define the mode designations
 
     def __init__(self, blue_formation: list[int], red_formation: list[int],
-                 mode: int, save_data: bool):
+                 controllers: list[int], save_data: bool):
         """
-        The mode parameter sets whether a human or an algorithm chooses the 
-        moves for either or both sides of the simulated match (see constant 
-        definitions in the (to be implemented) class).
+        The controllers parameter sets whether a human or an algorithm chooses 
+        the moves for either or both sides of the simulated match (see constant 
+        definitions in the Controller class).
         """
         self.blue_formation = blue_formation
         self.red_formation = self._place_in_red_range(red_formation)
-        self.mode = mode
+        self.player_one = controllers[0]
+        self.player_two = controllers[1]
+        self.player_one_color = random.choice([Player.BLUE, Player.RED])
+        self.player_two_color = Player.RED if (
+            self.player_one_color == Player.BLUE) else Player.BLUE
         self.save_data = save_data
         self.game_history = []
 
@@ -648,6 +663,18 @@ class MatchSimulator:
         arbiter_board.print_state(POV.WORLD, with_color=True)
         print(f"Player to move: {arbiter_board.player_to_move}")
 
+    def get_current_controller(self, board: Board):
+        """
+        This determines the source of moves of the MatchSimulator.
+        """
+        current_controller = None  # Initialize return value
+        if board.player_to_move == self.player_one_color:
+            current_controller = self.player_one
+        elif board.player_to_move == self.player_two_color:
+            current_controller = self.player_two
+
+        return current_controller
+
     def start(self):
         """
         This method simulates a GG match in the terminal, either taking input
@@ -670,7 +697,14 @@ class MatchSimulator:
             MatchSimulator._print_game_status(turn_number, arbiter_board)
             valid_actions = arbiter_board.actions()
             branches_encountered += len(valid_actions)
-            action = random.choice(valid_actions)
+
+            action = ""  # Initialize variable for storing chosen action
+            if self.get_current_controller(arbiter_board) == Controller.RANDOM:
+                action = random.choice(valid_actions)
+            elif self.get_current_controller(arbiter_board) == Controller.HUMAN:
+                while action not in valid_actions:
+                    action = input("Choose a move: ")
+
             print(f"Chosen Move: {action}")
 
             if self.save_data:
