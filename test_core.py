@@ -141,6 +141,9 @@ class TestBoard(unittest.TestCase):
         sample_board = Board(sample_state_matrix, player_to_move=Player.BLUE,
                              blue_anticipating=False, red_anticipating=False)
         self.assertEqual(len(sample_board.actions()), 16)
+        sample_board = Board(sample_state_matrix, player_to_move=Player.RED,
+                             blue_anticipating=False, red_anticipating=False)
+        self.assertEqual(len(sample_board.actions()), 12)
 
 
     def test_transition(self):
