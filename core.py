@@ -619,9 +619,9 @@ class Infostate(Board):
                 lowest_possible, highest_possible = entry[0], entry[1]
                 # Label both sides of the entry range
                 labelled_entry = [self.label_piece_by_team(
-                    piece=highest_possible),
+                    piece=lowest_possible),
                     self.label_piece_by_team(
-                    piece=lowest_possible)]
+                    piece=highest_possible)]
                 if (highest_possible == Ranking.BLANK
                         and lowest_possible == Ranking.BLANK):
                     self._print_blank_square()
