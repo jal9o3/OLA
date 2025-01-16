@@ -132,6 +132,8 @@ class POV:
     """
 
     WORLD = 0
+    BLUE = 1
+    RED = 2
 
     def __init__(self):
         pass
@@ -568,7 +570,9 @@ class Board:
         )
         # Deduce the result based on the difference matrix' characteristics
         if (matrix_difference[
-                starting_row][starting_column] == challenger_value):
+                starting_row][starting_column] == challenger_value
+                and matrix_difference[
+                    destination_row][destination_column] == target_value):
             result = Result.DRAW
         elif (matrix_difference[
             starting_row][starting_column] == challenger_value
@@ -601,8 +605,8 @@ class Board:
         transition function.
         """
         matrix_difference = [
-            [self.matrix[i][j] - new_board[i][j] for j in range(Board.COLUMNS)]
-            for i in range(Board.ROWS)]
+            [self.matrix[i][j] - new_board.matrix[i][j]
+             for j in range(Board.COLUMNS)] for i in range(Board.ROWS)]
         starting_row, starting_column, destination_row, destination_column = (
             map(int, action)
         )
@@ -704,11 +708,42 @@ class Infostate(Board):
         self._print_column_numbers()
         print()  # Move the output after the board to a new line
 
-    def transition(self, action: str, result: int):
+    def transition(self, action: str, *args, **kwargs):
         """
         This obtains the next infostate based on the provided action and the
         result classification of the action.
         """
+        _ = args  # Stops the linter's complaints
+        new_matrix = copy.deepcopy(self.matrix)
+        starting_row, starting_column, destination_row, destination_column = (
+            map(int, action)
+        )
+        # Find the action's result in the keyword arguments
+        result = None
+        if 'result' in kwargs:
+            result = kwargs['result']
+        else:
+            return None
+
+        if result == Result.DRAW:
+            new_matrix[starting_row][starting_column] = [
+                Ranking.BLANK, Ranking.BLANK]
+            new_matrix[destination_row][destination_column] = [
+                Ranking.BLANK, Ranking.BLANK
+            ]
+        elif result in [Result.WIN, Result.OCCUPY]:
+            new_matrix[destination_row][destination_column] = self.matrix[
+                starting_row][starting_column]
+            new_matrix[starting_row][starting_column] = [
+                Ranking.BLANK, Ranking.BLANK]
+        elif result == Result.LOSS:
+            new_matrix[starting_row][starting_column] = [
+                Ranking.BLANK, Ranking.BLANK]
+
+        return Infostate(owner=self.owner, matrix=new_matrix, player_to_move=(
+            Player.RED if self.player_to_move == Player.BLUE else Player.BLUE),
+            anticipation_probabilities=[0.0, 0.0]
+        )
 
 
 class Controller:
@@ -728,21 +763,22 @@ class MatchSimulator:
     This class handles the simulation of a GG match.
     """
 
-    def __init__(self, blue_formation: list[int], red_formation: list[int],
-                 controllers: list[int], save_data: bool):
+    def __init__(self, formations: list[list[int]], controllers: list[int],
+                 save_data: bool, pov: int):
         """
         The controllers parameter sets whether a human or an algorithm chooses 
         the moves for either or both sides of the simulated match (see constant 
         definitions in the Controller class).
         """
-        self.blue_formation = blue_formation
-        self.red_formation = self._place_in_red_range(red_formation)
+        self.blue_formation = formations[0]
+        self.red_formation = self._place_in_red_range(formations[1])
         self.controllers = controllers
         self.player_one_color = random.choice([Player.BLUE, Player.RED])
         self.player_two_color = Player.RED if (
             self.player_one_color == Player.BLUE) else Player.BLUE
         self.save_data = save_data
         self.game_history = []
+        self.pov = pov
 
     @staticmethod
     def _place_in_red_range(formation: list[int]):
@@ -834,9 +870,18 @@ class MatchSimulator:
         return arbiter_matrix
 
     @staticmethod
-    def _print_game_status(turn_number: int, arbiter_board: Board):
+    def _print_game_status(turn_number: int, arbiter_board: Board,
+                           infostates: list[Infostate], pov: int):
+
+        blue_infostate, red_infostate = infostates[0], infostates[1]
         print(f"Turn Number: {turn_number}")
-        arbiter_board.print_state(POV.WORLD, with_color=True)
+        if pov == POV.WORLD:
+            arbiter_board.print_state(POV.WORLD, with_color=True)
+        elif pov == POV.BLUE:
+            blue_infostate.print_state()
+        elif pov == POV.RED:
+            red_infostate.print_state()
+
         print(f"Player to move: {arbiter_board.player_to_move}")
 
     def get_current_controller(self, board: Board):
@@ -873,7 +918,11 @@ class MatchSimulator:
         turn_number = 1
         branches_encountered = 0
         while not arbiter_board.is_terminal():
-            MatchSimulator._print_game_status(turn_number, arbiter_board)
+            MatchSimulator._print_game_status(turn_number, arbiter_board,
+                                              infostates=[
+                                                  blue_infostate,
+                                                  red_infostate],
+                                              pov=self.pov)
             valid_actions = arbiter_board.actions()
             branches_encountered += len(valid_actions)
 
@@ -890,5 +939,9 @@ class MatchSimulator:
                 self.game_history.append(action)
 
             new_arbiter_board = arbiter_board.transition(action)
+            result = arbiter_board.classify_action_result(action,
+                                                          new_arbiter_board)
+            blue_infostate = blue_infostate.transition(action, result=result)
+            red_infostate = red_infostate.transition(action, result=result)
             arbiter_board = new_arbiter_board
             turn_number += 1
