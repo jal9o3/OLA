@@ -603,7 +603,7 @@ class Infostate(Board):
         for k in range(Board.COLUMNS):
             print(f"{k:7}", end=' ')
 
-    def print_state(self, with_color: bool, *args, **kwargs):
+    def print_state(self, *args, **kwargs):
         """
         This prints the state as seen by either of the players in the terminal.
         """
@@ -793,7 +793,8 @@ class MatchSimulator:
         red_infostate = Infostate.at_start(owner=Player.RED,
                                            board=arbiter_board)
 
-        blue_infostate.print_state(with_color=True)
+        blue_infostate.print_state()
+        red_infostate.print_state()
         return
 
         turn_number = 1
