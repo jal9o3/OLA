@@ -534,6 +534,51 @@ class Board:
                      red_anticipating)
 
 
+class Infostate(Board):
+    """
+    This represents the current game state as seen by either of the players.
+    """
+
+    def __init__(self, owner: int, matrix: list[list[list[int]]],
+                 player_to_move: int, anticipation_probabilities=list[float]):
+        """
+        In contrast to the arbiter board, the infostate must belong to strictly
+        one of the players, and the values of blue_anticipating and
+        red_anticipating are probabilities between 0 and 1.
+        """
+        super().__init__(matrix=None, player_to_move=player_to_move,
+                         blue_anticipating=False, red_anticipating=False)
+        self.owner = owner
+        # Override attributes of the parent board class
+        self.matrix = matrix
+        self.blue_anticipating = anticipation_probabilities[0]
+        self.red_anticipating = anticipation_probabilities[1]
+
+    @staticmethod
+    def at_start(owner: int, board: Board) -> 'Infostate':
+        """
+        This creates the starting infostate for either of the players.
+        """
+        infostate_matrix = copy.deepcopy(board.matrix)  # Initialize the matrix
+        opponent = (Player.RED if owner == Player.BLUE else Player.BLUE)
+        opponent_piece_range_start, opponent_piece_range_end = (
+            Infostate.get_piece_range(opponent))
+        for i, row in enumerate(board.matrix):
+            for j, entry in enumerate(row):
+                # Set initial value bounds for the pieces
+                if entry == Ranking.BLANK:
+                    infostate_matrix[i][j] = [Ranking.BLANK, Ranking.BLANK]
+                elif Infostate.get_piece_affiliation(piece=entry) == owner:
+                    infostate_matrix[i][j] = [entry, entry]  # Upper = Lower
+                elif Infostate.get_piece_affiliation(piece=entry) != owner:
+                    infostate_matrix[i][j] = [opponent_piece_range_start,
+                                              opponent_piece_range_end]
+
+        return Infostate(owner=owner, matrix=infostate_matrix,
+                         player_to_move=Player.BLUE,
+                         anticipation_probabilities=[0.0, 0.0])
+
+
 class Controller:
     """
     This class contains constants that set a MatchSimulator's input (game move)
@@ -688,7 +733,10 @@ class MatchSimulator:
         if self.save_data:
             self.game_history.append(arbiter_board.matrix)
 
-        # TODO: Initialize initial blue and red infostates
+        blue_infostate = Infostate.at_start(owner=Player.BLUE,
+                                            board=arbiter_board)
+        red_infostate = Infostate.at_start(owner=Player.RED,
+                                           board=arbiter_board)
 
         turn_number = 1
         branches_encountered = 0
