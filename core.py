@@ -592,7 +592,7 @@ class Infostate(Board):
         """
         This is for representing blank squares in the printed infostate.
         """
-        Board._print_square(" -----------")
+        Board._print_square("[----------]")
 
     def print_state(self, with_color: bool, *args, **kwargs):
         """
@@ -615,10 +615,10 @@ class Infostate(Board):
             for entry in row:
                 lowest_possible, highest_possible = entry[0], entry[1]
                 # Label both sides of the entry range
-                labelled_entry = (self.label_piece_by_team(
+                labelled_entry = [self.label_piece_by_team(
                     piece=highest_possible),
                     self.label_piece_by_team(
-                    piece=lowest_possible))
+                    piece=lowest_possible)]
                 if (highest_possible == Ranking.BLANK
                         and lowest_possible == Ranking.BLANK):
                     self._print_blank_square()
