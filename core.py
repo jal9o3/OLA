@@ -560,8 +560,7 @@ class MatchSimulator:
         """
         self.blue_formation = blue_formation
         self.red_formation = self._place_in_red_range(red_formation)
-        self.player_one = controllers[0]
-        self.player_two = controllers[1]
+        self.controllers = controllers
         self.player_one_color = random.choice([Player.BLUE, Player.RED])
         self.player_two_color = Player.RED if (
             self.player_one_color == Player.BLUE) else Player.BLUE
@@ -669,9 +668,9 @@ class MatchSimulator:
         """
         current_controller = None  # Initialize return value
         if board.player_to_move == self.player_one_color:
-            current_controller = self.player_one
+            current_controller = self.controllers[0]
         elif board.player_to_move == self.player_two_color:
-            current_controller = self.player_two
+            current_controller = self.controllers[1]
 
         return current_controller
 
