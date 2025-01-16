@@ -137,6 +137,21 @@ class POV:
         pass
 
 
+class Result:
+    """
+    This class contains constants that represent the possible results of actions
+    in game states, for use with infostates.
+    """
+
+    DRAW = 0
+    WIN = 1
+    OCCUPY = 2
+    LOSS = 3
+
+    def __init__(self):
+        pass
+
+
 class Board:
     """
     This class represents the current game state as seen by the arbiter.
@@ -497,11 +512,13 @@ class Board:
 
         return new_matrix
 
-    def transition(self, action: str):
+    def transition(self, action: str, *args, **kwargs):
         """
         This determines the next state based on the current state and the chosen
         action.
         """
+        _, _ = args, kwargs  # Stops the linter's complaints
+
         # Initialize the new game state
         new_matrix = copy.deepcopy(self.matrix)
         starting_row, starting_column, destination_row, destination_column = (
@@ -526,21 +543,75 @@ class Board:
                                                   destination_square
                                                   )
         blue_flag, red_flag = Ranking.FLAG, Ranking.FLAG + Ranking.SPY
-        next_to_move = (
-            Player.RED if self.player_to_move == Player.BLUE else Player.BLUE)
-        blue_anticipating = red_anticipating = False
+        player_anticipations = [False, False]  # Blue and red respectively
         if (blue_flag in self.matrix[-1] and not self.blue_anticipating
             and not self.has_none_adjacent(
                 self.matrix[-1].index(blue_flag), self.matrix[-1])):
-            blue_anticipating = True
+            player_anticipations[0] = True
         elif (red_flag in self.matrix[0] and not self.red_anticipating
               and not self.has_none_adjacent(
                   self.matrix[0].index(0), self.matrix[0]
         )):
-            red_anticipating = True
+            player_anticipations[1] = True
 
-        return Board(new_matrix, next_to_move, blue_anticipating,
-                     red_anticipating)
+        return Board(new_matrix, player_to_move=(
+            Player.RED if self.player_to_move == Player.BLUE else Player.BLUE),
+            blue_anticipating=player_anticipations[0],
+            red_anticipating=player_anticipations[1])
+
+    @staticmethod
+    def _deduce_action_result(matrix_difference: list[list[int]], action: str,
+                              challenger_value: int, target_value: int):
+        result = None  # Initialize return value
+        starting_row, starting_column, destination_row, destination_column = (
+            map(int, action)
+        )
+        # Deduce the result based on the difference matrix' characteristics
+        if (matrix_difference[
+                starting_row][starting_column] == challenger_value):
+            result = Result.DRAW
+        elif (matrix_difference[
+            starting_row][starting_column] == challenger_value
+            and (
+                matrix_difference[destination_row][destination_column] == (
+                    target_value - challenger_value
+                ) and matrix_difference[
+                    destination_row][destination_column] == Ranking.BLANK)):
+            result = Result.OCCUPY
+        elif (matrix_difference[
+            starting_row][starting_column] == challenger_value
+            and (
+                matrix_difference[destination_row][destination_column] == (
+                    target_value - challenger_value
+                ) and matrix_difference[
+                    destination_row][destination_column] != Ranking.BLANK)):
+            result = Result.WIN
+        elif (matrix_difference[
+                starting_row][starting_column] == challenger_value
+                and matrix_difference[
+                    destination_row][destination_column] == Ranking.BLANK):
+            result = Result.LOSS
+
+        return result
+
+    def classify_action_result(self, action: str, new_board: 'Board'):
+        """
+        This classifies action results as DRAW, WIN, LOSS (for challenge moves)
+        or OCCUPY (for non-challenge moves), for use of the Infostate class'
+        transition function.
+        """
+        matrix_difference = [
+            [self.matrix[i][j] - new_board[i][j] for j in range(Board.COLUMNS)]
+            for i in range(Board.ROWS)]
+        starting_row, starting_column, destination_row, destination_column = (
+            map(int, action)
+        )
+        challenger_value, target_value = (
+            self.matrix[starting_row][starting_column],
+            self.matrix[destination_row][destination_column])
+
+        return Board._deduce_action_result(matrix_difference, action,
+                                           challenger_value, target_value)
 
 
 class Infostate(Board):
@@ -632,6 +703,12 @@ class Infostate(Board):
             print("\n")  # Moves the next row to the next line
         self._print_column_numbers()
         print()  # Move the output after the board to a new line
+
+    def transition(self, action: str, result: int):
+        """
+        This obtains the next infostate based on the provided action and the
+        result classification of the action.
+        """
 
 
 class Controller:
@@ -812,5 +889,6 @@ class MatchSimulator:
             if self.save_data:
                 self.game_history.append(action)
 
-            arbiter_board = arbiter_board.transition(action)
+            new_arbiter_board = arbiter_board.transition(action)
+            arbiter_board = new_arbiter_board
             turn_number += 1
