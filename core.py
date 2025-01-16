@@ -594,6 +594,15 @@ class Infostate(Board):
         """
         Board._print_square("[-----]")
 
+    @staticmethod
+    def _print_column_numbers():
+        """
+        This is for printing the column numbers below the board.
+        """
+        print("\n ", end='')
+        for k in range(Board.COLUMNS):
+            print(f"{k:7}", end=' ')
+
     def print_state(self, with_color: bool, *args, **kwargs):
         """
         This prints the state as seen by either of the players in the terminal.
@@ -602,12 +611,6 @@ class Infostate(Board):
 
         logger = logging.getLogger(__name__)
         logger.setLevel(logging.DEBUG)
-
-        # Color codes for printing colored text
-        blue, red = "34", "31"
-
-        # Shorthands for piece rankings
-        blue_flag, red_flag = Board.get_flag_values()
 
         print()  # Starts the board to a new line
         for i, row in enumerate(self.matrix):
@@ -625,8 +628,8 @@ class Infostate(Board):
                 else:
                     # Prints two chars wide
                     self._print_square(
-                        f"[{labelled_entry[0]},{labelled_entry[1]}]")
-            print()  # Moves the next row to the next line
+                        f"({labelled_entry[0]},{labelled_entry[1]})")
+            print("\n")  # Moves the next row to the next line
         self._print_column_numbers()
         print()  # Move the output after the board to a new line
 
