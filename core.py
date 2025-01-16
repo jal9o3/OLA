@@ -227,6 +227,17 @@ class Board:
 
         return labelled_piece
 
+    @staticmethod
+    def get_flag_values():
+        """
+        This returns the shorthands for the flags, useful for a flattening the
+        state representation.
+        """
+        blue_flag = Ranking.FLAG
+        red_flag = Ranking.FLAG + Ranking.SPY  # See Ranking class for details
+
+        return blue_flag, red_flag
+
     def print_state(self, pov: int, with_color: bool):
         """
         This displays the state represented by the Board instance to the 
@@ -239,12 +250,10 @@ class Board:
         logger.setLevel(logging.DEBUG)
 
         # Color codes for printing colored text
-        blue = "34"
-        red = "31"
+        blue, red = "34", "31"
 
         # Shorthands for piece rankings
-        blue_flag = Ranking.FLAG
-        red_flag = Ranking.FLAG + Ranking.SPY  # See Ranking class for details
+        blue_flag, red_flag = Board.get_flag_values()
 
         print()  # Starts the board to a new line
         for i, row in enumerate(self.matrix):
@@ -578,6 +587,48 @@ class Infostate(Board):
                          player_to_move=Player.BLUE,
                          anticipation_probabilities=[0.0, 0.0])
 
+    @staticmethod
+    def _print_blank_square():
+        """
+        This is for representing blank squares in the printed infostate.
+        """
+        Board._print_square(" -----------")
+
+    def print_state(self, with_color: bool, *args, **kwargs):
+        """
+        This prints the state as seen by either of the players in the terminal.
+        """
+        _, _ = args, kwargs  # Stops the linter's complaints
+
+        logger = logging.getLogger(__name__)
+        logger.setLevel(logging.DEBUG)
+
+        # Color codes for printing colored text
+        blue, red = "34", "31"
+
+        # Shorthands for piece rankings
+        blue_flag, red_flag = Board.get_flag_values()
+
+        print()  # Starts the board to a new line
+        for i, row in enumerate(self.matrix):
+            self._print_number_of_row(i)
+            for entry in row:
+                lowest_possible, highest_possible = entry[0], entry[1]
+                # Label both sides of the entry range
+                labelled_entry = (self.label_piece_by_team(
+                    piece=highest_possible),
+                    self.label_piece_by_team(
+                    piece=lowest_possible))
+                if (highest_possible == Ranking.BLANK
+                        and lowest_possible == Ranking.BLANK):
+                    self._print_blank_square()
+                else:
+                    # Prints two chars wide
+                    self._print_square(f"{labelled_entry}")
+            print()  # Moves the next row to the next line
+        self._print_column_numbers()
+        print()  # Move the output after the board to a new line
+
 
 class Controller:
     """
@@ -737,6 +788,9 @@ class MatchSimulator:
                                             board=arbiter_board)
         red_infostate = Infostate.at_start(owner=Player.RED,
                                            board=arbiter_board)
+
+        blue_infostate.print_state(with_color=True)
+        return
 
         turn_number = 1
         branches_encountered = 0
