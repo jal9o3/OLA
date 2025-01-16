@@ -592,7 +592,7 @@ class Infostate(Board):
         """
         This is for representing blank squares in the printed infostate.
         """
-        Board._print_square("[----------]")
+        Board._print_square("[-----]")
 
     def print_state(self, with_color: bool, *args, **kwargs):
         """
@@ -624,7 +624,8 @@ class Infostate(Board):
                     self._print_blank_square()
                 else:
                     # Prints two chars wide
-                    self._print_square(f"{labelled_entry}")
+                    self._print_square(
+                        f"[{labelled_entry[0]},{labelled_entry[1]}]")
             print()  # Moves the next row to the next line
         self._print_column_numbers()
         print()  # Move the output after the board to a new line
