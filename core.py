@@ -793,10 +793,6 @@ class MatchSimulator:
         red_infostate = Infostate.at_start(owner=Player.RED,
                                            board=arbiter_board)
 
-        blue_infostate.print_state()
-        red_infostate.print_state()
-        return
-
         turn_number = 1
         branches_encountered = 0
         while not arbiter_board.is_terminal():
