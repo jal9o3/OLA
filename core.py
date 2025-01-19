@@ -787,8 +787,9 @@ class Infostate(Board):
         the value of the associated opposing piece involved in the action and
         the offset associated with the color of the piece.
         """
+        # Delayed retrieval of keyword arguments silences the linter
         xy = kwargs.get('xy', None)
-        offset = kwargs.get('offset', None)  # Silences the linter's complaints
+        offset = kwargs.get('offset', None)
 
         start_row, start_col, dest_row, dest_col = (
             map(int, action)
