@@ -778,72 +778,37 @@ class Infostate(Board):
         min_val, max_val = 0, 1  # Indices in the piece entries
 
         if result == Result.DRAW:
-            new_matrix = Infostate._remove_entries(matrix=new_matrix,
-                                                   entry_locations=(
-                                                       (start_row, start_col),
-                                                       (dest_row, dest_col)))
-        elif (result == Result.WIN
-              and Infostate._piece_is_identified(
-                piece=self.matrix[start_row][start_col])):
-            new_matrix = self.move_entry(matrix=new_matrix,
-                                         start=(start_row, start_col),
-                                         end=(dest_row, dest_col))
-        elif (result == Result.WIN
-              and not Infostate._piece_is_identified(
-                piece=self.matrix[start_row][start_col])
-                and Infostate._get_piece_affiliation(
-                    piece=self.matrix[start_row][start_col]) == Player.RED):
-
+            new_matrix = Infostate._remove_entries(matrix=new_matrix, entry_locations=(
+                (start_row, start_col), (dest_row, dest_col)))
+        elif (result == Result.WIN and Infostate._piece_is_identified(piece=self.matrix[start_row][start_col])):
+            new_matrix = self.move_entry(matrix=new_matrix, start=(
+                start_row, start_col), end=(dest_row, dest_col))
+        elif (result == Result.WIN and not Infostate._piece_is_identified(piece=self.matrix[start_row][start_col]) and Infostate._get_piece_affiliation(piece=self.matrix[start_row][start_col]) == Player.RED):
             new_matrix[start_row][start_col][min_val] = (
                 self.matrix[dest_row][dest_col][max_val] + Ranking.SPY + 1)
-            new_matrix = self.move_entry(matrix=new_matrix,
-                                         start=(start_row, start_col),
-                                         end=(dest_row, dest_col))
-
-        elif (result == Result.WIN
-              and not Infostate._piece_is_identified(
-                piece=self.matrix[start_row][start_col])
-              and Infostate._get_piece_affiliation(
-                piece=self.matrix[start_row][start_col]) == Player.BLUE):
-
+            new_matrix = self.move_entry(matrix=new_matrix, start=(
+                start_row, start_col), end=(dest_row, dest_col))
+        elif (result == Result.WIN and not Infostate._piece_is_identified(piece=self.matrix[start_row][start_col]) and Infostate._get_piece_affiliation(piece=self.matrix[start_row][start_col]) == Player.BLUE):
             new_matrix[start_row][start_col][min_val] = (
                 self.matrix[dest_row][dest_col][max_val] - Ranking.SPY + 1)
-            new_matrix = self.move_entry(matrix=new_matrix,
-                                         start=(start_row, start_col),
-                                         end=(dest_row, dest_col))
-
+            new_matrix = self.move_entry(matrix=new_matrix, start=(
+                start_row, start_col), end=(dest_row, dest_col))
         elif result == Result.OCCUPY:
-            new_matrix = self.move_entry(matrix=new_matrix,
-                                         start=(start_row, start_col),
-                                         end=(dest_row, dest_col))
-        elif (result == Result.LOSS
-              and Infostate._piece_is_identified(
-                piece=self.matrix[dest_row][dest_col])):
-            new_matrix = Infostate._remove_entry(matrix=new_matrix,
-                                                 entry_location=(start_row,
-                                                                 start_col))
-        elif (result == Result.LOSS
-              and not Infostate._piece_is_identified(
-                piece=self.matrix[dest_row][dest_col])
-                and Infostate._get_piece_affiliation(
-                    piece=self.matrix[dest_row][dest_col]) == Player.RED):
-
+            new_matrix = self.move_entry(matrix=new_matrix, start=(
+                start_row, start_col), end=(dest_row, dest_col))
+        elif (result == Result.LOSS and Infostate._piece_is_identified(piece=self.matrix[dest_row][dest_col])):
+            new_matrix = Infostate._remove_entry(
+                matrix=new_matrix, entry_location=(start_row, start_col))
+        elif (result == Result.LOSS and not Infostate._piece_is_identified(piece=self.matrix[dest_row][dest_col]) and Infostate._get_piece_affiliation(piece=self.matrix[dest_row][dest_col]) == Player.RED):
             new_matrix[dest_row][dest_col][min_val] = (
                 self.matrix[start_row][start_col][max_val] + Ranking.SPY + 1)
-            new_matrix = Infostate._remove_entry(matrix=new_matrix,
-                                                 entry_location=(start_row,
-                                                                 start_col))
-
-        elif (result == Result.LOSS and not Infostate._piece_is_identified(
-                piece=self.matrix[dest_row][dest_col])
-                and Infostate._get_piece_affiliation(
-                    piece=self.matrix[dest_row][dest_col]) == Player.BLUE):
-
+            new_matrix = Infostate._remove_entry(
+                matrix=new_matrix, entry_location=(start_row, start_col))
+        elif (result == Result.LOSS and not Infostate._piece_is_identified(piece=self.matrix[dest_row][dest_col]) and Infostate._get_piece_affiliation(piece=self.matrix[dest_row][dest_col]) == Player.BLUE):
             new_matrix[dest_row][dest_col][min_val] = (
                 self.matrix[start_row][start_col][max_val] - Ranking.SPY + 1)
-            new_matrix = Infostate._remove_entry(matrix=new_matrix,
-                                                 entry_location=(start_row,
-                                                                 start_col))
+            new_matrix = Infostate._remove_entry(
+                matrix=new_matrix, entry_location=(start_row, start_col))
 
         return Infostate(owner=self.owner, matrix=new_matrix, player_to_move=(
             Player.RED if self.player_to_move == Player.BLUE else Player.BLUE),
