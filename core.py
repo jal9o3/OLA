@@ -561,39 +561,36 @@ class Board:
             blue_anticipating=player_anticipations[0],
             red_anticipating=player_anticipations[1])
 
-    @staticmethod
-    def _deduce_action_result(matrix_difference: list[list[int]], action: str,
-                              challenger_value: int, target_value: int):
+    def deduce_action_result(self, matrix_difference: list[list[int]],
+                             action: str):
+        """
+        This examines the characteristics of the difference matrix to classify
+        the result of the action in the board state.
+        """
         result = None  # Initialize return value
         start_row, start_col, dest_row, dest_col = (
             map(int, action)
         )
+        challenger_value, target_value = (self.matrix[start_row][start_col],
+                                          self.matrix[dest_row][dest_col])
         # Deduce the result based on the difference matrix' characteristics
-        if (matrix_difference[
-                start_row][start_col] == challenger_value
-                and matrix_difference[
-                    dest_row][dest_col] == target_value):
+        if (matrix_difference[start_row][start_col] == challenger_value
+                and matrix_difference[dest_row][dest_col] == target_value):
             result = Result.DRAW
-        elif (matrix_difference[
-            start_row][start_col] == challenger_value
-            and (
-                matrix_difference[dest_row][dest_col] == (
-                    target_value - challenger_value
-                ) and matrix_difference[
-                    dest_row][dest_col] == Ranking.BLANK)):
+        elif (matrix_difference[start_row][start_col] == challenger_value
+              and (matrix_difference[dest_row][dest_col] == (
+                target_value - challenger_value
+                  ) and self.matrix[dest_row][dest_col] == Ranking.BLANK)
+              ):
             result = Result.OCCUPY
-        elif (matrix_difference[
-            start_row][start_col] == challenger_value
-            and (
-                matrix_difference[dest_row][dest_col] == (
-                    target_value - challenger_value
-                ) and matrix_difference[
-                    dest_row][dest_col] != Ranking.BLANK)):
+        elif (matrix_difference[start_row][start_col] == challenger_value
+              and (matrix_difference[dest_row][dest_col] == (
+                target_value - challenger_value
+                  ) and self.matrix[dest_row][dest_col] != Ranking.BLANK)
+              ):
             result = Result.WIN
-        elif (matrix_difference[
-                start_row][start_col] == challenger_value
-                and matrix_difference[
-                    dest_row][dest_col] == Ranking.BLANK):
+        elif (matrix_difference[start_row][start_col] == challenger_value
+                and matrix_difference[dest_row][dest_col] == Ranking.BLANK):
             result = Result.LOSS
 
         return result
@@ -607,15 +604,8 @@ class Board:
         matrix_difference = [
             [self.matrix[i][j] - new_board.matrix[i][j]
              for j in range(Board.COLUMNS)] for i in range(Board.ROWS)]
-        start_row, start_col, dest_row, dest_col = (
-            map(int, action)
-        )
-        challenger_value, target_value = (
-            self.matrix[start_row][start_col],
-            self.matrix[dest_row][dest_col])
 
-        return Board._deduce_action_result(matrix_difference, action,
-                                           challenger_value, target_value)
+        return self.deduce_action_result(matrix_difference, action)
 
 
 class Infostate(Board):
