@@ -165,13 +165,13 @@ class Board:
                  blue_anticipating: bool, red_anticipating: bool):
         """
         The matrix is simply a representation of the current piece positions and
-        ranks, with the rank designations being 0 to 30 (see constant 
+        ranks, with the rank designations being 0 to 30 (see constant
         definitions in the Ranking class).
 
-        blue_anticipating is True when the blue player's flag has reached the 
-        eighth row, but can still be challenged in the next turn by a red piece. 
-        If red fails to challenge, blue wins. The same logic applies to 
-        red_anticipating, except that the red player's flag must reach the 
+        blue_anticipating is True when the blue player's flag has reached the
+        eighth row, but can still be challenged in the next turn by a red piece.
+        If red fails to challenge, blue wins. The same logic applies to
+        red_anticipating, except that the red player's flag must reach the
         first row.
         """
         self.matrix = matrix
@@ -257,11 +257,11 @@ class Board:
 
     def print_state(self, pov: int, with_color: bool):
         """
-        This displays the state represented by the Board instance to the 
+        This displays the state represented by the Board instance to the
         terminal. The pov parameter determines which of the pieces have visible
-        rank numbers (see constant definitions in POV class). The with_color 
-        parameter determines whether the blue and red flags are colored 
-        appropriately for easier identification. 
+        rank numbers (see constant definitions in POV class). The with_color
+        parameter determines whether the blue and red flags are colored
+        appropriately for easier identification.
         """
         logger = logging.getLogger(__name__)
         logger.setLevel(logging.DEBUG)
@@ -387,7 +387,7 @@ class Board:
     @staticmethod
     def get_piece_range(player: int):
         """
-        This obtains the highest and lowest possible value representations of a 
+        This obtains the highest and lowest possible value representations of a
         player's pieces.
         """
         blue_flag, blue_spy, red_flag, red_spy = (
@@ -414,7 +414,7 @@ class Board:
 
     def is_allied_piece(self, entry: int):
         """
-        This checks if the given board entry contains an allied piece of the 
+        This checks if the given board entry contains an allied piece of the
         player to move.
         """
         return not self.not_allied_piece(entry)
@@ -469,7 +469,7 @@ class Board:
         This reflects challenge moves in a new matrix by arbitrating the
         relative values of the opposing pieces.
         """
-        starting_row, starting_column, destination_row, destination_column = (
+        start_row, start_col, dest_row, dest_col = (
             map(int, action)
         )
         if challenger_value == Ranking.PRIVATE and target_value == Ranking.SPY:
@@ -477,8 +477,8 @@ class Board:
             return new_matrix
 
         if challenger_value == Ranking.SPY and target_value == Ranking.PRIVATE:
-            new_matrix = self.remove_piece(new_matrix, starting_row,
-                                           starting_column)
+            new_matrix = self.remove_piece(new_matrix, start_row,
+                                           start_col)
             return new_matrix
 
         if (challenger_value > target_value
@@ -486,14 +486,14 @@ class Board:
                 and target_value == Ranking.FLAG)):
             new_matrix = self.move_piece_in_matrix_copy(new_matrix, action)
         elif challenger_value < target_value:
-            new_matrix = self.remove_piece(new_matrix, starting_row,
-                                           starting_column)
+            new_matrix = self.remove_piece(new_matrix, start_row,
+                                           start_col)
             return new_matrix
         elif challenger_value == target_value:
-            new_matrix = self.remove_piece(new_matrix, starting_row,
-                                           starting_column)
-            new_matrix = self.remove_piece(new_matrix, destination_row,
-                                           destination_column)
+            new_matrix = self.remove_piece(new_matrix, start_row,
+                                           start_col)
+            new_matrix = self.remove_piece(new_matrix, dest_row,
+                                           dest_col)
             return new_matrix
 
         return new_matrix
@@ -505,12 +505,12 @@ class Board:
         piece in the presumably unoccupied destination square.
         """
 
-        starting_row, starting_column, destination_row, destination_column = (
+        start_row, start_col, dest_row, dest_col = (
             map(int, action)
         )
-        new_matrix[destination_row][destination_column] = (
-            self.matrix[starting_row][starting_column])
-        new_matrix[starting_row][starting_column] = Ranking.BLANK
+        new_matrix[dest_row][dest_col] = (
+            self.matrix[start_row][start_col])
+        new_matrix[start_row][start_col] = Ranking.BLANK
 
         return new_matrix
 
@@ -523,11 +523,11 @@ class Board:
 
         # Initialize the new game state
         new_matrix = copy.deepcopy(self.matrix)
-        starting_row, starting_column, destination_row, destination_column = (
+        start_row, start_col, dest_row, dest_col = (
             map(int, action)
         )
-        piece_to_move = self.matrix[starting_row][starting_column]
-        destination_square = self.matrix[destination_row][destination_column]
+        piece_to_move = self.matrix[start_row][start_col]
+        destination_square = self.matrix[dest_row][dest_col]
 
         if destination_square == Ranking.BLANK:
             new_matrix = self.move_piece_in_matrix_copy(new_matrix, action)
@@ -565,35 +565,35 @@ class Board:
     def _deduce_action_result(matrix_difference: list[list[int]], action: str,
                               challenger_value: int, target_value: int):
         result = None  # Initialize return value
-        starting_row, starting_column, destination_row, destination_column = (
+        start_row, start_col, dest_row, dest_col = (
             map(int, action)
         )
         # Deduce the result based on the difference matrix' characteristics
         if (matrix_difference[
-                starting_row][starting_column] == challenger_value
+                start_row][start_col] == challenger_value
                 and matrix_difference[
-                    destination_row][destination_column] == target_value):
+                    dest_row][dest_col] == target_value):
             result = Result.DRAW
         elif (matrix_difference[
-            starting_row][starting_column] == challenger_value
+            start_row][start_col] == challenger_value
             and (
-                matrix_difference[destination_row][destination_column] == (
+                matrix_difference[dest_row][dest_col] == (
                     target_value - challenger_value
                 ) and matrix_difference[
-                    destination_row][destination_column] == Ranking.BLANK)):
+                    dest_row][dest_col] == Ranking.BLANK)):
             result = Result.OCCUPY
         elif (matrix_difference[
-            starting_row][starting_column] == challenger_value
+            start_row][start_col] == challenger_value
             and (
-                matrix_difference[destination_row][destination_column] == (
+                matrix_difference[dest_row][dest_col] == (
                     target_value - challenger_value
                 ) and matrix_difference[
-                    destination_row][destination_column] != Ranking.BLANK)):
+                    dest_row][dest_col] != Ranking.BLANK)):
             result = Result.WIN
         elif (matrix_difference[
-                starting_row][starting_column] == challenger_value
+                start_row][start_col] == challenger_value
                 and matrix_difference[
-                    destination_row][destination_column] == Ranking.BLANK):
+                    dest_row][dest_col] == Ranking.BLANK):
             result = Result.LOSS
 
         return result
@@ -607,12 +607,12 @@ class Board:
         matrix_difference = [
             [self.matrix[i][j] - new_board.matrix[i][j]
              for j in range(Board.COLUMNS)] for i in range(Board.ROWS)]
-        starting_row, starting_column, destination_row, destination_column = (
+        start_row, start_col, dest_row, dest_col = (
             map(int, action)
         )
         challenger_value, target_value = (
-            self.matrix[starting_row][starting_column],
-            self.matrix[destination_row][destination_column])
+            self.matrix[start_row][start_col],
+            self.matrix[dest_row][dest_col])
 
         return Board._deduce_action_result(matrix_difference, action,
                                            challenger_value, target_value)
@@ -708,6 +708,60 @@ class Infostate(Board):
         self._print_column_numbers()
         print()  # Move the output after the board to a new line
 
+    @staticmethod
+    def _remove_entry(matrix: list[list[list[int]]],
+                      entry_location: tuple[int]):
+        entry_row, entry_column = entry_location
+
+        matrix[entry_row][entry_column] = [
+            Ranking.BLANK, Ranking.BLANK]
+
+        return matrix
+
+    @staticmethod
+    def _remove_entries(matrix: list[list[list[int]]],
+                        entry_locations: tuple[tuple[int]]):
+        start_row, start_col = entry_locations[0]
+        dest_row, dest_col = entry_locations[1]
+
+        matrix = Infostate._remove_entry(matrix=matrix, entry_location=(
+            start_row,
+            start_col))
+        matrix = Infostate._remove_entry(matrix=matrix, entry_location=(
+            dest_row,
+            dest_col
+        ))
+        return matrix
+
+    def move_entry(self, matrix: list[list[list[int]]],
+                   start: tuple[int], end: tuple[int]):
+        """
+        This reflects a move in an infostate in an infostate matrix.
+        """
+        start_row, start_col = start[0], start[1]
+        dest_row, dest_col = end[0], end[1]
+
+        matrix[dest_row][dest_col] = self.matrix[
+            start_row][start_col]
+        matrix[start_row][start_col] = [
+            Ranking.BLANK, Ranking.BLANK]
+
+        return matrix
+
+    @staticmethod
+    def _piece_is_identified(piece: list[int]):
+        return piece[0] == piece[1]
+
+    @staticmethod
+    def _get_piece_affiliation(piece: list[int]):
+        affiliation = None  # Initialize return value
+        if piece[0] <= Ranking.SPY:
+            affiliation = Player.BLUE
+        elif piece[0] > Ranking.SPY:
+            affiliation = Player.RED
+
+        return affiliation
+
     def transition(self, action: str, *args, **kwargs):
         """
         This obtains the next infostate based on the provided action and the
@@ -715,30 +769,81 @@ class Infostate(Board):
         """
         _ = args  # Stops the linter's complaints
         new_matrix = copy.deepcopy(self.matrix)
-        starting_row, starting_column, destination_row, destination_column = (
+        start_row, start_col, dest_row, dest_col = (
             map(int, action)
         )
         # Find the action's result in the keyword arguments
-        result = None
-        if 'result' in kwargs:
-            result = kwargs['result']
-        else:
-            return None
+        result = kwargs['result'] if 'result' in kwargs else None
+
+        min_val, max_val = 0, 1  # Indices in the piece entries
 
         if result == Result.DRAW:
-            new_matrix[starting_row][starting_column] = [
-                Ranking.BLANK, Ranking.BLANK]
-            new_matrix[destination_row][destination_column] = [
-                Ranking.BLANK, Ranking.BLANK
-            ]
-        elif result in [Result.WIN, Result.OCCUPY]:
-            new_matrix[destination_row][destination_column] = self.matrix[
-                starting_row][starting_column]
-            new_matrix[starting_row][starting_column] = [
-                Ranking.BLANK, Ranking.BLANK]
-        elif result == Result.LOSS:
-            new_matrix[starting_row][starting_column] = [
-                Ranking.BLANK, Ranking.BLANK]
+            new_matrix = Infostate._remove_entries(matrix=new_matrix,
+                                                   entry_locations=(
+                                                       (start_row, start_col),
+                                                       (dest_row, dest_col)))
+        elif (result == Result.WIN
+              and Infostate._piece_is_identified(
+                piece=self.matrix[start_row][start_col])):
+            new_matrix = self.move_entry(matrix=new_matrix,
+                                         start=(start_row, start_col),
+                                         end=(dest_row, dest_col))
+        elif (result == Result.WIN
+              and not Infostate._piece_is_identified(
+                piece=self.matrix[start_row][start_col])
+                and Infostate._get_piece_affiliation(
+                    piece=self.matrix[start_row][start_col]) == Player.RED):
+
+            new_matrix[start_row][start_col][min_val] = (
+                self.matrix[dest_row][dest_col][max_val] + Ranking.SPY + 1)
+            new_matrix = self.move_entry(matrix=new_matrix,
+                                         start=(start_row, start_col),
+                                         end=(dest_row, dest_col))
+
+        elif (result == Result.WIN
+              and not Infostate._piece_is_identified(
+                piece=self.matrix[start_row][start_col])
+              and Infostate._get_piece_affiliation(
+                piece=self.matrix[start_row][start_col]) == Player.BLUE):
+
+            new_matrix[start_row][start_col][min_val] = (
+                self.matrix[dest_row][dest_col][max_val] - Ranking.SPY + 1)
+            new_matrix = self.move_entry(matrix=new_matrix,
+                                         start=(start_row, start_col),
+                                         end=(dest_row, dest_col))
+
+        elif result == Result.OCCUPY:
+            new_matrix = self.move_entry(matrix=new_matrix,
+                                         start=(start_row, start_col),
+                                         end=(dest_row, dest_col))
+        elif (result == Result.LOSS
+              and Infostate._piece_is_identified(
+                piece=self.matrix[dest_row][dest_col])):
+            new_matrix = Infostate._remove_entry(matrix=new_matrix,
+                                                 entry_location=(start_row,
+                                                                 start_col))
+        elif (result == Result.LOSS
+              and not Infostate._piece_is_identified(
+                piece=self.matrix[dest_row][dest_col])
+                and Infostate._get_piece_affiliation(
+                    piece=self.matrix[dest_row][dest_col]) == Player.RED):
+
+            new_matrix[dest_row][dest_col][min_val] = (
+                self.matrix[start_row][start_col][max_val] + Ranking.SPY + 1)
+            new_matrix = Infostate._remove_entry(matrix=new_matrix,
+                                                 entry_location=(start_row,
+                                                                 start_col))
+
+        elif (result == Result.LOSS and not Infostate._piece_is_identified(
+                piece=self.matrix[dest_row][dest_col])
+                and Infostate._get_piece_affiliation(
+                    piece=self.matrix[dest_row][dest_col]) == Player.BLUE):
+
+            new_matrix[dest_row][dest_col][min_val] = (
+                self.matrix[start_row][start_col][max_val] - Ranking.SPY + 1)
+            new_matrix = Infostate._remove_entry(matrix=new_matrix,
+                                                 entry_location=(start_row,
+                                                                 start_col))
 
         return Infostate(owner=self.owner, matrix=new_matrix, player_to_move=(
             Player.RED if self.player_to_move == Player.BLUE else Player.BLUE),
