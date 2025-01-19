@@ -779,6 +779,20 @@ class Infostate(Board):
         return (Infostate._get_piece_affiliation(
             piece=self.matrix[row][col]) == Player.RED)
 
+    def piece_is_blue_spy(self, row: int, col: int, val: int):
+        """
+        This checks if a piece at a given coordinate in the infostate matrix
+        is a spy of the blue player.
+        """
+        return self.matrix[row][col][val] == Ranking.SPY
+
+    def piece_is_red_spy(self, row: int, col: int, val: int):
+        """
+        This checks if a piece at a given coordinate in the infostate matrix
+        is a spy of the red player.
+        """
+        return self.matrix[row][col][val] == Ranking.SPY*2
+
     def set_val(self, matrix: list[list[list[int]]], action: str, val: int,
                 **kwargs):
         """
@@ -798,9 +812,29 @@ class Infostate(Board):
 
         source_val = max_val if val == min_val else max_val
 
-        if xy == (start_row, start_col):
+        # Deal with the SPY vs PRIVATE edge cases
+        red_private = Ranking.PRIVATE + Ranking.SPY  # See Ranking class
+        if (xy == (start_row, start_col)
+                and self.piece_is_blue_spy(dest_row, dest_col, val=source_val)):
+            matrix[start_row][start_col][min_val] = red_private
+            matrix[start_row][start_col][max_val] = red_private
+        elif (xy == (start_row, start_col)
+                and self.piece_is_red_spy(dest_row, dest_col, val=source_val)):
+            matrix[start_row][start_col][min_val] = Ranking.PRIVATE
+            matrix[start_row][start_col][max_val] = Ranking.PRIVATE
+        elif (xy == (dest_row, dest_col)
+              and self.piece_is_blue_spy(start_row, start_col, val=source_val)):
+            matrix[dest_row][dest_col][min_val] = red_private
+            matrix[dest_row][dest_col][max_val] = red_private
+        elif (xy == (dest_row, dest_col)
+              and self.piece_is_red_spy(start_row, start_col, val=source_val)):
+            matrix[dest_row][dest_col][min_val] = Ranking.PRIVATE
+            matrix[dest_row][dest_col][max_val] = Ranking.PRIVATE
+        # Update the range of the unknown attacker
+        elif xy == (start_row, start_col):
             matrix[start_row][start_col][val] = (
                 self.matrix[dest_row][dest_col][source_val] + offset + 1)
+        # Update the range of the unknown defender
         elif xy == (dest_row, dest_col):
             matrix[dest_row][dest_col][val] = (
                 self.matrix[start_row][start_col][source_val] + offset + 1)
