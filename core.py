@@ -780,13 +780,16 @@ class Infostate(Board):
             piece=self.matrix[row][col]) == Player.RED)
 
     def set_val(self, matrix: list[list[list[int]]], action: str, val: int,
-                cols: tuple[int], offset: int):
+                **kwargs):
         """
         This sets a new value to either end of the range of an unidentified 
         piece in a copy of the infostate matrix. This value is calculated from
         the value of the associated opposing piece involved in the action and
         the offset associated with the color of the piece.
         """
+        xy = kwargs.get('xy', None)
+        offset = kwargs.get('offset', None)  # Silences the linter's complaints
+
         start_row, start_col, dest_row, dest_col = (
             map(int, action)
         )
@@ -794,10 +797,10 @@ class Infostate(Board):
 
         source_val = max_val if val == min_val else max_val
 
-        if cols == (start_row, start_col):
+        if xy == (start_row, start_col):
             matrix[start_row][start_col][val] = (
                 self.matrix[dest_row][dest_col][source_val] + offset + 1)
-        elif cols == (dest_row, dest_col):
+        elif xy == (dest_row, dest_col):
             matrix[dest_row][dest_col][val] = (
                 self.matrix[start_row][start_col][source_val] + offset + 1)
 
@@ -831,7 +834,7 @@ class Infostate(Board):
               and not self.piece_is_owned(row=start_row, col=start_col)
               and not self.piece_is_blue(row=start_row, col=start_col)):
             new_matrix = self.set_val(matrix=new_matrix, action=action,
-                                      val=min_val, cols=(start_row, start_col),
+                                      val=min_val, xy=(start_row, start_col),
                                       offset=Ranking.SPY)
             new_matrix = self.move_entry(matrix=new_matrix, start=(
                 start_row, start_col), end=(dest_row, dest_col))
@@ -840,7 +843,7 @@ class Infostate(Board):
               and not self.piece_is_owned(row=start_row, col=start_col)
               and self.piece_is_blue(row=start_row, col=start_col)):
             new_matrix = self.set_val(matrix=new_matrix, action=action,
-                                      val=min_val, cols=(start_row, start_col),
+                                      val=min_val, xy=(start_row, start_col),
                                       offset=-Ranking.SPY)
             new_matrix = self.move_entry(matrix=new_matrix, start=(
                 start_row, start_col), end=(dest_row, dest_col))
@@ -858,7 +861,7 @@ class Infostate(Board):
               and not self.piece_is_owned(row=dest_row, col=dest_col)
               and not self.piece_is_blue(row=dest_row, col=dest_col)):
             new_matrix = self.set_val(matrix=new_matrix, action=action,
-                                      val=min_val, cols=(dest_row, dest_col),
+                                      val=min_val, xy=(dest_row, dest_col),
                                       offset=Ranking.SPY)
             new_matrix = Infostate._remove_entry(
                 matrix=new_matrix, entry_location=(start_row, start_col))
@@ -867,7 +870,7 @@ class Infostate(Board):
               and not self.piece_is_owned(row=dest_row, col=dest_col)
               and self.piece_is_blue(row=dest_row, col=dest_col)):
             new_matrix = self.set_val(matrix=new_matrix, action=action,
-                                      val=min_val, cols=(dest_row, dest_col),
+                                      val=min_val, xy=(dest_row, dest_col),
                                       offset=-Ranking.SPY)
             new_matrix = Infostate._remove_entry(
                 matrix=new_matrix, entry_location=(start_row, start_col))
