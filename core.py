@@ -762,6 +762,15 @@ class Infostate(Board):
 
         return affiliation
 
+    def winning_attacker_is_owned(self, start_row: int, start_col: int,
+                                  result: int):
+        """
+        Determines if the attacking piece belongs to the owner of the infostate.
+        """
+        return (result == Result.WIN
+                and Infostate._get_piece_affiliation(
+                    self.matrix[start_row][start_col]) == self.owner)
+
     def transition(self, action: str, *args, **kwargs):
         """
         This obtains the next infostate based on the provided action and the
@@ -780,10 +789,11 @@ class Infostate(Board):
         if result == Result.DRAW:
             new_matrix = Infostate._remove_entries(matrix=new_matrix, entry_locations=(
                 (start_row, start_col), (dest_row, dest_col)))
-        elif (result == Result.WIN and Infostate._piece_is_identified(piece=self.matrix[start_row][start_col])):
+        elif (self.winning_attacker_is_owned(start_row, start_col, result)):
             new_matrix = self.move_entry(matrix=new_matrix, start=(
                 start_row, start_col), end=(dest_row, dest_col))
-        elif (result == Result.WIN and not Infostate._piece_is_identified(piece=self.matrix[start_row][start_col]) and Infostate._get_piece_affiliation(piece=self.matrix[start_row][start_col]) == Player.RED):
+        elif (not self.winning_attacker_is_owned(start_row, start_col, result)
+              and Infostate._get_piece_affiliation(piece=self.matrix[start_row][start_col]) == Player.RED):
             new_matrix[start_row][start_col][min_val] = (
                 self.matrix[dest_row][dest_col][max_val] + Ranking.SPY + 1)
             new_matrix = self.move_entry(matrix=new_matrix, start=(
