@@ -1023,6 +1023,16 @@ class MatchSimulator:
         turn_number = 1
         branches_encountered = 0
         while not arbiter_board.is_terminal():
+            # Assume that only one of the controllers is human
+            if (self.get_current_controller(arbiter_board) == Controller.HUMAN
+                    and arbiter_board.player_to_move == Player.BLUE):
+                self.pov = POV.BLUE
+            elif (self.get_current_controller(arbiter_board) == Controller.HUMAN
+                  and arbiter_board.player_to_move == Player.BLUE):
+                self.pov = POV.RED
+            elif Controller.HUMAN in self.controllers:
+                self.pov = None
+
             MatchSimulator._print_game_status(turn_number, arbiter_board,
                                               infostates=[
                                                   blue_infostate,
