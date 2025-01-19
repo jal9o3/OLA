@@ -720,9 +720,9 @@ class Infostate(Board):
 
     @staticmethod
     def _remove_entries(matrix: list[list[list[int]]],
-                        entry_locations: tuple[tuple[int]]):
-        start_row, start_col = entry_locations[0]
-        dest_row, dest_col = entry_locations[1]
+                        locs: tuple[tuple[int]]):
+        start_row, start_col = locs[0]
+        dest_row, dest_col = locs[1]
 
         matrix = Infostate._remove_entry(matrix=matrix, entry_location=(
             start_row,
@@ -762,14 +762,46 @@ class Infostate(Board):
 
         return affiliation
 
-    def winning_attacker_is_owned(self, start_row: int, start_col: int,
-                                  result: int):
+    def piece_is_owned(self, row: int, col: int):
         """
-        Determines if the attacking piece belongs to the owner of the infostate.
+        Determines if the piece at the specified row and column in the infostate 
+        matrix belongs to the owner of the infostate.
         """
-        return (result == Result.WIN
-                and Infostate._get_piece_affiliation(
-                    self.matrix[start_row][start_col]) == self.owner)
+        return (Infostate._get_piece_affiliation(
+            self.matrix[row][col]) == self.owner)
+
+    def piece_is_blue(self, row: int, col: int):
+        """
+        This checks if a piece at a specified row and column in the infostate 
+        matrix belongs to the blue player. Negate to check if it belongs to the 
+        red player.
+        """
+        return (Infostate._get_piece_affiliation(
+            piece=self.matrix[row][col]) == Player.RED)
+
+    def set_val(self, matrix: list[list[list[int]]], action: str, val: int,
+                cols: tuple[int], offset: int):
+        """
+        This sets a new value to either end of the range of an unidentified 
+        piece in a copy of the infostate matrix. This value is calculated from
+        the value of the associated opposing piece involved in the action and
+        the offset associated with the color of the piece.
+        """
+        start_row, start_col, dest_row, dest_col = (
+            map(int, action)
+        )
+        min_val, max_val = 0, 1  # Indices in the piece entries
+
+        source_val = max_val if val == min_val else max_val
+
+        if cols == (start_row, start_col):
+            matrix[start_row][start_col][val] = (
+                self.matrix[dest_row][dest_col][source_val] + offset + 1)
+        elif cols == (dest_row, dest_col):
+            matrix[dest_row][dest_col][val] = (
+                self.matrix[start_row][start_col][source_val] + offset + 1)
+
+        return matrix
 
     def transition(self, action: str, *args, **kwargs):
         """
@@ -787,36 +819,56 @@ class Infostate(Board):
         min_val, max_val = 0, 1  # Indices in the piece entries
 
         if result == Result.DRAW:
-            new_matrix = Infostate._remove_entries(matrix=new_matrix, entry_locations=(
+            new_matrix = Infostate._remove_entries(matrix=new_matrix, locs=(
                 (start_row, start_col), (dest_row, dest_col)))
-        elif (self.winning_attacker_is_owned(start_row, start_col, result)):
+
+        elif (result == Result.WIN
+              and self.piece_is_owned(row=start_row, col=start_col)):
             new_matrix = self.move_entry(matrix=new_matrix, start=(
                 start_row, start_col), end=(dest_row, dest_col))
-        elif (not self.winning_attacker_is_owned(start_row, start_col, result)
-              and Infostate._get_piece_affiliation(piece=self.matrix[start_row][start_col]) == Player.RED):
-            new_matrix[start_row][start_col][min_val] = (
-                self.matrix[dest_row][dest_col][max_val] + Ranking.SPY + 1)
+
+        elif (result == Result.WIN
+              and not self.piece_is_owned(row=start_row, col=start_col)
+              and not self.piece_is_blue(row=start_row, col=start_col)):
+            new_matrix = self.set_val(matrix=new_matrix, action=action,
+                                      val=min_val, cols=(start_row, start_col),
+                                      offset=Ranking.SPY)
             new_matrix = self.move_entry(matrix=new_matrix, start=(
                 start_row, start_col), end=(dest_row, dest_col))
-        elif (result == Result.WIN and not Infostate._piece_is_identified(piece=self.matrix[start_row][start_col]) and Infostate._get_piece_affiliation(piece=self.matrix[start_row][start_col]) == Player.BLUE):
-            new_matrix[start_row][start_col][min_val] = (
-                self.matrix[dest_row][dest_col][max_val] - Ranking.SPY + 1)
+
+        elif (result == Result.WIN
+              and not self.piece_is_owned(row=start_row, col=start_col)
+              and self.piece_is_blue(row=start_row, col=start_col)):
+            new_matrix = self.set_val(matrix=new_matrix, action=action,
+                                      val=min_val, cols=(start_row, start_col),
+                                      offset=-Ranking.SPY)
             new_matrix = self.move_entry(matrix=new_matrix, start=(
                 start_row, start_col), end=(dest_row, dest_col))
+
         elif result == Result.OCCUPY:
             new_matrix = self.move_entry(matrix=new_matrix, start=(
                 start_row, start_col), end=(dest_row, dest_col))
-        elif (result == Result.LOSS and Infostate._piece_is_identified(piece=self.matrix[dest_row][dest_col])):
+
+        elif (result == Result.LOSS
+              and self.piece_is_owned(dest_row, dest_col)):
             new_matrix = Infostate._remove_entry(
                 matrix=new_matrix, entry_location=(start_row, start_col))
-        elif (result == Result.LOSS and not Infostate._piece_is_identified(piece=self.matrix[dest_row][dest_col]) and Infostate._get_piece_affiliation(piece=self.matrix[dest_row][dest_col]) == Player.RED):
-            new_matrix[dest_row][dest_col][min_val] = (
-                self.matrix[start_row][start_col][max_val] + Ranking.SPY + 1)
+
+        elif (result == Result.LOSS
+              and not self.piece_is_owned(row=dest_row, col=dest_col)
+              and not self.piece_is_blue(row=dest_row, col=dest_col)):
+            new_matrix = self.set_val(matrix=new_matrix, action=action,
+                                      val=min_val, cols=(dest_row, dest_col),
+                                      offset=Ranking.SPY)
             new_matrix = Infostate._remove_entry(
                 matrix=new_matrix, entry_location=(start_row, start_col))
-        elif (result == Result.LOSS and not Infostate._piece_is_identified(piece=self.matrix[dest_row][dest_col]) and Infostate._get_piece_affiliation(piece=self.matrix[dest_row][dest_col]) == Player.BLUE):
-            new_matrix[dest_row][dest_col][min_val] = (
-                self.matrix[start_row][start_col][max_val] - Ranking.SPY + 1)
+
+        elif (result == Result.LOSS
+              and not self.piece_is_owned(row=dest_row, col=dest_col)
+              and self.piece_is_blue(row=dest_row, col=dest_col)):
+            new_matrix = self.set_val(matrix=new_matrix, action=action,
+                                      val=min_val, cols=(dest_row, dest_col),
+                                      offset=-Ranking.SPY)
             new_matrix = Infostate._remove_entry(
                 matrix=new_matrix, entry_location=(start_row, start_col))
 
@@ -846,8 +898,8 @@ class MatchSimulator:
     def __init__(self, formations: list[list[int]], controllers: list[int],
                  save_data: bool, pov: int):
         """
-        The controllers parameter sets whether a human or an algorithm chooses 
-        the moves for either or both sides of the simulated match (see constant 
+        The controllers parameter sets whether a human or an algorithm chooses
+        the moves for either or both sides of the simulated match (see constant
         definitions in the Controller class).
         """
         self.blue_formation = formations[0]
@@ -860,10 +912,10 @@ class MatchSimulator:
         self.game_history = []
         self.pov = pov
 
-    @staticmethod
+    @ staticmethod
     def _place_in_red_range(formation: list[int]):
         """
-        This is to ensure that the red player's pieces are between 16 and 30 
+        This is to ensure that the red player's pieces are between 16 and 30
         (see Ranking class for details).
         """
 
@@ -873,7 +925,7 @@ class MatchSimulator:
 
         return formation
 
-    @staticmethod
+    @ staticmethod
     def _prepare_empty_matrices():
         """
         This helper method prepares a blank starting matrix for each of the two
@@ -886,7 +938,7 @@ class MatchSimulator:
 
         return blue_player_matrix, red_player_matrix
 
-    @staticmethod
+    @ staticmethod
     def _place_formation_on_matrix(formation: list[int],
                                    matrix: list[list[int]]):
         """
@@ -903,7 +955,7 @@ class MatchSimulator:
 
         return matrix
 
-    @staticmethod
+    @ staticmethod
     def _flip_matrix(matrix: list[list[int]]):
         """
         This helper method is for placing the blue pieces in their starting
@@ -916,7 +968,7 @@ class MatchSimulator:
 
         return matrix
 
-    @staticmethod
+    @ staticmethod
     def _combine_player_matrices(blue_player_matrix: list[list[int]],
                                  red_player_matrix: list[list[int]]):
         """
@@ -949,7 +1001,7 @@ class MatchSimulator:
 
         return arbiter_matrix
 
-    @staticmethod
+    @ staticmethod
     def _print_game_status(turn_number: int, arbiter_board: Board,
                            infostates: list[Infostate], pov: int):
 
