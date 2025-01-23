@@ -664,6 +664,7 @@ class Infostate(Board):
         """
         infostate_board = copy.deepcopy(board.matrix)  # Initialize the board
         opponent = (Player.RED if owner == Player.BLUE else Player.BLUE)
+        offset = 0 if owner == Player.BLUE else Ranking.SPY  # For red pieces
         for i, row in enumerate(board.matrix):
             for j, entry in enumerate(row):
                 # Set initial value bounds for the pieces
@@ -673,7 +674,8 @@ class Infostate(Board):
                         rank_ceiling=Ranking.BLANK)
                 elif Infostate.get_piece_affiliation(piece=entry) == owner:
                     infostate_board[i][j] = InfostatePiece(
-                        color=owner, rank_floor=entry, rank_ceiling=entry
+                        color=owner, rank_floor=entry - offset,
+                        rank_ceiling=entry - offset
                     )
                 elif Infostate.get_piece_affiliation(piece=entry) != owner:
                     infostate_board[i][j] = InfostatePiece(
@@ -1056,12 +1058,15 @@ class MatchSimulator:
 
         blue_infostate, red_infostate = infostates[0], infostates[1]
         print(f"Turn Number: {turn_number}")
-        if pov == POV.WORLD:
-            arbiter_board.print_state(POV.WORLD, with_color=True)
-        elif pov == POV.BLUE:
-            blue_infostate.print_state()
-        elif pov == POV.RED:
-            red_infostate.print_state()
+        # if pov == POV.WORLD:
+        #     arbiter_board.print_state(POV.WORLD, with_color=True)
+        # elif pov == POV.BLUE:
+        #     blue_infostate.print_state()
+        # elif pov == POV.RED:
+        #     red_infostate.print_state()
+
+        blue_infostate.print_state()
+        red_infostate.print_state()
 
         arbiter_board.print_state(pov=POV.WORLD, with_color=True)
 
