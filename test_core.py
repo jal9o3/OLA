@@ -204,10 +204,12 @@ class TestInfostate(unittest.TestCase):
                                                    board=sample_board)
         next_infostate = sample_blue_infostate.transition(action="4353",
                                                           result=Result.WIN)
-        sample_blue_infostate.print_state()
-        next_infostate.print_state()
         self.assertEqual(next_infostate.matrix[5][3][0], 22)
         self.assertEqual(next_infostate.abstracted_board[5][3].rank_floor, 7)
+        next_infostate = sample_blue_infostate.transition(action="1617",
+                                                          result=Result.WIN)
+        self.assertEqual(next_infostate.matrix[1][6][0], 0)
+        self.assertEqual(next_infostate.abstracted_board[1][6].rank_floor, 0)
 
 
 class TestPlayer(unittest.TestCase):
