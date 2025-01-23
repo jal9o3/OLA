@@ -910,8 +910,7 @@ class Infostate(Board):
                 board=new_board, entry_location=(start_row, start_col))
 
         elif (result == Result.LOSS
-              and not self.piece_is_owned(row=dest_row, col=dest_col)
-              and not self.piece_is_blue(row=dest_row, col=dest_col)):
+              and not self.piece_is_owned(row=dest_row, col=dest_col)):
             new_board[dest_row][dest_col].rank_floor = (
                 new_board[start_row][start_col].rank_ceiling + 1)
             new_board = Infostate._remove_piece(
@@ -1063,6 +1062,8 @@ class MatchSimulator:
             blue_infostate.print_state()
         elif pov == POV.RED:
             red_infostate.print_state()
+
+        arbiter_board.print_state(pov=POV.WORLD, with_color=True)
 
         print(f"Player to move: {arbiter_board.player_to_move}")
 
