@@ -771,6 +771,8 @@ class Infostate(Board):
             start_row][start_col].rank_floor
         board[dest_row][dest_col].rank_ceiling = self.abstracted_board[
             start_row][start_col].rank_ceiling
+        board[dest_row][dest_col].color = self.abstracted_board[start_row][
+            start_col].color
         board[start_row][start_col] = InfostatePiece(color=Player.ARBITER,
                                                      rank_floor=Ranking.BLANK,
                                                      rank_ceiling=Ranking.BLANK)
