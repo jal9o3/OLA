@@ -6,8 +6,8 @@ import unittest
 from unittest.mock import patch
 
 from core import (
-    Board, Player, Ranking, get_random_permutation, get_blank_matrix,
-    get_hex_uppercase_string
+    Board, Infostate, Result, Player, Ranking, get_random_permutation,
+    get_blank_matrix, get_hex_uppercase_string
 )
 
 
@@ -175,6 +175,39 @@ class TestBoard(unittest.TestCase):
                              blue_anticipating=False, red_anticipating=False)
         next_board = sample_board.transition(action="3222")
         self.assertTrue(next_board.is_terminal())
+
+
+class TestInfostate(unittest.TestCase):
+    """
+    This tests the representation of the board as seen by either of the players.
+    """
+
+    def test_transition(self):
+        """
+        This verifies that the infostate representation is configured properly 
+        after each move.
+        """
+
+        sample_state_matrix = [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 17, 1, 0, 0, 2, 30, 0],
+            [0, 0, 0, 0, 0, 9, 15, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 23, 0, 29, 0, 0, 0],
+            [0, 0, 0, 6, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 16, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        ]
+        sample_board = Board(sample_state_matrix, player_to_move=Player.BLUE,
+                             blue_anticipating=False, red_anticipating=False)
+        sample_blue_infostate = Infostate.at_start(owner=Player.BLUE,
+                                                   board=sample_board)
+        next_infostate = sample_blue_infostate.transition(action="4353",
+                                                          result=Result.WIN)
+        sample_blue_infostate.print_state()
+        next_infostate.print_state()
+        self.assertEqual(next_infostate.matrix[5][3][0], 22)
+        self.assertEqual(next_infostate.abstracted_board[5][3].rank_floor, 7)
 
 
 class TestPlayer(unittest.TestCase):

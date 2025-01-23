@@ -769,11 +769,11 @@ class Infostate(Board):
         start_row, start_col = start[0], start[1]
         dest_row, dest_col = end[0], end[1]
 
-        board[dest_row][dest_col].rank_floor = self.abstracted_board[
+        board[dest_row][dest_col].rank_floor = board[
             start_row][start_col].rank_floor
-        board[dest_row][dest_col].rank_ceiling = self.abstracted_board[
+        board[dest_row][dest_col].rank_ceiling = board[
             start_row][start_col].rank_ceiling
-        board[dest_row][dest_col].color = self.abstracted_board[start_row][
+        board[dest_row][dest_col].color = board[start_row][
             start_col].color
         board[start_row][start_col] = InfostatePiece(color=Player.ARBITER,
                                                      rank_floor=Ranking.BLANK,
@@ -1138,3 +1138,4 @@ class MatchSimulator:
             red_infostate = red_infostate.transition(action, result=result)
             arbiter_board = new_arbiter_board
             turn_number += 1
+            time.sleep(0.7)
