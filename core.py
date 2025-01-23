@@ -1058,17 +1058,12 @@ class MatchSimulator:
 
         blue_infostate, red_infostate = infostates[0], infostates[1]
         print(f"Turn Number: {turn_number}")
-        # if pov == POV.WORLD:
-        #     arbiter_board.print_state(POV.WORLD, with_color=True)
-        # elif pov == POV.BLUE:
-        #     blue_infostate.print_state()
-        # elif pov == POV.RED:
-        #     red_infostate.print_state()
-
-        blue_infostate.print_state()
-        red_infostate.print_state()
-
-        arbiter_board.print_state(pov=POV.WORLD, with_color=True)
+        if pov == POV.WORLD:
+            arbiter_board.print_state(POV.WORLD, with_color=True)
+        elif pov == POV.BLUE:
+            blue_infostate.print_state()
+        elif pov == POV.RED:
+            red_infostate.print_state()
 
         print(f"Player to move: {arbiter_board.player_to_move}")
 
@@ -1111,7 +1106,7 @@ class MatchSimulator:
                     and arbiter_board.player_to_move == Player.BLUE):
                 self.pov = POV.BLUE
             elif (self.get_current_controller(arbiter_board) == Controller.HUMAN
-                  and arbiter_board.player_to_move == Player.BLUE):
+                  and arbiter_board.player_to_move == Player.RED):
                 self.pov = POV.RED
             elif Controller.HUMAN in self.controllers:
                 self.pov = None
