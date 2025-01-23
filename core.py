@@ -43,6 +43,7 @@ class Player:
     formations.
     """
 
+    ARBITER = 0
     BLUE = 1
     RED = 2
 
@@ -608,13 +609,25 @@ class Board:
         return self.deduce_action_result(matrix_difference, action)
 
 
+class InfostatePiece:
+    """
+    This represents a piece on the infostate.
+    """
+
+    def __init__(self, color: int, rank_floor: int, rank_ceiling: int):
+        self.color = color
+        self.rank_floor = rank_floor
+        self.rank_ceiling = rank_ceiling
+
+
 class Infostate(Board):
     """
     This represents the current game state as seen by either of the players.
     """
 
-    def __init__(self, owner: int, matrix: list[list[list[int]]],
-                 player_to_move: int, anticipation_probabilities=list[float]):
+    def __init__(self, abstracted_board: list[list[InfostatePiece]], owner: int,
+                 matrix: list[list[list[int]]], player_to_move: int,
+                 anticipation_probabilities=list[float]):
         """
         In contrast to the arbiter board, the infostate must belong to strictly
         one of the players, and the values of blue_anticipating and
@@ -627,29 +640,51 @@ class Infostate(Board):
         self.matrix = matrix
         self.blue_anticipating = anticipation_probabilities[0]
         self.red_anticipating = anticipation_probabilities[1]
+        self.abstracted_board = abstracted_board
+
+    @staticmethod
+    def _to_matrix(infostate_board: list[list[InfostatePiece]]):
+        infostate_matrix = [[[0, 0] for col in range(Board.COLUMNS)]
+                            for row in range(Board.ROWS)]
+        for i, row in enumerate(infostate_board):
+            for j, piece in enumerate(row):
+                if piece.color == Player.BLUE:
+                    infostate_matrix[i][j] = [piece.rank_floor,
+                                              piece.rank_ceiling]
+                elif piece.color == Player.RED:
+                    infostate_matrix[i][j] = [piece.rank_floor + Ranking.SPY,
+                                              piece.rank_ceiling + Ranking.SPY]
+
+        return infostate_matrix
 
     @staticmethod
     def at_start(owner: int, board: Board) -> 'Infostate':
         """
         This creates the starting infostate for either of the players.
         """
-        infostate_matrix = copy.deepcopy(board.matrix)  # Initialize the matrix
+        infostate_board = copy.deepcopy(board.matrix)  # Initialize the board
         opponent = (Player.RED if owner == Player.BLUE else Player.BLUE)
-        opponent_piece_range_start, opponent_piece_range_end = (
-            Infostate.get_piece_range(opponent))
         for i, row in enumerate(board.matrix):
             for j, entry in enumerate(row):
                 # Set initial value bounds for the pieces
                 if entry == Ranking.BLANK:
-                    infostate_matrix[i][j] = [Ranking.BLANK, Ranking.BLANK]
+                    infostate_board[i][j] = InfostatePiece(
+                        color=Player.ARBITER, rank_floor=Ranking.BLANK,
+                        rank_ceiling=Ranking.BLANK)
                 elif Infostate.get_piece_affiliation(piece=entry) == owner:
-                    infostate_matrix[i][j] = [entry, entry]  # Upper = Lower
+                    infostate_board[i][j] = InfostatePiece(
+                        color=owner, rank_floor=entry, rank_ceiling=entry
+                    )
                 elif Infostate.get_piece_affiliation(piece=entry) != owner:
-                    infostate_matrix[i][j] = [opponent_piece_range_start,
-                                              opponent_piece_range_end]
+                    infostate_board[i][j] = InfostatePiece(
+                        color=opponent, rank_floor=Ranking.FLAG,
+                        rank_ceiling=Ranking.SPY
+                    )
 
-        return Infostate(owner=owner, matrix=infostate_matrix,
-                         player_to_move=Player.BLUE,
+        infostate_matrix = Infostate._to_matrix(infostate_board)
+
+        return Infostate(abstracted_board=infostate_board, owner=owner,
+                         matrix=infostate_matrix, player_to_move=Player.BLUE,
                          anticipation_probabilities=[0.0, 0.0])
 
     @staticmethod
@@ -699,31 +734,32 @@ class Infostate(Board):
         print()  # Move the output after the board to a new line
 
     @staticmethod
-    def _remove_entry(matrix: list[list[list[int]]],
+    def _remove_piece(board: list[list[InfostatePiece]],
                       entry_location: tuple[int]):
-        entry_row, entry_column = entry_location
+        entry_row, entry_col = entry_location
 
-        matrix[entry_row][entry_column] = [
-            Ranking.BLANK, Ranking.BLANK]
+        board[entry_row][entry_col] = InfostatePiece(color=Player.ARBITER,
+                                                     rank_floor=Ranking.BLANK,
+                                                     rank_ceiling=Ranking.BLANK)
 
-        return matrix
+        return board
 
     @staticmethod
-    def _remove_entries(matrix: list[list[list[int]]],
-                        locs: tuple[tuple[int]]):
+    def _remove_pieces(board: list[list[InfostatePiece]],
+                       locs: tuple[tuple[int]]):
         start_row, start_col = locs[0]
         dest_row, dest_col = locs[1]
 
-        matrix = Infostate._remove_entry(matrix=matrix, entry_location=(
+        matrix = Infostate._remove_piece(board=board, entry_location=(
             start_row,
             start_col))
-        matrix = Infostate._remove_entry(matrix=matrix, entry_location=(
+        matrix = Infostate._remove_piece(board=board, entry_location=(
             dest_row,
             dest_col
         ))
         return matrix
 
-    def move_entry(self, matrix: list[list[list[int]]],
+    def move_piece(self, board: list[list[InfostatePiece]],
                    start: tuple[int], end: tuple[int]):
         """
         This reflects a move in an infostate in an infostate matrix.
@@ -731,12 +767,15 @@ class Infostate(Board):
         start_row, start_col = start[0], start[1]
         dest_row, dest_col = end[0], end[1]
 
-        matrix[dest_row][dest_col] = self.matrix[
-            start_row][start_col]
-        matrix[start_row][start_col] = [
-            Ranking.BLANK, Ranking.BLANK]
+        board[dest_row][dest_col].rank_floor = self.abstracted_board[
+            start_row][start_col].rank_floor
+        board[dest_row][dest_col].rank_ceiling = self.abstracted_board[
+            start_row][start_col].rank_ceiling
+        board[start_row][start_col] = InfostatePiece(color=Player.ARBITER,
+                                                     rank_floor=Ranking.BLANK,
+                                                     rank_ceiling=Ranking.BLANK)
 
-        return matrix
+        return board
 
     @staticmethod
     def _piece_is_identified(piece: list[int]):
@@ -755,10 +794,9 @@ class Infostate(Board):
     def piece_is_owned(self, row: int, col: int):
         """
         Determines if the piece at the specified row and column in the infostate 
-        matrix belongs to the owner of the infostate.
+        belongs to the owner of the infostate.
         """
-        return (Infostate._get_piece_affiliation(
-            self.matrix[row][col]) == self.owner)
+        return self.abstracted_board[row][col].color == self.owner
 
     def piece_is_blue(self, row: int, col: int):
         """
@@ -837,73 +875,55 @@ class Infostate(Board):
         result classification of the action.
         """
         _ = args  # Stops the linter's complaints
-        new_matrix = copy.deepcopy(self.matrix)
+        new_board = copy.deepcopy(self.abstracted_board)
         start_row, start_col, dest_row, dest_col = (
             map(int, action)
         )
         # Find the action's result in the keyword arguments
         result = kwargs['result'] if 'result' in kwargs else None
 
-        min_val, max_val = 0, 1  # Indices in the piece entries
-
         if result == Result.DRAW:
-            new_matrix = Infostate._remove_entries(matrix=new_matrix, locs=(
+            new_board = Infostate._remove_pieces(board=new_board, locs=(
                 (start_row, start_col), (dest_row, dest_col)))
 
         elif (result == Result.WIN
               and self.piece_is_owned(row=start_row, col=start_col)):
-            new_matrix = self.move_entry(matrix=new_matrix, start=(
+            new_board = self.move_piece(board=new_board, start=(
                 start_row, start_col), end=(dest_row, dest_col))
 
         elif (result == Result.WIN
-              and not self.piece_is_owned(row=start_row, col=start_col)
-              and not self.piece_is_blue(row=start_row, col=start_col)):
-            new_matrix = self.set_val(matrix=new_matrix, action=action,
-                                      val=min_val, xy=(start_row, start_col),
-                                      offset=Ranking.SPY)
-            new_matrix = self.move_entry(matrix=new_matrix, start=(
-                start_row, start_col), end=(dest_row, dest_col))
-
-        elif (result == Result.WIN
-              and not self.piece_is_owned(row=start_row, col=start_col)
-              and self.piece_is_blue(row=start_row, col=start_col)):
-            new_matrix = self.set_val(matrix=new_matrix, action=action,
-                                      val=min_val, xy=(start_row, start_col),
-                                      offset=-Ranking.SPY)
-            new_matrix = self.move_entry(matrix=new_matrix, start=(
+              and not self.piece_is_owned(row=start_row, col=start_col)):
+            new_board[start_row][start_col].rank_floor = (
+                new_board[dest_row][dest_col].rank_ceiling + 1)
+            new_board = self.move_piece(board=new_board, start=(
                 start_row, start_col), end=(dest_row, dest_col))
 
         elif result == Result.OCCUPY:
-            new_matrix = self.move_entry(matrix=new_matrix, start=(
+            new_board = self.move_piece(board=new_board, start=(
                 start_row, start_col), end=(dest_row, dest_col))
 
         elif (result == Result.LOSS
               and self.piece_is_owned(dest_row, dest_col)):
-            new_matrix = Infostate._remove_entry(
-                matrix=new_matrix, entry_location=(start_row, start_col))
+            new_board = Infostate._remove_piece(
+                board=new_board, entry_location=(start_row, start_col))
 
         elif (result == Result.LOSS
               and not self.piece_is_owned(row=dest_row, col=dest_col)
               and not self.piece_is_blue(row=dest_row, col=dest_col)):
-            new_matrix = self.set_val(matrix=new_matrix, action=action,
-                                      val=min_val, xy=(dest_row, dest_col),
-                                      offset=Ranking.SPY)
-            new_matrix = Infostate._remove_entry(
-                matrix=new_matrix, entry_location=(start_row, start_col))
+            new_board[dest_row][dest_col].rank_floor = (
+                new_board[start_row][start_col].rank_ceiling + 1)
+            new_board = Infostate._remove_piece(
+                board=new_board, entry_location=(start_row, start_col))
 
-        elif (result == Result.LOSS
-              and not self.piece_is_owned(row=dest_row, col=dest_col)
-              and self.piece_is_blue(row=dest_row, col=dest_col)):
-            new_matrix = self.set_val(matrix=new_matrix, action=action,
-                                      val=min_val, xy=(dest_row, dest_col),
-                                      offset=-Ranking.SPY)
-            new_matrix = Infostate._remove_entry(
-                matrix=new_matrix, entry_location=(start_row, start_col))
+        new_matrix = Infostate._to_matrix(infostate_board=new_board)
 
-        return Infostate(owner=self.owner, matrix=new_matrix, player_to_move=(
-            Player.RED if self.player_to_move == Player.BLUE else Player.BLUE),
-            anticipation_probabilities=[0.0, 0.0]
-        )
+        return Infostate(abstracted_board=new_board, owner=self.owner,
+                         matrix=new_matrix,
+                         player_to_move=(
+                             Player.RED if self.player_to_move == Player.BLUE
+                             else Player.BLUE),
+                         anticipation_probabilities=[0.0, 0.0]
+                         )
 
 
 class Controller:
