@@ -951,14 +951,14 @@ class Infostate(Board):
         if flag_loc is None:
             anticipation = False
         elif (self.owner == Player.BLUE and flag_loc[0] == Infostate.ROWS - 1
-            and not self.anticipating
-            and self.has_none_adjacent(column_number=flag_loc[1],
-                                       end_row=new_board[-1])):
+              and not self.anticipating
+              and self.has_none_adjacent(column_number=flag_loc[1],
+                                         end_row=new_board[-1])):
             anticipation = True
         elif (self.owner == Player.RED and flag_loc[0] == 0
-            and not self.anticipating
-            and self.has_none_adjacent(column_number=flag_loc[1],
-                                       end_row=new_board[0])):
+              and not self.anticipating
+              and self.has_none_adjacent(column_number=flag_loc[1],
+                                         end_row=new_board[0])):
             anticipation = True
 
         return Infostate(abstracted_board=new_board, owner=self.owner,
@@ -1117,37 +1117,69 @@ class MatchSimulator:
 
         return current_controller
 
+    @staticmethod
+    def _starting_infostates(arbiter_board: Board):
+        blue_infostate = Infostate.at_start(owner=Player.BLUE,
+                                            board=arbiter_board)
+        red_infostate = Infostate.at_start(owner=Player.RED,
+                                           board=arbiter_board)
+
+        return blue_infostate, red_infostate
+
+    def manage_pov_switching(self, arbiter_board: Board):
+        """
+        This is for setting the POV when one of the controllers is human.
+        """
+        # Assume that only one of the controllers is human
+        if (self.get_current_controller(arbiter_board) == Controller.HUMAN
+                and arbiter_board.player_to_move == Player.BLUE):
+            self.pov = POV.BLUE
+        elif (self.get_current_controller(arbiter_board) == Controller.HUMAN
+                and arbiter_board.player_to_move == Player.RED):
+            self.pov = POV.RED
+        elif Controller.HUMAN in self.controllers:
+            self.pov = None
+
+    def get_controller_input(self, arbiter_board: Board):
+        """
+        This is for obtaining the controller's chosen action, be it human or
+        bot.
+        """
+        valid_actions = arbiter_board.actions()
+        if self.get_current_controller(arbiter_board) == Controller.RANDOM:
+            action = random.choice(valid_actions)
+        elif self.get_current_controller(arbiter_board) == Controller.HUMAN:
+            while action not in valid_actions:
+                action = input("Choose a move: ")
+
+        return action
+
+    @staticmethod
+    def _update_infostates(blue_infostate: Infostate, red_infostate: Infostate,
+                           action: str, result: str):
+        blue_infostate = blue_infostate.transition(action, result=result)
+        red_infostate = red_infostate.transition(action, result=result)
+
+        return blue_infostate, red_infostate
+
     def start(self):
         """
         This method simulates a GG match in the terminal, either taking input
         from humans or choosing moves based on an algorithm or even both.
         """
-        logger = logging.getLogger(__name__)
-        logger.setLevel(logging.DEBUG)
-
         arbiter_board = Board(self.setup_arbiter_matrix(),
                               player_to_move=Player.BLUE,
                               blue_anticipating=False, red_anticipating=False)
         if self.save_data:
             self.game_history.append(arbiter_board.matrix)
 
-        blue_infostate = Infostate.at_start(owner=Player.BLUE,
-                                            board=arbiter_board)
-        red_infostate = Infostate.at_start(owner=Player.RED,
-                                           board=arbiter_board)
+        blue_infostate, red_infostate = MatchSimulator._starting_infostates(
+            arbiter_board)
 
         turn_number = 1
         branches_encountered = 0
         while not arbiter_board.is_terminal():
-            # Assume that only one of the controllers is human
-            if (self.get_current_controller(arbiter_board) == Controller.HUMAN
-                    and arbiter_board.player_to_move == Player.BLUE):
-                self.pov = POV.BLUE
-            elif (self.get_current_controller(arbiter_board) == Controller.HUMAN
-                  and arbiter_board.player_to_move == Player.RED):
-                self.pov = POV.RED
-            elif Controller.HUMAN in self.controllers:
-                self.pov = None
+            self.manage_pov_switching(arbiter_board)
 
             MatchSimulator._print_game_status(turn_number, arbiter_board,
                                               infostates=[
@@ -1158,12 +1190,7 @@ class MatchSimulator:
             branches_encountered += len(valid_actions)
 
             action = ""  # Initialize variable for storing chosen action
-            if self.get_current_controller(arbiter_board) == Controller.RANDOM:
-                action = random.choice(valid_actions)
-            elif self.get_current_controller(arbiter_board) == Controller.HUMAN:
-                while action not in valid_actions:
-                    action = input("Choose a move: ")
-
+            action = self.get_controller_input(arbiter_board)
             print(f"Chosen Move: {action}")
 
             if self.save_data:
@@ -1172,7 +1199,8 @@ class MatchSimulator:
             new_arbiter_board = arbiter_board.transition(action)
             result = arbiter_board.classify_action_result(action,
                                                           new_arbiter_board)
-            blue_infostate = blue_infostate.transition(action, result=result)
-            red_infostate = red_infostate.transition(action, result=result)
+            blue_infostate, red_infostate = MatchSimulator._update_infostates(
+                blue_infostate, red_infostate, action=action, result=result
+            )
             arbiter_board = new_arbiter_board
             turn_number += 1
