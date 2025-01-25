@@ -781,49 +781,12 @@ class Infostate(Board):
 
         return board
 
-    @staticmethod
-    def _piece_is_identified(piece: list[int]):
-        return piece[0] == piece[1]
-
-    @staticmethod
-    def _get_piece_affiliation(piece: list[int]):
-        affiliation = None  # Initialize return value
-        if piece[0] <= Ranking.SPY:
-            affiliation = Player.BLUE
-        elif piece[0] > Ranking.SPY:
-            affiliation = Player.RED
-
-        return affiliation
-
     def piece_is_owned(self, row: int, col: int):
         """
         Determines if the piece at the specified row and column in the infostate 
         belongs to the owner of the infostate.
         """
         return self.abstracted_board[row][col].color == self.owner
-
-    def piece_is_blue(self, row: int, col: int):
-        """
-        This checks if a piece at a specified row and column in the infostate 
-        matrix belongs to the blue player. Negate to check if it belongs to the 
-        red player.
-        """
-        return (Infostate._get_piece_affiliation(
-            piece=self.matrix[row][col]) == Player.RED)
-
-    def piece_is_blue_spy(self, row: int, col: int, val: int):
-        """
-        This checks if a piece at a given coordinate in the infostate matrix
-        is a spy of the blue player.
-        """
-        return self.matrix[row][col][val] == Ranking.SPY
-
-    def piece_is_red_spy(self, row: int, col: int, val: int):
-        """
-        This checks if a piece at a given coordinate in the infostate matrix
-        is a spy of the red player.
-        """
-        return self.matrix[row][col][val] == Ranking.SPY*2
 
     @staticmethod
     def update_val(board: list[list[InfostatePiece]], to_update: tuple[int],
