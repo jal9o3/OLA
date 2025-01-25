@@ -332,23 +332,23 @@ class Board:
         logger = logging.getLogger(__name__)
         logger.setLevel(logging.DEBUG)
 
-        has_adjacent = False  # Initialize return value
+        result = False  # Initialize return value
         leftmost_column_number = 0
         rightmost_column_number = Board.COLUMNS - 1
         if (Board.has_at_edge_column(column_number)
             and column_number == leftmost_column_number
                 and Board.is_vacant_to_the_right(column_number, end_row)):
-            has_adjacent = True
+            result = True
         elif (Board.has_at_edge_column(column_number)
               and column_number == rightmost_column_number
               and Board.is_vacant_to_the_left(column_number, end_row)):
-            has_adjacent = True
+            result = True
         elif (not Board.has_at_edge_column(column_number)
               and Board.is_vacant_to_the_right(column_number, end_row)
               and Board.is_vacant_to_the_left(column_number, end_row)):
-            has_adjacent = True
+            result = True
 
-        return has_adjacent
+        return result
 
     def is_terminal(self):
         """
@@ -656,11 +656,11 @@ class Infostate(Board):
 
     def __init__(self, abstracted_board: list[list[InfostatePiece]], owner: int,
                  matrix: list[list[list[int]]], player_to_move: int,
-                 anticipation_probabilities=list[float]):
+                 anticipating=bool):
         """
         In contrast to the arbiter board, the infostate must belong to strictly
-        one of the players, and the values of blue_anticipating and
-        red_anticipating are probabilities between 0 and 1.
+        one of the players, and the value of the anticipating attribute depends
+        on the location of the infostate owner's flag.
         """
         super().__init__(matrix=None, player_to_move=player_to_move,
                          blue_anticipating=False, red_anticipating=False)
@@ -668,8 +668,7 @@ class Infostate(Board):
         # Override attributes of the parent board class
         # TODO: Derive the matrix from the abstracted board
         self.matrix = matrix
-        self.blue_anticipating = anticipation_probabilities[0]
-        self.red_anticipating = anticipation_probabilities[1]
+        self.anticipating = anticipating
         self.abstracted_board = abstracted_board
 
     @staticmethod
@@ -717,7 +716,7 @@ class Infostate(Board):
 
         return Infostate(abstracted_board=infostate_board, owner=owner,
                          matrix=infostate_matrix, player_to_move=Player.BLUE,
-                         anticipation_probabilities=[0.0, 0.0])
+                         anticipating=False)
 
     @staticmethod
     def _print_blank_square():
@@ -841,6 +840,67 @@ class Infostate(Board):
 
         return board
 
+    def _find_flag(self):
+        """
+        This finds the infostate owner's flag, useful for setting the
+        anticipating attribute.
+        """
+        for i, row in enumerate(self.abstracted_board):
+            for j, piece in enumerate(row):
+                if (piece.color == self.owner
+                        and piece.rank_floor == Ranking.FLAG):
+                    return (i, j)
+
+        return None
+
+    # TODO: Combine the next two methods into one
+
+    @staticmethod
+    def is_vacant_to_the_right(column_number: int,
+                               end_row: list[InfostatePiece]):
+        """
+        Checks if the square to the right of a given column in a row is blank.
+        """
+        go_right = 1
+        # The only squares "owned" by the arbiter are blank squares
+        return end_row[column_number + go_right].color != Player.ARBITER
+
+    @staticmethod
+    def is_vacant_to_the_left(column_number: int,
+                              end_row: list[InfostatePiece]):
+        """
+        Checks if the square to the left of a given column in a row is blank.
+        """
+        go_left = -1
+        # The only squares "owned" by the arbiter are blank squares
+        return end_row[column_number + go_left].color != Player.ARBITER
+
+    @staticmethod
+    def has_none_adjacent(column_number: int, end_row: list[InfostatePiece]):
+        """
+        This checks if a given column in a row has blank square neighbors.
+        """
+        logger = logging.getLogger(__name__)
+        logger.setLevel(logging.DEBUG)
+
+        result = False  # Initialize return value
+        leftmost_column_number = 0
+        rightmost_column_number = Board.COLUMNS - 1
+        if (Board.has_at_edge_column(column_number)
+            and column_number == leftmost_column_number
+                and Board.is_vacant_to_the_right(column_number, end_row)):
+            result = True
+        elif (Board.has_at_edge_column(column_number)
+              and column_number == rightmost_column_number
+              and Board.is_vacant_to_the_left(column_number, end_row)):
+            result = True
+        elif (not Board.has_at_edge_column(column_number)
+              and Board.is_vacant_to_the_right(column_number, end_row)
+              and Board.is_vacant_to_the_left(column_number, end_row)):
+            result = True
+
+        return result
+
     def transition(self, action: str, *args, **kwargs):
         """
         This obtains the next infostate based on the provided action and the
@@ -890,13 +950,24 @@ class Infostate(Board):
 
         new_matrix = Infostate._to_matrix(infostate_board=new_board)
 
+        anticipation = self.anticipating
+        flag_loc = self._find_flag()
+        if (self.owner == Player.BLUE and flag_loc[0] == Infostate.ROWS - 1
+            and not self.anticipating
+            and self.has_none_adjacent(column_number=flag_loc[1],
+                                       end_row=new_board[-1])):
+            anticipation = True
+        if (self.owner == Player.RED and flag_loc[0] == 0
+            and not self.anticipating
+            and self.has_none_adjacent(column_number=flag_loc[1],
+                                       end_row=new_board[0])):
+            anticipation = True
+
         return Infostate(abstracted_board=new_board, owner=self.owner,
                          matrix=new_matrix,
                          player_to_move=(
                              Player.RED if self.player_to_move == Player.BLUE
-                             else Player.BLUE),
-                         anticipation_probabilities=[0.0, 0.0]
-                         )
+                             else Player.BLUE), anticipating=anticipation)
 
 
 class Controller:
