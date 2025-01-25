@@ -608,6 +608,35 @@ class Board:
 
         return self.deduce_action_result(matrix_difference, action)
 
+    def reward(self):
+        """
+        This assigns a numerical value to terminal states. Positive reward
+        indicates a blue win, negative reward indicates a red win, and a zero
+        indicates a draw.
+        """
+
+        blue_flag = Ranking.FLAG
+        red_flag = Ranking.FLAG + Ranking.SPY  # See ranking class for details
+        blue_end = 0
+        red_end = -1  # The first and last row numbers, respectively
+        win_value = 1000000
+
+        reward = 0  # Initialize return value
+        if self.piece_not_found(blue_flag):
+            reward = -win_value
+        elif self.piece_not_found(red_flag):
+            reward = win_value
+        elif blue_flag in self.matrix[red_end] and self.blue_anticipating:
+            # If the flag has already survived a turn in the board's red end
+            reward = win_value
+        elif red_flag in self.matrix[blue_end] and self.red_anticipating:
+            # If the flag has already survived a turn in the board's blue end
+            reward = -win_value
+        else:
+            reward = 0  # Assume a draw
+
+        return reward
+
 
 class InfostatePiece:
     """
@@ -637,6 +666,7 @@ class Infostate(Board):
                          blue_anticipating=False, red_anticipating=False)
         self.owner = owner
         # Override attributes of the parent board class
+        # TODO: Derive the matrix from the abstracted board
         self.matrix = matrix
         self.blue_anticipating = anticipation_probabilities[0]
         self.red_anticipating = anticipation_probabilities[1]

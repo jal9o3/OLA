@@ -145,6 +145,38 @@ class TestBoard(unittest.TestCase):
                              blue_anticipating=False, red_anticipating=False)
         self.assertEqual(len(sample_board.actions()), 12)
 
+    def test_reward(self):
+        """
+        This verifies that the proper values are assigned to terminal states.
+        """
+        win_value = 1000000
+        sample_state_matrix = [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 2, 0, 0],
+            [0, 0, 15, 0, 0, 9, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 23, 0, 29, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        ]
+        sample_board = Board(sample_state_matrix, player_to_move=Player.RED,
+                             blue_anticipating=False, red_anticipating=False)
+        self.assertEqual(sample_board.reward(), win_value)
+        sample_state_matrix = [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 2, 0, 0],
+            [0, 0, 15, 0, 0, 9, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 23, 0, 29, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 16, 0],
+        ]
+        sample_board = Board(sample_state_matrix, player_to_move=Player.BLUE,
+                             blue_anticipating=False, red_anticipating=False)
+        self.assertEqual(sample_board.reward(), -win_value)
+
     def test_transition(self):
         """
         This verifies that the next state can be determined given the current
