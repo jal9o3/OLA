@@ -761,8 +761,8 @@ class Infostate(Board):
         ))
         return matrix
 
-    def move_piece(self, board: list[list[InfostatePiece]],
-                   start: tuple[int], end: tuple[int]):
+    def _move_piece(self, board: list[list[InfostatePiece]],
+                    start: tuple[int], end: tuple[int]):
         """
         This reflects a move in an infostate in an infostate matrix.
         """
@@ -781,7 +781,7 @@ class Infostate(Board):
 
         return board
 
-    def piece_is_owned(self, row: int, col: int):
+    def _piece_is_owned(self, row: int, col: int):
         """
         Determines if the piece at the specified row and column in the infostate 
         belongs to the owner of the infostate.
@@ -789,8 +789,8 @@ class Infostate(Board):
         return self.abstracted_board[row][col].color == self.owner
 
     @staticmethod
-    def update_val(board: list[list[InfostatePiece]], to_update: tuple[int],
-                   source: tuple[int]):
+    def _update_val(board: list[list[InfostatePiece]], to_update: tuple[int],
+                    source: tuple[int]):
         """
         This sets a new value to the range of an unidentified piece in a copy of 
         the infostate piece board. This value is calculated from the value of 
@@ -829,32 +829,32 @@ class Infostate(Board):
                 (start_row, start_col), (dest_row, dest_col)))
 
         elif (result == Result.WIN
-              and self.piece_is_owned(row=start_row, col=start_col)):
-            new_board = self.move_piece(board=new_board, start=(
+              and self._piece_is_owned(row=start_row, col=start_col)):
+            new_board = self._move_piece(board=new_board, start=(
                 start_row, start_col), end=(dest_row, dest_col))
 
         elif (result == Result.WIN
-              and not self.piece_is_owned(row=start_row, col=start_col)):
-            new_board = Infostate.update_val(board=new_board,
-                                             to_update=(start_row, start_col),
-                                             source=(dest_row, dest_col))
-            new_board = self.move_piece(board=new_board, start=(
+              and not self._piece_is_owned(row=start_row, col=start_col)):
+            new_board = Infostate._update_val(board=new_board,
+                                              to_update=(start_row, start_col),
+                                              source=(dest_row, dest_col))
+            new_board = self._move_piece(board=new_board, start=(
                 start_row, start_col), end=(dest_row, dest_col))
 
         elif result == Result.OCCUPY:
-            new_board = self.move_piece(board=new_board, start=(
+            new_board = self._move_piece(board=new_board, start=(
                 start_row, start_col), end=(dest_row, dest_col))
 
         elif (result == Result.LOSS
-              and self.piece_is_owned(dest_row, dest_col)):
+              and self._piece_is_owned(dest_row, dest_col)):
             new_board = Infostate._remove_piece(
                 board=new_board, entry_location=(start_row, start_col))
 
         elif (result == Result.LOSS
-              and not self.piece_is_owned(row=dest_row, col=dest_col)):
-            new_board = Infostate.update_val(board=new_board,
-                                             to_update=(dest_row, dest_col),
-                                             source=(start_row, start_col))
+              and not self._piece_is_owned(row=dest_row, col=dest_col)):
+            new_board = Infostate._update_val(board=new_board,
+                                              to_update=(dest_row, dest_col),
+                                              source=(start_row, start_col))
             new_board = Infostate._remove_piece(
                 board=new_board, entry_location=(start_row, start_col))
 
