@@ -176,6 +176,32 @@ class TestBoard(unittest.TestCase):
         sample_board = Board(sample_state_matrix, player_to_move=Player.BLUE,
                              blue_anticipating=False, red_anticipating=False)
         self.assertEqual(sample_board.reward(), -win_value)
+        sample_state_matrix = [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 2, 0, 0],
+            [0, 0, 15, 0, 0, 9, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 23, 0, 29, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 16, 0],
+        ]
+        sample_board = Board(sample_state_matrix, player_to_move=Player.RED,
+                             blue_anticipating=True, red_anticipating=False)
+        self.assertEqual(sample_board.reward(), win_value)
+        sample_state_matrix = [
+            [0, 0, 0, 0, 0, 0, 0, 16, 0],
+            [0, 0, 0, 0, 0, 0, 2, 0, 0],
+            [0, 0, 15, 0, 0, 9, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 23, 0, 29, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        ]
+        sample_board = Board(sample_state_matrix, player_to_move=Player.BLUE,
+                             blue_anticipating=True, red_anticipating=True)
+        self.assertEqual(sample_board.reward(), -win_value)
 
     def test_transition(self):
         """
