@@ -764,6 +764,9 @@ class Infostate(Board):
         self._print_column_numbers()
         print()  # Move the output after the board to a new line
 
+        if self.anticipating:
+            print("\n[WAITING IF OPPONENT CHALLENGES]\n")
+
     @staticmethod
     def _remove_piece(board: list[list[InfostatePiece]],
                       entry_location: tuple[int]):
