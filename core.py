@@ -1162,6 +1162,16 @@ class MatchSimulator:
 
         return blue_infostate, red_infostate
 
+    @staticmethod
+    def _print_result(arbiter_board: Board):
+        win_value = 1000000
+        if arbiter_board.reward() == win_value:
+            print("\n[VICTORY FOR BLUE]\n")
+        elif arbiter_board.reward() == -win_value:
+            print("\n[VICTORY FOR RED]\n")
+        else:
+            print("\n[DRAW]\n")
+
     def start(self):
         """
         This method simulates a GG match in the terminal, either taking input
@@ -1192,7 +1202,6 @@ class MatchSimulator:
             action = ""  # Initialize variable for storing chosen action
             action = self.get_controller_input(arbiter_board)
             print(f"Chosen Move: {action}")
-
             if self.save_data:
                 self.game_history.append(action)
 
@@ -1204,3 +1213,5 @@ class MatchSimulator:
             )
             arbiter_board = new_arbiter_board
             turn_number += 1
+
+        MatchSimulator._print_result(arbiter_board)
