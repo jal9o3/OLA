@@ -840,12 +840,12 @@ class Infostate(Board):
 
         return board
 
-    def _find_flag(self):
+    def _find_flag(self, board: list[list[InfostatePiece]]):
         """
         This finds the infostate owner's flag, useful for setting the
         anticipating attribute.
         """
-        for i, row in enumerate(self.abstracted_board):
+        for i, row in enumerate(board):
             for j, piece in enumerate(row):
                 if (piece.color == self.owner
                         and piece.rank_floor == Ranking.FLAG):
@@ -863,7 +863,7 @@ class Infostate(Board):
         """
         go_right = 1
         # The only squares "owned" by the arbiter are blank squares
-        return end_row[column_number + go_right].color != Player.ARBITER
+        return end_row[column_number + go_right].color == Player.ARBITER
 
     @staticmethod
     def is_vacant_to_the_left(column_number: int,
@@ -873,7 +873,7 @@ class Infostate(Board):
         """
         go_left = -1
         # The only squares "owned" by the arbiter are blank squares
-        return end_row[column_number + go_left].color != Player.ARBITER
+        return end_row[column_number + go_left].color == Player.ARBITER
 
     @staticmethod
     def has_none_adjacent(column_number: int, end_row: list[InfostatePiece]):
@@ -888,15 +888,15 @@ class Infostate(Board):
         rightmost_column_number = Board.COLUMNS - 1
         if (Board.has_at_edge_column(column_number)
             and column_number == leftmost_column_number
-                and Board.is_vacant_to_the_right(column_number, end_row)):
+                and Infostate.is_vacant_to_the_right(column_number, end_row)):
             result = True
         elif (Board.has_at_edge_column(column_number)
               and column_number == rightmost_column_number
-              and Board.is_vacant_to_the_left(column_number, end_row)):
+              and Infostate.is_vacant_to_the_left(column_number, end_row)):
             result = True
         elif (not Board.has_at_edge_column(column_number)
-              and Board.is_vacant_to_the_right(column_number, end_row)
-              and Board.is_vacant_to_the_left(column_number, end_row)):
+              and Infostate.is_vacant_to_the_right(column_number, end_row)
+              and Infostate.is_vacant_to_the_left(column_number, end_row)):
             result = True
 
         return result
@@ -951,7 +951,7 @@ class Infostate(Board):
         new_matrix = Infostate._to_matrix(infostate_board=new_board)
 
         anticipation = self.anticipating
-        flag_loc = self._find_flag()
+        flag_loc = self._find_flag(board=new_board)
         if (self.owner == Player.BLUE and flag_loc[0] == Infostate.ROWS - 1
             and not self.anticipating
             and self.has_none_adjacent(column_number=flag_loc[1],

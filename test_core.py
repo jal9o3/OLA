@@ -272,6 +272,24 @@ class TestInfostate(unittest.TestCase):
                                                           result=Result.WIN)
         self.assertEqual(next_infostate.abstracted_board[2][2].rank_floor, 2)
         self.assertEqual(next_infostate.abstracted_board[2][2].rank_ceiling, 2)
+        sample_state_matrix = [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 17, 0, 0, 0, 2, 30, 0],
+            [0, 0, 15, 0, 0, 9, 15, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 23, 0, 29, 0, 0, 0],
+            [0, 0, 0, 6, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 16, 0, 1, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        ]
+        sample_board = Board(sample_state_matrix, player_to_move=Player.BLUE,
+                             blue_anticipating=False, red_anticipating=False)
+        sample_blue_infostate = Infostate.at_start(owner=Player.BLUE,
+                                                   board=sample_board)
+        next_infostate = sample_blue_infostate.transition(action="6777",
+                                                          result=Result.OCCUPY)
+        self.assertEqual(next_infostate.abstracted_board[7][7].rank_floor, 1)
+        self.assertTrue(next_infostate.anticipating)
 
 
 class TestPlayer(unittest.TestCase):
