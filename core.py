@@ -825,53 +825,28 @@ class Infostate(Board):
         """
         return self.matrix[row][col][val] == Ranking.SPY*2
 
-    def set_val(self, matrix: list[list[list[int]]], action: str, val: int,
-                **kwargs):
+    @staticmethod
+    def update_val(board: list[list[InfostatePiece]], to_update: tuple[int],
+                   source: tuple[int]):
         """
-        This sets a new value to either end of the range of an unidentified 
-        piece in a copy of the infostate matrix. This value is calculated from
-        the value of the associated opposing piece involved in the action and
-        the offset associated with the color of the piece.
+        This sets a new value to the range of an unidentified piece in a copy of 
+        the infostate piece board. This value is calculated from the value of 
+        the associated opposing piece involved in the action.
         """
-        # Delayed retrieval of keyword arguments silences the linter
-        xy = kwargs.get('xy', None)
-        offset = kwargs.get('offset', None)
 
-        start_row, start_col, dest_row, dest_col = (
-            map(int, action)
-        )
-        min_val, max_val = 0, 1  # Indices in the piece entries
-
-        source_val = max_val if val == min_val else max_val
+        update_row, update_col, source_row, source_col = (to_update[0],
+                                                          to_update[1],
+                                                          source[0], source[1])
 
         # Deal with the SPY vs PRIVATE edge cases
-        red_private = Ranking.PRIVATE + Ranking.SPY  # See Ranking class
-        if (xy == (start_row, start_col)
-                and self.piece_is_blue_spy(dest_row, dest_col, val=source_val)):
-            matrix[start_row][start_col][min_val] = red_private
-            matrix[start_row][start_col][max_val] = red_private
-        elif (xy == (start_row, start_col)
-                and self.piece_is_red_spy(dest_row, dest_col, val=source_val)):
-            matrix[start_row][start_col][min_val] = Ranking.PRIVATE
-            matrix[start_row][start_col][max_val] = Ranking.PRIVATE
-        elif (xy == (dest_row, dest_col)
-              and self.piece_is_blue_spy(start_row, start_col, val=source_val)):
-            matrix[dest_row][dest_col][min_val] = red_private
-            matrix[dest_row][dest_col][max_val] = red_private
-        elif (xy == (dest_row, dest_col)
-              and self.piece_is_red_spy(start_row, start_col, val=source_val)):
-            matrix[dest_row][dest_col][min_val] = Ranking.PRIVATE
-            matrix[dest_row][dest_col][max_val] = Ranking.PRIVATE
-        # Update the range of the unknown attacker
-        elif xy == (start_row, start_col):
-            matrix[start_row][start_col][val] = (
-                self.matrix[dest_row][dest_col][source_val] + offset + 1)
-        # Update the range of the unknown defender
-        elif xy == (dest_row, dest_col):
-            matrix[dest_row][dest_col][val] = (
-                self.matrix[start_row][start_col][source_val] + offset + 1)
+        if board[source_row][source_col].rank_floor == Ranking.SPY:
+            board[update_row][update_col].rank_floor = Ranking.PRIVATE
+            board[update_row][update_col].rank_ceiling = Ranking.PRIVATE
+        else:
+            board[update_row][update_col].rank_floor = (
+                board[source_row][source_col].rank_ceiling + 1)
 
-        return matrix
+        return board
 
     def transition(self, action: str, *args, **kwargs):
         """
@@ -897,8 +872,9 @@ class Infostate(Board):
 
         elif (result == Result.WIN
               and not self.piece_is_owned(row=start_row, col=start_col)):
-            new_board[start_row][start_col].rank_floor = (
-                new_board[dest_row][dest_col].rank_ceiling + 1)
+            new_board = Infostate.update_val(board=new_board,
+                                             to_update=(start_row, start_col),
+                                             source=(dest_row, dest_col))
             new_board = self.move_piece(board=new_board, start=(
                 start_row, start_col), end=(dest_row, dest_col))
 
@@ -913,8 +889,9 @@ class Infostate(Board):
 
         elif (result == Result.LOSS
               and not self.piece_is_owned(row=dest_row, col=dest_col)):
-            new_board[dest_row][dest_col].rank_floor = (
-                new_board[start_row][start_col].rank_ceiling + 1)
+            new_board = Infostate.update_val(board=new_board,
+                                             to_update=(dest_row, dest_col),
+                                             source=(start_row, start_col))
             new_board = Infostate._remove_piece(
                 board=new_board, entry_location=(start_row, start_col))
 
