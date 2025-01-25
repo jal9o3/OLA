@@ -655,8 +655,7 @@ class Infostate(Board):
     """
 
     def __init__(self, abstracted_board: list[list[InfostatePiece]], owner: int,
-                 matrix: list[list[list[int]]], player_to_move: int,
-                 anticipating=bool):
+                 player_to_move: int, anticipating=bool):
         """
         In contrast to the arbiter board, the infostate must belong to strictly
         one of the players, and the value of the anticipating attribute depends
@@ -666,8 +665,7 @@ class Infostate(Board):
                          blue_anticipating=False, red_anticipating=False)
         self.owner = owner
         # Override attributes of the parent board class
-        # TODO: Derive the matrix from the abstracted board
-        self.matrix = matrix
+        self.matrix = Infostate._to_matrix(infostate_board=abstracted_board)
         self.anticipating = anticipating
         self.abstracted_board = abstracted_board
 
@@ -712,11 +710,8 @@ class Infostate(Board):
                         rank_ceiling=Ranking.SPY
                     )
 
-        infostate_matrix = Infostate._to_matrix(infostate_board)
-
         return Infostate(abstracted_board=infostate_board, owner=owner,
-                         matrix=infostate_matrix, player_to_move=Player.BLUE,
-                         anticipating=False)
+                         player_to_move=Player.BLUE, anticipating=False)
 
     @staticmethod
     def _print_blank_square():
@@ -951,23 +946,22 @@ class Infostate(Board):
             new_board = Infostate._remove_piece(
                 board=new_board, entry_location=(start_row, start_col))
 
-        new_matrix = Infostate._to_matrix(infostate_board=new_board)
-
         anticipation = self.anticipating
         flag_loc = self._find_flag(board=new_board)
-        if (self.owner == Player.BLUE and flag_loc[0] == Infostate.ROWS - 1
+        if flag_loc is None:
+            anticipation = False
+        elif (self.owner == Player.BLUE and flag_loc[0] == Infostate.ROWS - 1
             and not self.anticipating
             and self.has_none_adjacent(column_number=flag_loc[1],
                                        end_row=new_board[-1])):
             anticipation = True
-        if (self.owner == Player.RED and flag_loc[0] == 0
+        elif (self.owner == Player.RED and flag_loc[0] == 0
             and not self.anticipating
             and self.has_none_adjacent(column_number=flag_loc[1],
                                        end_row=new_board[0])):
             anticipation = True
 
         return Infostate(abstracted_board=new_board, owner=self.owner,
-                         matrix=new_matrix,
                          player_to_move=(
                              Player.RED if self.player_to_move == Player.BLUE
                              else Player.BLUE), anticipating=anticipation)
@@ -1182,4 +1176,3 @@ class MatchSimulator:
             red_infostate = red_infostate.transition(action, result=result)
             arbiter_board = new_arbiter_board
             turn_number += 1
-            time.sleep(0.7)
