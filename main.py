@@ -27,7 +27,7 @@ def main():
                                      controllers=[
                                          Controller.RANDOM, Controller.RANDOM],
                                      save_data=False,
-                                     pov=POV.BLUE)
+                                     pov=POV.RED)
     match_simulator.start()
 
 
