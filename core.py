@@ -378,6 +378,7 @@ class Board:
             # If the flag has already survived a turn in the board's blue end
             terminality = True
         elif red_flag in self.matrix[blue_end] and not self.red_anticipating:
+            flag_column_number = self.matrix[blue_end].index(red_flag)
             terminality = Board.has_none_adjacent(flag_column_number,
                                                   self.matrix[blue_end])
         else:
