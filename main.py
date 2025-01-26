@@ -3,7 +3,9 @@ This is the entry point for interacting with the OLA engine.
 """
 import logging
 
-from core import Player, POV, Ranking, Controller, MatchSimulator
+from constants import Ranking, Controller
+from core import Player, POV
+from simulation import MatchSimulator
 
 
 def main():

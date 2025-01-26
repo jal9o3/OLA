@@ -5,17 +5,18 @@ operational throughout continued development.
 import unittest
 from unittest.mock import patch
 
-from core import (
-    Board, Infostate, Result, Player, Ranking, get_random_permutation,
-    get_blank_matrix, get_hex_uppercase_string
-)
+
+from helpers import (get_random_permutation, get_blank_matrix,
+                     get_hex_uppercase_string)
+from constants import Result, Ranking
+from core import Board, Infostate, Player
 
 
 class TestGetRandomPermutation(unittest.TestCase):
     """
     This tests the function that shuffles any given list.
     """
-    @patch('core.random.shuffle')
+    @patch('helpers.random.shuffle')
     def test_get_random_permutation(self, mock_shuffle):
         """
         This test simulates a random shuffle.
