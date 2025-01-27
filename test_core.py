@@ -312,6 +312,32 @@ class TestInfostate(unittest.TestCase):
         self.assertEqual(next_infostate.abstracted_board[0][0].rank_floor, 1)
         self.assertTrue(next_infostate.anticipating)
 
+    def test_flatten(self):
+        """
+        This confirms whether the infostate is properly flattened on its way to 
+        become an infostate string.
+        """
+        sample_state_matrix = [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 17, 1, 0, 0, 2, 30, 0],
+            [0, 0, 15, 0, 0, 9, 15, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 23, 0, 29, 0, 0, 0],
+            [0, 0, 0, 6, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 16, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        ]
+        sample_board = Board(sample_state_matrix, player_to_move=Player.BLUE,
+                             blue_anticipating=False, red_anticipating=False)
+        sample_blue_infostate = Infostate.at_start(owner=Player.BLUE,
+                                                   board=sample_board)
+        flattened_infostate = sample_blue_infostate.flatten()
+        infostate_string = str(sample_blue_infostate)
+        infostate_list = list(map(int, infostate_string.split(" ")))
+        self.assertListEqual(
+            infostate_list[:-3],
+            flattened_infostate)
+
 
 class TestPlayer(unittest.TestCase):
     """

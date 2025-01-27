@@ -866,3 +866,24 @@ class Infostate(Board):
                          player_to_move=(
                              Player.RED if self.player_to_move == Player.BLUE
                              else Player.BLUE), anticipating=anticipation)
+
+    def flatten(self):
+        """
+        This converts the infostate matrix to a list.
+        """
+        flattened = [
+            rank_range for row in self.matrix
+            for piece in row for rank_range in piece]
+
+        return flattened
+
+    def __str__(self):
+        flattened_matrix = self.flatten()
+        flattened_matrix.append(self.player_to_move)
+        flattened_matrix.append(self.owner)
+        if self.anticipating:
+            flattened_matrix.append(1)
+        else:
+            flattened_matrix.append(0)
+
+        return " ".join(list(map(str, flattened_matrix)))
