@@ -5,6 +5,16 @@ This contains definitions relevant to the training of an AI for GG.
 from core import Board, Infostate, Player
 
 
+class Abstraction:
+    """
+    This replaces the theoretical full history of the game.
+    """
+
+    def __init__(self, state: Board, infostate: Infostate):
+        self.state = state
+        self.infostate = infostate
+
+
 class CFRTrainer:
     """
     This is responsible for generating regret and strategy tables using the
@@ -92,11 +102,12 @@ class CFRTrainer:
 
         return next_profile
 
-    def cfr(self, state: Board, infostate: Infostate, current_player: int,
+    def cfr(self, abstraction: Abstraction, current_player: int,
             iteration: int, blue_probability: float, red_probability: float):
         """
         This is the recursive algorithm for calculating counterfactual regret.
         """
+        state, infostate = abstraction.state, abstraction.infostate
         if state.is_terminal() and state.player_to_move == current_player:
             return state.reward()
         if state.is_terminal() and state.player_to_move != current_player:
@@ -121,12 +132,13 @@ class CFRTrainer:
                     red_probability=red_probability,
                     action_index=a))
 
-            utilities[a] = -self.cfr(state=next_state,
-                                     infostate=next_infostate,
-                                     current_player=current_player,
-                                     iteration=iteration,
-                                     blue_probability=new_blue_probability,
-                                     red_probability=new_red_probability)
+            utilities[a] = -self.cfr(abstraction=Abstraction(
+                state=next_state,
+                infostate=next_infostate),
+                current_player=current_player,
+                iteration=iteration,
+                blue_probability=new_blue_probability,
+                red_probability=new_red_probability)
 
             node_utility += profile[a]*utilities[a]
 
@@ -148,14 +160,12 @@ class CFRTrainer:
 
         return node_utility
 
-    def solve(self, start_state: Board, start_infostate: Infostate,
-              iterations: int = 100000):
+    def solve(self, abstraction: Abstraction, iterations: int = 100000):
         """
         This runs the counterfactual regret minimization algorithm to produce
         the tables needed by the AI.
         """
         for i in range(iterations):
             for player in [Player.BLUE, Player.RED]:
-                self.cfr(state=start_state, infostate=start_infostate,
-                         current_player=player, iteration=i, blue_probability=1,
-                         red_probability=1)
+                self.cfr(abstraction=abstraction, current_player=player,
+                         iteration=i, blue_probability=1, red_probability=1)
