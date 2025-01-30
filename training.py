@@ -102,6 +102,29 @@ class CFRTrainer:
 
         return next_profile
 
+    def _cfr_children(self, abstraction: Abstraction, profile: list[float],
+                      blue_probability: float, red_probability: float, utilities: list[float],
+                      current_player: int, iteration: int
+                      ):
+        state, infostate = abstraction.state, abstraction.infostate
+        for a, action in enumerate(state.actions()):
+            next_state, next_infostate = CFRTrainer._get_next(
+                state=state, infostate=infostate, action=action)
+
+            new_blue_probability, new_red_probability = (
+                CFRTrainer._update_probabilities(
+                    state=state, profile=profile, blue_probability=blue_probability,
+                    red_probability=red_probability, action_index=a))
+
+            utilities[a] = -self.cfr(abstraction=Abstraction(
+                state=next_state, infostate=next_infostate),
+                current_player=current_player, iteration=iteration,
+                blue_probability=new_blue_probability, red_probability=new_red_probability)
+
+            node_utility += profile[a]*utilities[a]
+
+        return node_utility
+
     def cfr(self, abstraction: Abstraction, current_player: int,
             iteration: int, blue_probability: float, red_probability: float):
         """
@@ -116,46 +139,26 @@ class CFRTrainer:
         node_utility, utilities = CFRTrainer._initialize_utilities(state=state)
 
         regret_table, strategy_table, profile = self._get_tables(
-            state=state,
-            infostate=infostate)
-
-        for a, action in enumerate(state.actions()):
-            next_state, next_infostate = CFRTrainer._get_next(
-                state=state,
-                infostate=infostate,
-                action=action)
-
-            new_blue_probability, new_red_probability = (
-                CFRTrainer._update_probabilities(
-                    state=state, profile=profile,
-                    blue_probability=blue_probability,
-                    red_probability=red_probability,
-                    action_index=a))
-
-            utilities[a] = -self.cfr(abstraction=Abstraction(
-                state=next_state,
-                infostate=next_infostate),
-                current_player=current_player,
-                iteration=iteration,
-                blue_probability=new_blue_probability,
-                red_probability=new_red_probability)
-
-            node_utility += profile[a]*utilities[a]
+            state=state, infostate=infostate)
 
         player_probability, opponent_probability = CFRTrainer._probabilities(
-            current_player=current_player,
-            blue_probability=blue_probability,
-            red_probability=red_probability
-        )
+            current_player=current_player, blue_probability=blue_probability,
+            red_probability=red_probability)
+
+        node_utility = self._cfr_children(abstraction=abstraction, profile=profile,
+                                          blue_probability=blue_probability,
+                                          red_probability=red_probability, utilities=utilities,
+                                          current_player=current_player, iteration=iteration)
 
         if state.player_to_move == current_player:
             for a, action in enumerate(state.actions()):
-                regret_table[a] += opponent_probability*(
-                    utilities[a] - node_utility)
+                _ = action  # Silences the linter
+                regret_table[a] += opponent_probability * \
+                    (utilities[a] - node_utility)
                 strategy_table[a] += player_probability*profile[a]
 
-            next_profile = CFRTrainer._regret_match(state=state,
-                                                    regret_table=regret_table)
+            next_profile = CFRTrainer._regret_match(
+                state=state, regret_table=regret_table)
             self.profiles[str(infostate)] = next_profile
 
         return node_utility
