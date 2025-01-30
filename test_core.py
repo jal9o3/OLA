@@ -163,7 +163,7 @@ class TestBoard(unittest.TestCase):
         ]
         sample_board = Board(sample_state_matrix, player_to_move=Player.RED,
                              blue_anticipating=False, red_anticipating=False)
-        self.assertEqual(sample_board.reward(), win_value)
+        self.assertEqual(sample_board.reward(), -win_value)
         sample_state_matrix = [
             [0, 0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 2, 0, 0],
@@ -189,7 +189,7 @@ class TestBoard(unittest.TestCase):
         ]
         sample_board = Board(sample_state_matrix, player_to_move=Player.RED,
                              blue_anticipating=True, red_anticipating=False)
-        self.assertEqual(sample_board.reward(), win_value)
+        self.assertEqual(sample_board.reward(), -win_value)
         sample_state_matrix = [
             [0, 0, 0, 0, 0, 0, 0, 16, 0],
             [0, 0, 0, 0, 0, 0, 2, 0, 0],
