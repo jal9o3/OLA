@@ -195,11 +195,17 @@ class MatchSimulator:
     @staticmethod
     def _print_result(arbiter_board: Board):
         win_value = 1000000
-        if arbiter_board.reward() == win_value:
+        if ((arbiter_board.reward() == win_value
+                and arbiter_board.player_to_move == Player.BLUE)
+                or (arbiter_board.reward() == -win_value
+                    and arbiter_board.player_to_move == Player.RED)):
             print("\n[VICTORY FOR BLUE]\n")
-        elif arbiter_board.reward() == -win_value:
+        elif ((arbiter_board.reward() == win_value
+              and arbiter_board.player_to_move == Player.RED)
+              or (arbiter_board.reward() == -win_value
+              and arbiter_board.player_to_move == Player.BLUE)):
             print("\n[VICTORY FOR RED]\n")
-        else:
+        elif arbiter_board.reward() == 0:
             print("\n[DRAW]\n")
 
     def start(self):

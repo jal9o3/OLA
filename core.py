@@ -511,9 +511,10 @@ class Board:
 
     def reward(self):
         """
-        This assigns a numerical value to terminal states. Positive reward
-        indicates a blue win, negative reward indicates a red win, and a zero
-        indicates a draw.
+        This assigns a numerical value to terminal states. Initially, a positive 
+        reward indicates a blue win, negative reward indicates a red win, and a 
+        zero indicates a draw. The magnitude is then negated if the player to
+        move is red to obtain the actual reward.
         """
 
         blue_flag = Ranking.FLAG
@@ -535,6 +536,9 @@ class Board:
             reward = -win_value
         else:
             reward = 0  # Assume a draw
+
+        if self.player_to_move == Player.RED:
+            reward *= -1
 
         return reward
 
