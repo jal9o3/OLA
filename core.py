@@ -542,6 +542,30 @@ class Board:
 
         return reward
 
+    def material(self):
+        """
+        Calculates the relative material advantage of the player to move.
+        Initially, the value for the blue player is calculated, and the
+        magnitude is negated if the current player is red.
+        """
+        blue_sum = 0
+        red_sum = 0  # Initialize material sums
+
+        red_offset = Ranking.SPY  # See Ranking class for details
+
+        for row in self.matrix:
+            for piece in row:
+                if Ranking.PRIVATE <= piece <= Ranking.SPY:
+                    blue_sum += piece
+                elif Ranking.PRIVATE + red_offset <= piece <= red_offset*2:
+                    red_sum += piece - red_sum
+
+        advantage = blue_sum - red_sum
+        if self.player_to_move == Player.RED:
+            advantage *= -1
+
+        return advantage
+
 
 class InfostatePiece:
     """

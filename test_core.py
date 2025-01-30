@@ -204,6 +204,29 @@ class TestBoard(unittest.TestCase):
                              blue_anticipating=True, red_anticipating=True)
         self.assertEqual(sample_board.reward(), -win_value)
 
+    def test_material(self):
+        """
+        This verifies that the calculation of material advantage of the player
+        to move works as expected.
+        """
+        sample_state_matrix = [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 2, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 16, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        ]
+        sample_board = Board(sample_state_matrix, player_to_move=Player.BLUE,
+                             blue_anticipating=False, red_anticipating=False)
+        self.assertEqual(sample_board.material(), 2)
+        sample_board = Board(sample_state_matrix, player_to_move=Player.RED,
+                             blue_anticipating=False, red_anticipating=False)
+        self.assertEqual(sample_board.material(), -2)
+
+
     def test_transition(self):
         """
         This verifies that the next state can be determined given the current
