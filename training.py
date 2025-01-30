@@ -51,6 +51,19 @@ class CFRTrainer:
         return next_state, next_infostate
 
     @staticmethod
+    def _update_probabilities(state: Board, profile: list[float],
+                              blue_probability: float, red_probability: float,
+                              action_index: int):
+        new_blue_probability = blue_probability
+        new_red_probability = red_probability  # Initialize new probabilities
+        if state.player_to_move == Player.BLUE:
+            new_blue_probability = profile[action_index]*blue_probability
+        elif state.player_to_move == Player.RED:
+            new_red_probability = profile[action_index]*red_probability
+
+        return new_blue_probability, new_red_probability
+
+    @staticmethod
     def _probabilities(current_player: int, blue_probability: float,
                        red_probability: float):
         opponent = Player.RED if current_player == Player.BLUE else Player.BLUE
@@ -101,13 +114,12 @@ class CFRTrainer:
                 infostate=infostate,
                 action=action)
 
-            # Initialize new probabilities
-            new_blue_probability = blue_probability
-            new_red_probability = red_probability
-            if state.player_to_move == Player.BLUE:
-                new_blue_probability = profile[a]*blue_probability
-            elif state.player_to_move == Player.RED:
-                new_red_probability = profile[a]*red_probability
+            new_blue_probability, new_red_probability = (
+                CFRTrainer._update_probabilities(
+                    state=state, profile=profile,
+                    blue_probability=blue_probability,
+                    red_probability=red_probability,
+                    action_index=a))
 
             utilities[a] = -self.cfr(state=next_state,
                                      infostate=next_infostate,
