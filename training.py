@@ -2,7 +2,11 @@
 This contains definitions relevant to the training of an AI for GG.
 """
 
+import random
+
 from core import Board, Infostate, Player
+from simulation import MatchSimulator
+from constants import POV, Ranking
 
 
 class Abstraction:
@@ -45,7 +49,7 @@ class CFRTrainer:
             strategy_table = self.strategy_tables[str(infostate)]
 
         if str(infostate) not in self.profiles:
-            profile = [0.0 for action in state.actions()]
+            profile = [1.0/len(state.actions()) for action in state.actions()]
         else:
             profile = self.profiles[str(infostate)]
 
@@ -104,7 +108,7 @@ class CFRTrainer:
 
     def _cfr_children(self, abstraction: Abstraction, profile: list[float],
                       blue_probability: float, red_probability: float, utilities: list[float],
-                      current_player: int, iteration: int
+                      node_utility: float, current_player: int, iteration: int
                       ):
         state, infostate = abstraction.state, abstraction.infostate
         for a, action in enumerate(state.actions()):
@@ -148,7 +152,8 @@ class CFRTrainer:
         node_utility = self._cfr_children(abstraction=abstraction, profile=profile,
                                           blue_probability=blue_probability,
                                           red_probability=red_probability, utilities=utilities,
-                                          current_player=current_player, iteration=iteration)
+                                          node_utility=node_utility, current_player=current_player,
+                                          iteration=iteration)
 
         if state.player_to_move == current_player:
             for a, action in enumerate(state.actions()):
@@ -186,7 +191,7 @@ class DepthLimitedCFRTrainer(CFRTrainer):
 
     def _cfr_children(self, abstraction: Abstraction, profile: list[float],
                       blue_probability: float, red_probability: float, utilities: list[float],
-                      current_player: int, iteration: int, depth: int = None
+                      node_utility: int, current_player: int, iteration: int, depth: int = None
                       ):
         state, infostate = abstraction.state, abstraction.infostate
         for a, action in enumerate(state.actions()):
@@ -210,7 +215,7 @@ class DepthLimitedCFRTrainer(CFRTrainer):
 
     def cfr(self, abstraction: Abstraction, current_player: int,
             iteration: int, blue_probability: float, red_probability: float,
-            depth: int = 8):
+            depth: int = 2):
         """
         This is the recursive algorithm for calculating counterfactual regret.
         """
@@ -221,7 +226,7 @@ class DepthLimitedCFRTrainer(CFRTrainer):
             return -state.reward()
         if not state.is_terminal() and depth == 0 and state.player_to_move == current_player:
             return state.material()
-        if not state.is_terminal() and depth == 0 and state.player_to_move == current_player:
+        if not state.is_terminal() and depth == 0 and state.player_to_move != current_player:
             return -state.material()
 
         node_utility, utilities = CFRTrainer._initialize_utilities(state=state)
@@ -236,8 +241,8 @@ class DepthLimitedCFRTrainer(CFRTrainer):
         node_utility = self._cfr_children(abstraction=abstraction, profile=profile,
                                           blue_probability=blue_probability,
                                           red_probability=red_probability, utilities=utilities,
-                                          current_player=current_player, iteration=iteration,
-                                          depth=depth)
+                                          node_utility=node_utility, current_player=current_player,
+                                          iteration=iteration, depth=depth)
 
         if state.player_to_move == current_player:
             for a, action in enumerate(state.actions()):
@@ -246,14 +251,17 @@ class DepthLimitedCFRTrainer(CFRTrainer):
                     (utilities[a] - node_utility)
                 strategy_table[a] += player_probability*profile[a]
 
+            self.regret_tables[str(infostate)] = regret_table
+            self.strategy_tables[str(infostate)] = strategy_table
+
             next_profile = CFRTrainer._regret_match(
                 state=state, regret_table=regret_table)
             self.profiles[str(infostate)] = next_profile
 
         return node_utility
 
-    def solve(self, abstraction: Abstraction, iterations: int = 100000,
-              depth=8):
+    def solve(self, abstraction: Abstraction, iterations: int = 10,
+              depth=2):
         """
         This runs the counterfactual regret minimization algorithm to produce
         the tables needed by the AI.
@@ -268,3 +276,107 @@ class DepthLimitedCFRTrainer(CFRTrainer):
                 else:
                     self.vanilla_cfr.cfr(abstraction=abstraction, current_player=player,
                                          iteration=i, blue_probability=1, red_probability=1)
+
+
+class CFRTrainingSimulator(MatchSimulator):
+    """
+    This handles the game simulations for generating the AI's training data. The
+    controller is assumed to be the counterfactual regret minimization
+    algorithm.
+    """
+
+    def __init__(self, formations: list[list[int]], controllers: list[int],
+                 save_data: bool, pov: int):
+        super().__init__(formations, controllers, save_data, pov)
+        self.controllers = None
+
+    @staticmethod
+    def _distill_strategy(raw_strategy: list[float]):
+        positive_sum = 0  # Initialize sum of positive probabilities
+        # Initialize list for the normalized strategy
+        normalized_strategy = [0.0 for i in range(len(raw_strategy))]
+        for probability in raw_strategy:
+            if probability > 0:
+                positive_sum += probability
+
+        for i, probability in enumerate(raw_strategy):
+            if probability > 0:
+                normalized_strategy[i] = probability/positive_sum
+
+        return normalized_strategy
+
+    def get_cfr_input(self, abstraction: Abstraction):
+        """
+        This is for obtaining the CFR controller's chosen action
+        """
+        valid_actions = abstraction.state.actions()
+        action = ""
+        trainer = DepthLimitedCFRTrainer()
+        trainer.solve(abstraction=abstraction)
+        strategy = CFRTrainingSimulator._distill_strategy(
+            raw_strategy=trainer.strategy_tables[str(abstraction.infostate)])
+        action = random.choices(valid_actions, weights=strategy, k=1)[0]
+
+        return action
+
+    def start(self):
+        """
+        This method simulates a GG match generating training data, using the
+        counterfactual regret minimization algorithm.
+        """
+        arbiter_board = Board(self.setup_arbiter_matrix(),
+                              player_to_move=Player.BLUE,
+                              blue_anticipating=False, red_anticipating=False)
+        if self.save_data:
+            self.game_history.append(arbiter_board.matrix)
+
+        blue_infostate, red_infostate = MatchSimulator._starting_infostates(
+            arbiter_board)
+
+        turn_number = 1
+        while not arbiter_board.is_terminal():
+
+            MatchSimulator._print_game_status(turn_number, arbiter_board,
+                                              infostates=[
+                                                  blue_infostate,
+                                                  red_infostate],
+                                              pov=self.pov)
+
+            action = ""  # Initialize variable for storing chosen action
+            current_infostate = (
+                blue_infostate if arbiter_board.player_to_move == Player.BLUE
+                else red_infostate)
+            current_abstraction = Abstraction(
+                state=arbiter_board, infostate=current_infostate)
+            action = self.get_cfr_input(abstraction=current_abstraction)
+            print(f"Chosen Move: {action}")
+            if self.save_data:
+                self.game_history.append(action)
+
+            new_arbiter_board = arbiter_board.transition(action)
+            result = arbiter_board.classify_action_result(action,
+                                                          new_arbiter_board)
+            blue_infostate, red_infostate = MatchSimulator._update_infostates(
+                blue_infostate, red_infostate, action=action, result=result
+            )
+            arbiter_board = new_arbiter_board
+            turn_number += 1
+
+        MatchSimulator._print_result(arbiter_board)
+
+
+if __name__ == "__main__":
+    # Sample random formations
+    blue_formation = list(
+        Player.get_sensible_random_formation(
+            piece_list=Ranking.SORTED_FORMATION)
+    )
+    red_formation = list(
+        Player.get_sensible_random_formation(
+            piece_list=Ranking.SORTED_FORMATION)
+    )
+
+    simulator = CFRTrainingSimulator(formations=[blue_formation, red_formation],
+                                     controllers=None, save_data=False,
+                                     pov=POV.WORLD)
+    simulator.start()
