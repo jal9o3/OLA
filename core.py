@@ -816,27 +816,26 @@ class Infostate(Board):
 
         return None
 
-    # TODO: Combine the next two methods into one
+    @staticmethod
+    def _is_vacant(column_number: int, end_row: list[InfostatePiece], direction: int):
+        """
+        Checks if the square in the given direction of a column in a row is blank.
+        """
+        return end_row[column_number + direction].color == Player.ARBITER
 
     @staticmethod
-    def is_vacant_to_the_right(column_number: int,
-                               end_row: list[InfostatePiece]):
+    def is_vacant_to_the_right(column_number: int, end_row: list[InfostatePiece]):
         """
         Checks if the square to the right of a given column in a row is blank.
         """
-        go_right = 1
-        # The only squares "owned" by the arbiter are blank squares
-        return end_row[column_number + go_right].color == Player.ARBITER
+        return Infostate._is_vacant(column_number, end_row, direction=1)
 
     @staticmethod
-    def is_vacant_to_the_left(column_number: int,
-                              end_row: list[InfostatePiece]):
+    def is_vacant_to_the_left(column_number: int, end_row: list[InfostatePiece]):
         """
         Checks if the square to the left of a given column in a row is blank.
         """
-        go_left = -1
-        # The only squares "owned" by the arbiter are blank squares
-        return end_row[column_number + go_left].color == Player.ARBITER
+        return Infostate._is_vacant(column_number, end_row, direction=-1)
 
     @staticmethod
     def has_none_adjacent(column_number: int, end_row: list[InfostatePiece]):
