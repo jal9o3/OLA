@@ -401,7 +401,7 @@ class Board:
         return new_matrix
 
     def _move_piece_in_matrix(self, new_matrix: list[list[int]],
-                                  action: str):
+                              action: str):
         """
         This reflects non-challenge moves in a new matrix by moving the selected
         piece in the presumably unoccupied destination square.
@@ -464,7 +464,7 @@ class Board:
             red_anticipating=player_anticipations[1])
 
     def _deduce_action_result(self, matrix_difference: list[list[int]],
-                             action: str):
+                              action: str):
         """
         This examines the characteristics of the difference matrix to classify
         the result of the action in the board state.
@@ -575,6 +575,42 @@ class InfostatePiece:
     def __init__(self, color: int, rank_floor: int, rank_ceiling: int):
         self.color = color
         self.rank_floor = rank_floor
+        self.rank_ceiling = rank_ceiling
+
+    def get_color(self) -> int:
+        """
+        Returns the color of the piece.
+        """
+        return self.color
+
+    def set_color(self, color: int):
+        """
+        Sets the color of the piece.
+        """
+        self.color = color
+
+    def get_rank_floor(self) -> int:
+        """
+        Returns the rank floor of the piece.
+        """
+        return self.rank_floor
+
+    def set_rank_floor(self, rank_floor: int):
+        """
+        Sets the rank floor of the piece.
+        """
+        self.rank_floor = rank_floor
+
+    def get_rank_ceiling(self) -> int:
+        """
+        Returns the rank ceiling of the piece.
+        """
+        return self.rank_ceiling
+
+    def set_rank_ceiling(self, rank_ceiling: int):
+        """
+        Sets the rank ceiling of the piece.
+        """
         self.rank_ceiling = rank_ceiling
 
 
