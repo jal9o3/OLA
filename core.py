@@ -463,7 +463,7 @@ class Board:
             blue_anticipating=player_anticipations[0],
             red_anticipating=player_anticipations[1])
 
-    def deduce_action_result(self, matrix_difference: list[list[int]],
+    def _deduce_action_result(self, matrix_difference: list[list[int]],
                              action: str):
         """
         This examines the characteristics of the difference matrix to classify
@@ -507,7 +507,7 @@ class Board:
             [self.matrix[i][j] - new_board.matrix[i][j]
              for j in range(Board.COLUMNS)] for i in range(Board.ROWS)]
 
-        return self.deduce_action_result(matrix_difference, action)
+        return self._deduce_action_result(matrix_difference, action)
 
     def reward(self):
         """
