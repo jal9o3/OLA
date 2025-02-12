@@ -375,7 +375,7 @@ class Board:
             map(int, action)
         )
         if challenger_value == Ranking.PRIVATE and target_value == Ranking.SPY:
-            new_matrix = self.move_piece_in_matrix(new_matrix, action)
+            new_matrix = self._move_piece_in_matrix(new_matrix, action)
             return new_matrix
 
         if challenger_value == Ranking.SPY and target_value == Ranking.PRIVATE:
@@ -386,7 +386,7 @@ class Board:
         if (challenger_value > target_value
             or (challenger_value == Ranking.FLAG
                 and target_value == Ranking.FLAG)):
-            new_matrix = self.move_piece_in_matrix(new_matrix, action)
+            new_matrix = self._move_piece_in_matrix(new_matrix, action)
         elif challenger_value < target_value:
             new_matrix = self.remove_piece(new_matrix, start_row,
                                            start_col)
@@ -400,7 +400,7 @@ class Board:
 
         return new_matrix
 
-    def move_piece_in_matrix(self, new_matrix: list[list[int]],
+    def _move_piece_in_matrix(self, new_matrix: list[list[int]],
                                   action: str):
         """
         This reflects non-challenge moves in a new matrix by moving the selected
@@ -432,7 +432,7 @@ class Board:
         destination_square = self.matrix[dest_row][dest_col]
 
         if destination_square == Ranking.BLANK:
-            new_matrix = self.move_piece_in_matrix(new_matrix, action)
+            new_matrix = self._move_piece_in_matrix(new_matrix, action)
         elif self.player_to_move == Player.BLUE:
             # The Ranking.SPY offset allows the flattening of the board state
             # (see Ranking class for more details).
