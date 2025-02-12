@@ -18,6 +18,38 @@ class Abstraction:
         self.state = state
         self.infostate = infostate
 
+    def get_state(self) -> Board:
+        """
+        Returns the current state of the board.
+        
+        :return: The current board state.
+        """
+        return self.state
+
+    def set_state(self, state: Board):
+        """
+        Sets the state of the board.
+        
+        :param state: The new board state to set.
+        """
+        self.state = state
+
+    def get_infostate(self) -> Infostate:
+        """
+        Returns the current infostate.
+        
+        :return: The current infostate.
+        """
+        return self.infostate
+
+    def set_infostate(self, infostate: Infostate):
+        """
+        Sets the infostate.
+        
+        :param infostate: The new infostate to set.
+        """
+        self.infostate = infostate
+
 
 class CFRTrainer:
     """
