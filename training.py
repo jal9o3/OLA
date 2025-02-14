@@ -240,6 +240,9 @@ class CFRTrainer:
             params.strategy_table[a] += params.player_probability * \
                 params.profile[a]
 
+        self.regret_tables[str(params.infostate)] = params.regret_table
+        self.strategy_tables[str(params.infostate)] = params.strategy_table
+
         next_profile = CFRTrainer._regret_match(
             state=params.state, regret_table=params.regret_table)
         self.profiles[str(params.infostate)] = next_profile
@@ -293,53 +296,44 @@ class DepthLimitedCFRTrainer(CFRTrainer):
         """
         This is the recursive algorithm for calculating counterfactual regret.
         """
-        abstraction, current_player, iteration, blue_probability, red_probability, depth = (
+        abstraction, current_player, blue_probability, red_probability, depth = (
             parameter_values.abstraction, parameter_values.current_player,
-            parameter_values.iteration, parameter_values.blue_probability,
-            parameter_values.red_probability, parameter_values.depth
+            parameter_values.blue_probability, parameter_values.red_probability,
+            parameter_values.depth
         )
-        state, infostate = abstraction.state, abstraction.infostate
 
-        if state.is_terminal() and state.player_to_move == current_player:
-            return state.reward()
-        if state.is_terminal() and state.player_to_move != current_player:
-            return -state.reward()
-        if (not state.is_terminal() and parameter_values.depth == 0
-                and state.player_to_move == current_player):
-            return state.material()
-        if (not state.is_terminal() and parameter_values.depth == 0
-                and state.player_to_move != current_player):
-            return -state.material()
+        if abstraction.state.is_terminal():
+            return self._terminal_state_utility(abstraction.state, current_player)
 
-        node_utility, utilities = CFRTrainer._initialize_utilities(state=state)
+        if depth == 0:
+            return self._depth_limited_utility(abstraction.state, current_player)
+
+        node_utility, utilities = CFRTrainer._initialize_utilities(
+            state=abstraction.state)
 
         regret_table, strategy_table, profile = self._get_tables(
-            state=state, infostate=infostate)
+            state=abstraction.state, infostate=abstraction.infostate)
 
         player_probability, opponent_probability = CFRTrainer._probabilities(
             current_player=current_player, blue_probability=blue_probability,
             red_probability=red_probability)
-        arguments = CFRParameters(abstraction=abstraction, current_player=current_player,
-                                  iteration=iteration, blue_probability=blue_probability,
-                                  red_probability=red_probability, depth=depth)
-        node_utility = self._cfr_children(parameters=arguments, profile=profile,
+        node_utility = self._cfr_children(parameters=parameter_values, profile=profile,
                                           utilities=utilities, node_utility=node_utility)
 
-        if state.player_to_move == current_player:
-            for a, action in enumerate(state.actions()):
-                _ = action  # Silences the linter
-                regret_table[a] += opponent_probability * \
-                    (utilities[a] - node_utility)
-                strategy_table[a] += player_probability*profile[a]
-
-            self.regret_tables[str(infostate)] = regret_table
-            self.strategy_tables[str(infostate)] = strategy_table
-
-            next_profile = CFRTrainer._regret_match(
-                state=state, regret_table=regret_table)
-            self.profiles[str(infostate)] = next_profile
+        if abstraction.state.player_to_move == current_player:
+            self._update_tables(
+                UpdateTablesParams(
+                    state=abstraction.state, regret_table=regret_table,
+                    strategy_table=strategy_table, profile=profile, utilities=utilities,
+                    node_utility=node_utility, opponent_probability=opponent_probability,
+                    player_probability=player_probability, infostate=abstraction.infostate))
 
         return node_utility
+
+    def _depth_limited_utility(self, state: Board, current_player: int):
+        if state.player_to_move == current_player:
+            return state.material()
+        return -state.material()
 
     def solve(self, abstraction: Abstraction, iterations: int = 10,
               depth=2):
