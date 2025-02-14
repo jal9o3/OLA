@@ -68,19 +68,42 @@ class CFRParameters:
 
 
 @dataclass
+class Probabilities:
+    """
+    This is for storing the probabilities of the current player and the opponent 
+    for the node.
+    """
+    opponent_probability: float
+    player_probability: float
+
+
+@dataclass
+class Tables:
+    """
+    A class used to represent tables for storing regrets and strategies.
+    Attributes
+    ----------
+    regret_table : list of float
+        A list to store regret values.
+    strategy_table : list of float
+        A list to store strategy probabilities.
+    """
+    regret_table: list[float]
+    strategy_table: list[float]
+
+
+@dataclass
 class UpdateTablesParams:
     """
     This is for storing the parameters needed to update the regret and strategy
     tables.
     """
     state: Board
-    regret_table: list[float]
-    strategy_table: list[float]
+    tables: Tables
     profile: list[float]
     utilities: list[float]
     node_utility: float
-    opponent_probability: float
-    player_probability: float
+    probabilities: Probabilities
     infostate: Infostate
 
 
@@ -186,20 +209,20 @@ class CFRTrainer:
                 state=next_state, infostate=next_infostate),
                 current_player=parameters.current_player, iteration=parameters.iteration,
                 blue_probability=new_blue_probability, red_probability=new_red_probability)
-            utilities[a] = -self.cfr(parameter_values=new_parameters)
+            utilities[a] = -self.cfr(params=new_parameters)
 
             node_utility += profile[a]*utilities[a]
 
         return node_utility
 
-    def cfr(self, parameter_values: CFRParameters):
+    def cfr(self, params: CFRParameters):
         """
         This is the recursive algorithm for calculating counterfactual regret.
         """
         abstraction, current_player, iteration, blue_probability, red_probability = (
-            parameter_values.abstraction, parameter_values.current_player,
-            parameter_values.iteration, parameter_values.blue_probability,
-            parameter_values.red_probability
+            params.abstraction, params.current_player,
+            params.iteration, params.blue_probability,
+            params.red_probability
         )
 
         if abstraction.state.is_terminal():
@@ -213,16 +236,20 @@ class CFRTrainer:
             current_player=current_player, blue_probability=blue_probability,
             red_probability=red_probability)
 
-        node_utility = self._cfr_children(parameters=parameter_values, profile=profile,
+        node_utility = self._cfr_children(parameters=params, profile=profile,
                                           utilities=utilities, node_utility=node_utility)
 
         if abstraction.state.player_to_move == current_player:
             self._update_tables(
                 UpdateTablesParams(
-                    state=abstraction.state, regret_table=regret_table,
-                    strategy_table=strategy_table, profile=profile, utilities=utilities,
-                    node_utility=node_utility, opponent_probability=opponent_probability,
-                    player_probability=player_probability, infostate=abstraction.infostate))
+                    state=abstraction.state,
+                    tables=Tables(
+                        regret_table=regret_table,
+                        strategy_table=strategy_table), profile=profile, utilities=utilities,
+                    node_utility=node_utility,
+                    probabilities=Probabilities(
+                        opponent_probability=opponent_probability,
+                        player_probability=player_probability), infostate=abstraction.infostate))
 
         return node_utility
 
@@ -233,18 +260,18 @@ class CFRTrainer:
         return -state.reward()
 
     def _update_tables(self, params: UpdateTablesParams):
-        for a, action in enumerate(params.state.actions()):
-            _ = action  # Silences the linter
-            params.regret_table[a] += params.opponent_probability * \
+        for a in range(len(params.state.actions())):
+            params.tables.regret_table[a] += params.probabilities.opponent_probability * \
                 (params.utilities[a] - params.node_utility)
-            params.strategy_table[a] += params.player_probability * \
+            params.tables.strategy_table[a] += params.probabilities.player_probability * \
                 params.profile[a]
 
-        self.regret_tables[str(params.infostate)] = params.regret_table
-        self.strategy_tables[str(params.infostate)] = params.strategy_table
+        self.regret_tables[str(params.infostate)] = params.tables.regret_table
+        self.strategy_tables[str(params.infostate)
+                             ] = params.tables.strategy_table
 
         next_profile = CFRTrainer._regret_match(
-            state=params.state, regret_table=params.regret_table)
+            state=params.state, regret_table=params.tables.regret_table)
         self.profiles[str(params.infostate)] = next_profile
 
     def solve(self, abstraction: Abstraction, iterations: int = 100000):
@@ -256,7 +283,7 @@ class CFRTrainer:
             for player in [Player.BLUE, Player.RED]:
                 arguments = CFRParameters(abstraction=abstraction, current_player=player,
                                           iteration=i, blue_probability=1, red_probability=1)
-                self.cfr(parameter_values=arguments)
+                self.cfr(params=arguments)
 
 
 class DepthLimitedCFRTrainer(CFRTrainer):
@@ -286,20 +313,20 @@ class DepthLimitedCFRTrainer(CFRTrainer):
                 current_player=parameters.current_player, iteration=parameters.iteration,
                 blue_probability=new_blue_probability, red_probability=new_red_probability,
                 depth=parameters.depth-1)
-            utilities[a] = -self.cfr(parameter_values=arguments)
+            utilities[a] = -self.cfr(params=arguments)
 
             node_utility += profile[a]*utilities[a]
 
         return node_utility
 
-    def cfr(self, parameter_values: CFRParameters):
+    def cfr(self, params: CFRParameters):
         """
         This is the recursive algorithm for calculating counterfactual regret.
         """
         abstraction, current_player, blue_probability, red_probability, depth = (
-            parameter_values.abstraction, parameter_values.current_player,
-            parameter_values.blue_probability, parameter_values.red_probability,
-            parameter_values.depth
+            params.abstraction, params.current_player,
+            params.blue_probability, params.red_probability,
+            params.depth
         )
 
         if abstraction.state.is_terminal():
@@ -317,16 +344,20 @@ class DepthLimitedCFRTrainer(CFRTrainer):
         player_probability, opponent_probability = CFRTrainer._probabilities(
             current_player=current_player, blue_probability=blue_probability,
             red_probability=red_probability)
-        node_utility = self._cfr_children(parameters=parameter_values, profile=profile,
+        node_utility = self._cfr_children(parameters=params, profile=profile,
                                           utilities=utilities, node_utility=node_utility)
 
         if abstraction.state.player_to_move == current_player:
             self._update_tables(
                 UpdateTablesParams(
-                    state=abstraction.state, regret_table=regret_table,
-                    strategy_table=strategy_table, profile=profile, utilities=utilities,
-                    node_utility=node_utility, opponent_probability=opponent_probability,
-                    player_probability=player_probability, infostate=abstraction.infostate))
+                    state=abstraction.state,
+                    tables=Tables(
+                        regret_table=regret_table,
+                        strategy_table=strategy_table), profile=profile, utilities=utilities,
+                    node_utility=node_utility,
+                    probabilities=Probabilities(
+                        opponent_probability=opponent_probability,
+                        player_probability=player_probability), infostate=abstraction.infostate))
 
         return node_utility
 
@@ -348,11 +379,11 @@ class DepthLimitedCFRTrainer(CFRTrainer):
                     arguments = CFRParameters(abstraction=abstraction, current_player=player,
                                               iteration=i, blue_probability=1, red_probability=1,
                                               depth=depth)
-                    self.cfr(parameter_values=arguments)
+                    self.cfr(params=arguments)
                 else:
                     arguments = CFRParameters(abstraction=abstraction, current_player=player,
                                               iteration=i, blue_probability=1, red_probability=1)
-                    self.vanilla_cfr.cfr(parameter_values=arguments)
+                    self.vanilla_cfr.cfr(params=arguments)
 
 
 class CFRTrainingSimulator(MatchSimulator):
