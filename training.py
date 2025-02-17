@@ -219,9 +219,8 @@ class CFRTrainer:
         """
         This is the recursive algorithm for calculating counterfactual regret.
         """
-        abstraction, current_player, iteration, blue_probability, red_probability = (
-            params.abstraction, params.current_player,
-            params.iteration, params.blue_probability,
+        abstraction, current_player, blue_probability, red_probability = (
+            params.abstraction, params.current_player, params.blue_probability,
             params.red_probability
         )
 
