@@ -3,7 +3,6 @@ Here we define the core components of the OLA engine.
 """
 import logging
 import copy
-import time
 
 from constants import Ranking, POV, Result
 from helpers import get_random_permutation, get_hex_uppercase_string
@@ -565,6 +564,23 @@ class Board:
             advantage *= -1
 
         return advantage
+
+    def get_squares_within_radius(self, center: tuple[int, int], radius: int
+                                  ) -> list[tuple[int, int]]:
+        """
+        Returns a list of tuples of coordinates of squares that are within a 
+        specified radius from the center.
+        """
+        rows, cols = Board.ROWS, Board.COLUMNS
+        center_row, center_col = center
+        squares_within_radius = []
+
+        for row in range(max(0, center_row - radius), min(rows, center_row + radius + 1)):
+            for col in range(max(0, center_col - radius), min(cols, center_col + radius + 1)):
+                if abs(center_row - row) + abs(center_col - col) <= radius:
+                    squares_within_radius.append((row, col))
+
+        return squares_within_radius
 
 
 class InfostatePiece:

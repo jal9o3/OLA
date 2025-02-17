@@ -226,7 +226,6 @@ class TestBoard(unittest.TestCase):
                              blue_anticipating=False, red_anticipating=False)
         self.assertEqual(sample_board.material(), -2)
 
-
     def test_transition(self):
         """
         This verifies that the next state can be determined given the current
@@ -399,6 +398,86 @@ class TestPlayer(unittest.TestCase):
 
         self.assertNotIn(
             Ranking.FLAG, front_line, "FLAG should not be in the front line")
+
+
+class TestGetSquaresWithinRadius(unittest.TestCase):
+    """
+    This tests the get_squares_within_radius method of the Board class.
+    """
+
+    def test_center_within_bounds(self):
+        """
+        This checks if the method returns the correct squares within the radius
+        when the center is within the bounds of the board.
+        """
+        board = Board(matrix=[], player_to_move=Player.BLUE,
+                      blue_anticipating=False, red_anticipating=False)
+        center = (4, 4)
+        radius = 2
+        expected_squares = [
+            (2, 4), (3, 3), (3, 4), (3, 5), (4, 2), (4, 3), (4, 4), (4, 5),
+            (4, 6), (5, 3), (5, 4), (5, 5), (6, 4)
+        ]
+        self.assertEqual(board.get_squares_within_radius(
+            center, radius), expected_squares)
+
+    def test_center_at_edge(self):
+        """
+        This checks if the method returns the correct squares within the radius
+        when the center is at the edge of the board.
+        """
+        board = Board(matrix=[], player_to_move=Player.BLUE,
+                      blue_anticipating=False, red_anticipating=False)
+        center = (0, 0)
+        radius = 2
+        expected_squares = [
+            (0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (2, 0)
+        ]
+        self.assertEqual(board.get_squares_within_radius(
+            center, radius), expected_squares)
+
+    def test_center_at_corner(self):
+        """
+        This checks if the method returns the correct squares within the radius
+        when the center is at the corner of the board.
+        """
+        board = Board(matrix=[], player_to_move=Player.BLUE,
+                      blue_anticipating=False, red_anticipating=False)
+        center = (7, 8)
+        radius = 1
+        expected_squares = [
+            (6, 8), (7, 7), (7, 8)
+        ]
+        self.assertEqual(board.get_squares_within_radius(
+            center, radius), expected_squares)
+
+    def test_zero_radius(self):
+        """
+        This checks if the method returns only the center square when the radius
+        is zero.
+        """
+        board = Board(matrix=[], player_to_move=Player.BLUE,
+                      blue_anticipating=False, red_anticipating=False)
+        center = (4, 4)
+        radius = 0
+        expected_squares = [(4, 4)]
+        self.assertEqual(board.get_squares_within_radius(
+            center, radius), expected_squares)
+
+    def test_large_radius(self):
+        """
+        This checks if the method returns the correct squares within the radius
+        when the radius is larger than the board dimensions.
+        """
+        board = Board(matrix=[], player_to_move=Player.BLUE,
+                      blue_anticipating=False, red_anticipating=False)
+        center = (4, 4)
+        radius = 10
+        expected_squares = [
+            (i, j) for i in range(Board.ROWS) for j in range(Board.COLUMNS)
+        ]
+        self.assertEqual(board.get_squares_within_radius(
+            center, radius), expected_squares)
 
 
 if __name__ == '__main__':
