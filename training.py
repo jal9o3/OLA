@@ -8,7 +8,7 @@ from dataclasses import dataclass
 
 from core import Board, Infostate, Player
 from simulation import MatchSimulator
-from constants import POV, Ranking
+from constants import POV, Ranking, Result
 
 
 class Abstraction:
@@ -561,9 +561,10 @@ class CFRTrainingSimulator(MatchSimulator):
         blue_infostate, red_infostate = MatchSimulator._starting_infostates(
             arbiter_board)
 
+        action, result, previous_action, previous_result, attack_location = (
+            "", "", "", "", None)  # Initialize needed values
         turn_number = 1
         while not arbiter_board.is_terminal():
-
             MatchSimulator._print_game_status(turn_number, arbiter_board,
                                               infostates=[
                                                   blue_infostate,
@@ -576,18 +577,48 @@ class CFRTrainingSimulator(MatchSimulator):
                 else red_infostate)
             current_abstraction = Abstraction(
                 state=arbiter_board, infostate=current_infostate)
-            actions_filter = ActionsFilter(state=arbiter_board, directions=DirectionFilter(
-                back=False, right=False, left=False),
-                square_whitelist=[(x, y) for y in range(Board.COLUMNS) for x in range(Board.ROWS)])
+            # For the first turns of each player, choose a forward move
+            if turn_number in [1, 2]:
+                actions_filter = ActionsFilter(state=arbiter_board, directions=DirectionFilter(
+                    back=False, right=False, left=False),
+                    square_whitelist=[(x, y) for y in range(Board.COLUMNS)
+                                      for x in range(Board.ROWS)])
+            # If there has been a challenge, center the evaluation on the piece
+            # that has been attacked
+            elif previous_result in [Result.WIN, Result.LOSS]:
+                whitelist = arbiter_board.get_squares_within_radius(
+                    center=attack_location, radius=2)
+                # TODO: Increase radius until enough pieces are considered
+                actions_filter = ActionsFilter(state=arbiter_board, directions=DirectionFilter(),
+                                               square_whitelist=whitelist)
+            # If there has been no challenge, center the evaluation on the last
+            # allied piece that moved
+            elif attack_location is None:
+                whitelist = arbiter_board.get_squares_within_radius(
+                    center=(int(previous_action[0]), int(previous_action[1])),
+                    radius=2)
+                actions_filter = ActionsFilter(state=arbiter_board, directions=DirectionFilter(
+                    back=False, right=False, left=False
+                ),
+                    square_whitelist=whitelist)
+            else:
+                actions_filter = None
+
             action = self.get_cfr_input(abstraction=current_abstraction,
                                         actions_filter=actions_filter)
             print(f"Chosen Move: {action}")
+            previous_action = action  # Store for the next iteration
             if self.save_data:
                 self.game_history.append(action)
 
             new_arbiter_board = arbiter_board.transition(action)
             result = arbiter_board.classify_action_result(action,
                                                           new_arbiter_board)
+            previous_result = result # Store for the next iteration
+            if result in [Result.WIN, Result.LOSS]:
+                attack_location = (int(action[2]), int(action[3]))
+            else:
+                attack_location = None
             blue_infostate, red_infostate = MatchSimulator._update_infostates(
                 blue_infostate, red_infostate, action=action, result=result
             )
