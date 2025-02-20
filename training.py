@@ -154,6 +154,8 @@ class ActionsFilter:
         if (((int(action[0]), int(action[1])) in self.square_whitelist)
                 or (int(action[2]), int(action[3]) in self.square_whitelist)):
             is_included = True
+        else:
+            return False
 
         # Blue's forward moves are those that increase the row number
         if (self.state.player_to_move == Player.BLUE
