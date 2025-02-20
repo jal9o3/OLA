@@ -405,11 +405,11 @@ class DepthLimitedCFRTrainer(CFRTrainer):
         self.vanilla_cfr = CFRTrainer()  # FOr accessing original implementation
 
     def _cfr_children(self, parameters: CFRParameters, profile: list[float], utilities: list[float],
-                      node_utility: float, actions_filter: ActionsFilter = None
+                      node_utility: float
                       ):
         state, infostate = parameters.abstraction.state, parameters.abstraction.infostate
-        if actions_filter is not None:
-            filtered_actions = actions_filter.filter()
+        if parameters.actions_filter is not None:
+            filtered_actions = parameters.actions_filter.filter()
         else:
             filtered_actions = None
         for a, action in enumerate(state.actions()):
@@ -438,10 +438,9 @@ class DepthLimitedCFRTrainer(CFRTrainer):
         """
         This is the recursive algorithm for calculating counterfactual regret.
         """
-        abstraction, current_player, blue_probability, red_probability, depth, actions_filter = (
-            params.abstraction, params.current_player,
-            params.blue_probability, params.red_probability,
-            params.depth, params.actions_filter
+        abstraction, current_player, blue_probability, red_probability, depth = (
+            params.abstraction, params.current_player, params.blue_probability,
+            params.red_probability, params.depth
         )
 
         if abstraction.state.is_terminal():
