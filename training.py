@@ -65,6 +65,7 @@ class CFRParameters:
     blue_probability: float
     red_probability: float
     depth: int = None
+    actions_filter: 'ActionsFilter' = None
 
 
 @dataclass
@@ -404,15 +405,15 @@ class DepthLimitedCFRTrainer(CFRTrainer):
         self.vanilla_cfr = CFRTrainer()  # FOr accessing original implementation
 
     def _cfr_children(self, parameters: CFRParameters, profile: list[float], utilities: list[float],
-                      node_utility: float
+                      node_utility: float, actions_filter: ActionsFilter = None
                       ):
         state, infostate = parameters.abstraction.state, parameters.abstraction.infostate
-        actions_filter = ActionsFilter(state=state, directions=DirectionFilter(
-            back=False, right=False, left=False),
-            square_whitelist=[(x, y) for y in range(Board.COLUMNS) for x in range(Board.ROWS)])
-        filtered_actions = actions_filter.filter()
+        if actions_filter is not None:
+            filtered_actions = actions_filter.filter()
+        else:
+            filtered_actions = None
         for a, action in enumerate(state.actions()):
-            if action not in filtered_actions:
+            if filtered_actions is not None and action not in filtered_actions:
                 node_utility += state.material()
                 continue
             next_state, next_infostate = CFRTrainer._get_next(
@@ -437,10 +438,10 @@ class DepthLimitedCFRTrainer(CFRTrainer):
         """
         This is the recursive algorithm for calculating counterfactual regret.
         """
-        abstraction, current_player, blue_probability, red_probability, depth = (
+        abstraction, current_player, blue_probability, red_probability, depth, actions_filter = (
             params.abstraction, params.current_player,
             params.blue_probability, params.red_probability,
-            params.depth
+            params.depth, params.actions_filter
         )
 
         if abstraction.state.is_terminal():
@@ -481,7 +482,7 @@ class DepthLimitedCFRTrainer(CFRTrainer):
         return -state.material()
 
     def solve(self, abstraction: Abstraction, iterations: int = 10,
-              depth=2):
+              depth: int = 2, actions_filter: ActionsFilter = None):
         """
         This runs the counterfactual regret minimization algorithm to produce
         the tables needed by the AI.
@@ -492,7 +493,7 @@ class DepthLimitedCFRTrainer(CFRTrainer):
                 if len(abstraction.state.actions()) > end_game:
                     arguments = CFRParameters(abstraction=abstraction, current_player=player,
                                               iteration=i, blue_probability=1, red_probability=1,
-                                              depth=depth)
+                                              depth=depth, actions_filter=actions_filter)
                     self.cfr(params=arguments)
                 else:
                     arguments = CFRParameters(abstraction=abstraction, current_player=player,
@@ -534,7 +535,7 @@ class CFRTrainingSimulator(MatchSimulator):
         valid_actions = abstraction.state.actions()
         action = ""
         trainer = DepthLimitedCFRTrainer()
-        trainer.solve(abstraction=abstraction)
+        trainer.solve(abstraction=abstraction, actions_filter=actions_filter)
         strategy = CFRTrainingSimulator._distill_strategy(
             raw_strategy=trainer.strategy_tables[str(abstraction.infostate)])
         if actions_filter is None:
