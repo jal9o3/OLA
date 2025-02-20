@@ -107,6 +107,114 @@ class UpdateTablesParams:
     infostate: Infostate
 
 
+@dataclass
+class DirectionFilter:
+    """
+    This is for defining which directions of movement should be evaluated,
+    intended to be used with the ActionsFilter class.
+    """
+
+    forward: bool = True
+    back: bool = True
+    left: bool = True
+    right: bool = True
+
+
+class ActionsFilter:
+    """
+    This is for defining the criteria for which moves in a given game state
+    should be evaluated.
+    """
+
+    def __init__(self, state: Board, directions: DirectionFilter,
+                 square_whitelist: list[tuple[int, int]]):
+        self.state = state
+        self.directions = directions
+        self.square_whitelist = square_whitelist
+
+    def filter(self):
+        """
+        This method filters the actions available in the current game state.
+        """
+        actions = self.state.actions()
+        filtered_actions = []
+        for action in actions:
+            if self._to_include(action):
+                filtered_actions.append(action)
+
+        return filtered_actions
+
+    def _to_include(self, action: str):
+        """
+        This method checks if an action is valid.
+        """
+        is_included = False  # Initialize the return value
+        # If the action's starting or destination square is in the whitelist
+        if (((int(action[0]), int(action[1])) in self.square_whitelist)
+                or (int(action[2]), int(action[3]) in self.square_whitelist)):
+            is_included = True
+
+        # Blue's forward moves are those that increase the row number
+        if (self.state.player_to_move == Player.BLUE
+                and int(action[0]) < int(action[2]) and self.directions.forward):
+            is_included = True
+        elif (self.state.player_to_move == Player.BLUE
+                and int(action[0]) < int(action[2]) and not self.directions.forward):
+            is_included = False
+
+        if (self.state.player_to_move == Player.BLUE
+                and int(action[0]) > int(action[2]) and self.directions.back):
+            is_included = True
+        elif (self.state.player_to_move == Player.BLUE
+                and int(action[0]) > int(action[2]) and not self.directions.back):
+            is_included = False
+
+        # Blue's right moves are those that decrease the column number
+        if (self.state.player_to_move == Player.BLUE
+                and int(action[1]) > int(action[3]) and self.directions.right):
+            is_included = True
+        elif (self.state.player_to_move == Player.BLUE
+                and int(action[1]) > int(action[3]) and not self.directions.right):
+            is_included = False
+
+        if (self.state.player_to_move == Player.BLUE
+                and int(action[1]) < int(action[3]) and self.directions.left):
+            is_included = True
+        elif (self.state.player_to_move == Player.BLUE
+                and int(action[1]) < int(action[3]) and not self.directions.left):
+            is_included = False
+
+        # Flip the logic for red player
+        if (self.state.player_to_move == Player.RED
+                and int(action[0]) > int(action[2]) and self.directions.forward):
+            is_included = True
+        elif (self.state.player_to_move == Player.RED
+                and int(action[0]) > int(action[2]) and not self.directions.forward):
+            is_included = False
+
+        if (self.state.player_to_move == Player.RED
+                and int(action[0]) < int(action[2]) and self.directions.back):
+            is_included = True
+        elif (self.state.player_to_move == Player.RED
+                and int(action[0]) < int(action[2]) and not self.directions.back):
+            is_included = False
+
+        if (self.state.player_to_move == Player.RED
+                and int(action[1]) < int(action[3]) and self.directions.right):
+            is_included = True
+        elif (self.state.player_to_move == Player.RED
+                and int(action[1]) < int(action[3]) and not self.directions.right):
+            is_included = False
+
+        if (self.state.player_to_move == Player.RED and self.directions.left
+                and int(action[1]) > int(action[3])):
+            is_included = True
+        elif (self.state.player_to_move == Player.RED
+                and int(action[1]) > int(action[3]) and not self.directions.left):
+            is_included = False
+        return is_included
+
+
 class CFRTrainer:
     """
     This is responsible for generating regret and strategy tables using the
@@ -299,7 +407,14 @@ class DepthLimitedCFRTrainer(CFRTrainer):
                       node_utility: float
                       ):
         state, infostate = parameters.abstraction.state, parameters.abstraction.infostate
+        actions_filter = ActionsFilter(state=state, directions=DirectionFilter(
+            back=False, right=False, left=False),
+            square_whitelist=[(x, y) for y in range(Board.COLUMNS) for x in range(Board.ROWS)])
+        filtered_actions = actions_filter.filter()
         for a, action in enumerate(state.actions()):
+            if action not in filtered_actions:
+                node_utility += state.material()
+                continue
             next_state, next_infostate = CFRTrainer._get_next(
                 state=state, infostate=infostate, action=action)
 
@@ -412,7 +527,7 @@ class CFRTrainingSimulator(MatchSimulator):
 
         return normalized_strategy
 
-    def get_cfr_input(self, abstraction: Abstraction):
+    def get_cfr_input(self, abstraction: Abstraction, actions_filter: ActionsFilter = None):
         """
         This is for obtaining the CFR controller's chosen action
         """
@@ -422,7 +537,13 @@ class CFRTrainingSimulator(MatchSimulator):
         trainer.solve(abstraction=abstraction)
         strategy = CFRTrainingSimulator._distill_strategy(
             raw_strategy=trainer.strategy_tables[str(abstraction.infostate)])
-        action = random.choices(valid_actions, weights=strategy, k=1)[0]
+        if actions_filter is None:
+            action = random.choices(valid_actions, weights=strategy, k=1)[0]
+        else:
+            filtered_actions = actions_filter.filter()
+            while action not in filtered_actions:
+                action = random.choices(
+                    valid_actions, weights=strategy, k=1)[0]
 
         return action
 
@@ -455,7 +576,11 @@ class CFRTrainingSimulator(MatchSimulator):
                 else red_infostate)
             current_abstraction = Abstraction(
                 state=arbiter_board, infostate=current_infostate)
-            action = self.get_cfr_input(abstraction=current_abstraction)
+            actions_filter = ActionsFilter(state=arbiter_board, directions=DirectionFilter(
+                back=False, right=False, left=False),
+                square_whitelist=[(x, y) for y in range(Board.COLUMNS) for x in range(Board.ROWS)])
+            action = self.get_cfr_input(abstraction=current_abstraction,
+                                        actions_filter=actions_filter)
             print(f"Chosen Move: {action}")
             if self.save_data:
                 self.game_history.append(action)
