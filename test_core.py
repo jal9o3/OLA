@@ -478,11 +478,11 @@ class TestGetSquaresWithinRadius(unittest.TestCase):
         ]
         self.assertEqual(board.get_squares_within_radius(
             center, radius), expected_squares)
-    
+
     def test_square_4_8(self):
         """
         This checks if the method returns the correct squares within the radius
-        when the radius is larger than the board dimensions.
+        when the center is at (4, 8).
         """
         board = Board(matrix=[], player_to_move=Player.BLUE,
                       blue_anticipating=False, red_anticipating=False)
