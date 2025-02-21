@@ -629,7 +629,7 @@ class CFRTrainingSimulator(MatchSimulator):
             self.game_history.append(arbiter_board.matrix)
         return arbiter_board
 
-    def _process_action(self, arbiter_board: Board, action:str):
+    def _process_action(self, arbiter_board: Board, action: str):
         new_arbiter_board = arbiter_board.transition(action)
         result = arbiter_board.classify_action_result(
             action, new_arbiter_board)
@@ -645,26 +645,22 @@ class CFRTrainingSimulator(MatchSimulator):
         counterfactual regret minimization algorithm.
         """
         arbiter_board = self._initialize_arbiter_board()
-
         blue_infostate, red_infostate = MatchSimulator._starting_infostates(
             arbiter_board)
-
         action, result, previous_action, previous_result, attack_location = (
             "", "", "", "", None)  # Initialize needed values
+
         turn_number = 1
         while not arbiter_board.is_terminal():
-            MatchSimulator._print_game_status(turn_number, arbiter_board,
-                                              infostates=[
-                                                  blue_infostate,
-                                                  red_infostate],
-                                              pov=self.pov)
-
+            MatchSimulator._print_game_status(turn_number, arbiter_board, infostates=[
+                blue_infostate, red_infostate],
+                pov=self.pov)
             action = ""  # Initialize variable for storing chosen action
-            current_infostate = (
-                blue_infostate if arbiter_board.player_to_move == Player.BLUE
-                else red_infostate)
+            current_infostate = (blue_infostate if arbiter_board.player_to_move == Player.BLUE
+                                 else red_infostate)
             current_abstraction = Abstraction(
                 state=arbiter_board, infostate=current_infostate)
+
             # For the first turns of each player, choose a forward move
             if turn_number in [1, 2]:
                 actions_filter = ActionsFilter(state=arbiter_board, directions=DirectionFilter(
@@ -681,8 +677,9 @@ class CFRTrainingSimulator(MatchSimulator):
             previous_action = action  # Store for the next iteration
             if self.save_data:
                 self.game_history.append(action)
-
-            arbiter_board, result, attack_location = self._process_action(arbiter_board, action)
+            arbiter_board, result, attack_location = self._process_action(
+                arbiter_board, action)
+            previous_result = result  # Store for the next iteration
             blue_infostate, red_infostate = MatchSimulator._update_infostates(
                 blue_infostate, red_infostate, action=action, result=result
             )
