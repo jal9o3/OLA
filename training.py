@@ -151,8 +151,8 @@ class ActionsFilter:
         """
         is_included = False  # Initialize the return value
         # If the action's starting or destination square is in the whitelist
-        if (((int(action[0]), int(action[1])) in self.square_whitelist)
-                or (int(action[2]), int(action[3]) in self.square_whitelist)):
+        if ((int(action[0]), int(action[1])) in self.square_whitelist
+                or (int(action[2]), int(action[3])) in self.square_whitelist):
             is_included = True
         else:
             return False
@@ -543,9 +543,18 @@ class CFRTrainingSimulator(MatchSimulator):
             action = random.choices(valid_actions, weights=strategy, k=1)[0]
         else:
             filtered_actions = actions_filter.filter()
-            while action not in filtered_actions:
-                action = random.choices(
-                    valid_actions, weights=strategy, k=1)[0]
+            filtered_strategy = []
+            for a, action in enumerate(valid_actions):
+                if action in filtered_actions:
+                    filtered_strategy.append(strategy[a])
+            normalizing_sum = sum(filtered_strategy)
+            if normalizing_sum > 0:
+                filtered_strategy = [p/normalizing_sum for p in filtered_strategy]
+            else:
+                # Reset options if all evaluated actions seem bad
+                filtered_actions, filtered_strategy = valid_actions, strategy
+            action = random.choices(
+                filtered_actions, weights=filtered_strategy, k=1)[0]
 
         return action
 
