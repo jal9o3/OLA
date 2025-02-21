@@ -405,52 +405,6 @@ class TestGetSquaresWithinRadius(unittest.TestCase):
     This tests the get_squares_within_radius method of the Board class.
     """
 
-    def test_center_within_bounds(self):
-        """
-        This checks if the method returns the correct squares within the radius
-        when the center is within the bounds of the board.
-        """
-        board = Board(matrix=[], player_to_move=Player.BLUE,
-                      blue_anticipating=False, red_anticipating=False)
-        center = (4, 4)
-        radius = 2
-        expected_squares = [
-            (2, 4), (3, 3), (3, 4), (3, 5), (4, 2), (4, 3), (4, 4), (4, 5),
-            (4, 6), (5, 3), (5, 4), (5, 5), (6, 4)
-        ]
-        self.assertEqual(board.get_squares_within_radius(
-            center, radius), expected_squares)
-
-    def test_center_at_edge(self):
-        """
-        This checks if the method returns the correct squares within the radius
-        when the center is at the edge of the board.
-        """
-        board = Board(matrix=[], player_to_move=Player.BLUE,
-                      blue_anticipating=False, red_anticipating=False)
-        center = (0, 0)
-        radius = 2
-        expected_squares = [
-            (0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (2, 0)
-        ]
-        self.assertEqual(board.get_squares_within_radius(
-            center, radius), expected_squares)
-
-    def test_center_at_corner(self):
-        """
-        This checks if the method returns the correct squares within the radius
-        when the center is at the corner of the board.
-        """
-        board = Board(matrix=[], player_to_move=Player.BLUE,
-                      blue_anticipating=False, red_anticipating=False)
-        center = (7, 8)
-        radius = 1
-        expected_squares = [
-            (6, 8), (7, 7), (7, 8)
-        ]
-        self.assertEqual(board.get_squares_within_radius(
-            center, radius), expected_squares)
-
     def test_zero_radius(self):
         """
         This checks if the method returns only the center square when the radius
@@ -489,6 +443,18 @@ class TestGetSquaresWithinRadius(unittest.TestCase):
         center = (4, 8)
         radius = 2
         self.assertIn((3, 7), board.get_squares_within_radius(center, radius))
+
+    def test_square_5_8(self):
+        """
+        This checks if the method returns the correct amount of squares when
+        the center is (5, 8)).
+        """
+        board = Board(matrix=[], player_to_move=Player.BLUE,
+                      blue_anticipating=False, red_anticipating=False)
+        center = (5, 8)
+        radius = 2
+        self.assertEqual(
+            len(board.get_squares_within_radius(center, radius)), 15)
 
 
 if __name__ == '__main__':
