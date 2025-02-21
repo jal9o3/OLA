@@ -416,7 +416,8 @@ class DepthLimitedCFRTrainer(CFRTrainer):
             filtered_actions = None
         for a, action in enumerate(state.actions()):
             if filtered_actions is not None and action not in filtered_actions:
-                node_utility += state.material()
+                utilities[a] = state.material()
+                node_utility += profile[a]*utilities[a]
                 continue
             next_state, next_infostate = CFRTrainer._get_next(
                 state=state, infostate=infostate, action=action)

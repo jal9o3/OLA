@@ -557,7 +557,7 @@ class Board:
                 if Ranking.PRIVATE <= piece <= Ranking.SPY:
                     blue_sum += piece
                 elif Ranking.PRIVATE + red_offset <= piece <= red_offset*2:
-                    red_sum += piece - red_sum
+                    red_sum += piece - red_offset
 
         advantage = blue_sum - red_sum
         if self.player_to_move == Player.RED:
