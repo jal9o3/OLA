@@ -52,6 +52,7 @@ class Abstraction:
         """
         self.infostate = infostate
 
+
 class TimelessBoard:
     """
     A special "board" for listing all the possible moves that can occur in a 
@@ -79,11 +80,12 @@ class TimelessBoard:
                                            column + direction_column)
 
                     if (bottom_row_number <= new_row < Board.ROWS
-                        and leftmost_column_number <= new_column < Board.COLUMNS):
+                            and leftmost_column_number <= new_column < Board.COLUMNS):
                         valid_actions.append(
                             f"{row}{column}{new_row}{new_column}")
 
         return valid_actions
+
 
 @dataclass
 class CFRParameters:
@@ -619,16 +621,30 @@ class CFRTrainingSimulator(MatchSimulator):
             reduced_branching = len(actions_filter.filter())
         return actions_filter
 
-    def start(self):
-        """
-        This method simulates a GG match generating training data, using the
-        counterfactual regret minimization algorithm.
-        """
+    def _initialize_arbiter_board(self):
         arbiter_board = Board(self.setup_arbiter_matrix(),
                               player_to_move=Player.BLUE,
                               blue_anticipating=False, red_anticipating=False)
         if self.save_data:
             self.game_history.append(arbiter_board.matrix)
+        return arbiter_board
+
+    def _process_action(self, arbiter_board: Board, action:str):
+        new_arbiter_board = arbiter_board.transition(action)
+        result = arbiter_board.classify_action_result(
+            action, new_arbiter_board)
+        if result in [Result.WIN, Result.LOSS]:
+            attack_location = (int(action[2]), int(action[3]))
+        else:
+            attack_location = None
+        return new_arbiter_board, result, attack_location
+
+    def start(self):
+        """
+        This method simulates a GG match generating training data, using the
+        counterfactual regret minimization algorithm.
+        """
+        arbiter_board = self._initialize_arbiter_board()
 
         blue_infostate, red_infostate = MatchSimulator._starting_infostates(
             arbiter_board)
@@ -666,18 +682,10 @@ class CFRTrainingSimulator(MatchSimulator):
             if self.save_data:
                 self.game_history.append(action)
 
-            new_arbiter_board = arbiter_board.transition(action)
-            result = arbiter_board.classify_action_result(action,
-                                                          new_arbiter_board)
-            previous_result = result  # Store for the next iteration
-            if result in [Result.WIN, Result.LOSS]:
-                attack_location = (int(action[2]), int(action[3]))
-            else:
-                attack_location = None
+            arbiter_board, result, attack_location = self._process_action(arbiter_board, action)
             blue_infostate, red_infostate = MatchSimulator._update_infostates(
                 blue_infostate, red_infostate, action=action, result=result
             )
-            arbiter_board = new_arbiter_board
             turn_number += 1
 
         MatchSimulator._print_result(arbiter_board)
