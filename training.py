@@ -431,7 +431,7 @@ class DepthLimitedCFRTrainer(CFRTrainer):
                 current_player=parameters.current_player, iteration=parameters.iteration,
                 blue_probability=new_blue_probability, red_probability=new_red_probability,
                 depth=parameters.depth-1)
-            utilities[a] = -self.cfr(params=arguments)
+            utilities[a] = self.cfr(params=arguments)
 
             node_utility += profile[a]*utilities[a]
 
