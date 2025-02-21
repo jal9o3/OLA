@@ -9,7 +9,7 @@ from unittest.mock import patch
 from helpers import (get_random_permutation, get_blank_matrix,
                      get_hex_uppercase_string)
 from constants import Result, Ranking
-from core import Board, Infostate, Player
+from core import Board, Infostate, Player, BoardPrinter, InfostatePrinter
 
 
 class TestGetRandomPermutation(unittest.TestCase):
@@ -118,11 +118,11 @@ class TestBoard(unittest.TestCase):
         """
         for piece in range(1, 16):
             expected = "b" + get_hex_uppercase_string(piece)
-            self.assertEqual(Board.label_piece_by_team(piece), expected)
+            self.assertEqual(BoardPrinter.label_piece_by_team(piece), expected)
 
         for piece in range(16, 31):
             expected = "r" + get_hex_uppercase_string(piece - Ranking.SPY)
-            self.assertEqual(Board.label_piece_by_team(piece), expected)
+            self.assertEqual(BoardPrinter.label_piece_by_team(piece), expected)
 
     def test_actions(self):
         """
