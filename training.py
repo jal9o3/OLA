@@ -534,6 +534,18 @@ class CFRTrainingSimulator(MatchSimulator):
         trainer.solve(abstraction=abstraction, actions_filter=actions_filter)
         strategy = CFRTrainingSimulator._distill_strategy(
             raw_strategy=trainer.strategy_tables[str(abstraction.infostate)])
+        # Set the lowest probability as the minimum threshold
+        threshold = min(strategy)
+        for i, probability in enumerate(strategy):
+            if probability < threshold:
+                strategy[i] = 0
+        normalizing_sum = sum(strategy)
+        if normalizing_sum > 0:
+            strategy = [p/normalizing_sum for p in strategy]
+        else:
+            # Reset options if all evaluated actions seem bad
+            strategy = [1/len(valid_actions) for a in valid_actions]
+
         if actions_filter is None:
             action = random.choices(valid_actions, weights=strategy, k=1)[0]
         else:
