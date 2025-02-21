@@ -52,7 +52,7 @@ class Abstraction:
         """
         self.infostate = infostate
 
-class TimelessBoard():
+class TimelessBoard:
     """
     A special "board" for listing all the possible moves that can occur in a 
     game, to be used by the CFRTrainingSimulator in preparing the training data.
