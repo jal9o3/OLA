@@ -567,10 +567,8 @@ class CFRTrainingSimulator(MatchSimulator):
 
             whitelist = arbiter_board.get_squares_within_radius(
                 center=center, radius=radius)
-            directions = DirectionFilter() if previous_result in [
-                Result.WIN, Result.LOSS] else DirectionFilter(back=False, right=False, left=False)
             actions_filter = ActionsFilter(
-                state=arbiter_board, directions=directions, square_whitelist=whitelist)
+                state=arbiter_board, directions=DirectionFilter(), square_whitelist=whitelist)
             reduced_branching = len(actions_filter.filter())
         return actions_filter
 
