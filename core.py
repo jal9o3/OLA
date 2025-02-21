@@ -4,7 +4,9 @@ Here we define the core components of the OLA engine.
 import logging
 import copy
 
-from constants import Ranking, POV, Result
+from dataclasses import dataclass
+
+from constants import Ranking, Result, POV
 from helpers import get_random_permutation, get_hex_uppercase_string
 
 # Configure the logging
@@ -80,44 +82,6 @@ class Board:
         self.red_anticipating = red_anticipating
 
     @staticmethod
-    def _get_colored(text: str, color_code: str):
-        """
-        This helper method attaches a color code to the provided text string to
-        embue the text with color when printed in the terminal.
-        """
-        return f"\033[{color_code}m{text:2}\033[0m"
-
-    @staticmethod
-    def _print_number_of_row(i: int):
-        """
-        This is for labelling the row with its number.
-        """
-        print(f"{i:2}", end='  ')
-
-    @staticmethod
-    def _print_square(contents: str):
-        """
-        This is for printing the contents of a square on the board.
-        """
-        print(contents, end=' ')
-
-    @staticmethod
-    def _print_blank_square():
-        """
-        This is for representing blank squares in the printed board.
-        """
-        Board._print_square(" -")
-
-    @staticmethod
-    def _print_column_numbers():
-        """
-        This is for printing the column numbers below the board.
-        """
-        print("\n    ", end='')
-        for k in range(Board.COLUMNS):
-            print(f"{k:2}", end=' ')
-
-    @staticmethod
     def get_piece_affiliation(piece: int):
         """
         This identifies whether a piece belongs to the blue or red player.
@@ -128,21 +92,6 @@ class Board:
         elif Ranking.FLAG + Ranking.SPY <= piece <= Ranking.SPY*2:
             affiliation = Player.RED
         return affiliation
-
-    @staticmethod
-    def label_piece_by_team(piece: int):
-        """
-        This method returns the string that will be printed in the terminal to
-        represent the piece.
-        """
-        labelled_piece = None  # Initialize return value
-        if Board.get_piece_affiliation(piece) == Player.BLUE:
-            labelled_piece = "b" + get_hex_uppercase_string(piece)
-        elif Board.get_piece_affiliation(piece) == Player.RED:
-            labelled_piece = "r" + get_hex_uppercase_string(
-                piece - Ranking.SPY)
-
-        return labelled_piece
 
     @staticmethod
     def get_flag_values():
@@ -163,32 +112,8 @@ class Board:
         parameter determines whether the blue and red flags are colored
         appropriately for easier identification.
         """
-        logger = logging.getLogger(__name__)
-        logger.setLevel(logging.DEBUG)
-
-        # Color codes for printing colored text
-        blue, red = "34", "31"
-
-        # Shorthands for piece rankings
-        blue_flag, red_flag = Board.get_flag_values()
-
-        print()  # Starts the board to a new line
-        for i, row in enumerate(self.matrix):
-            self._print_number_of_row(i)
-            for entry in row:
-                labelled_entry = self.label_piece_by_team(piece=entry)
-                if entry == Ranking.BLANK:
-                    self._print_blank_square()
-                elif entry == blue_flag and pov == POV.WORLD and with_color:
-                    self._print_square(self._get_colored(labelled_entry, blue))
-                elif entry == red_flag and pov == POV.WORLD and with_color:
-                    self._print_square(self._get_colored(labelled_entry, red))
-                elif pov == POV.WORLD:
-                    # Prints two chars wide
-                    self._print_square(f"{labelled_entry:2}")
-            print()  # Moves the next row to the next line
-        self._print_column_numbers()
-        print()  # Move the output after the board to a new line
+        printer = BoardPrinter(params=StatePrinterParams(board=self))
+        printer.print_state(pov=pov, with_color=with_color)
 
     def piece_not_found(self, piece: int):
         """
@@ -585,52 +510,15 @@ class Board:
 
         return squares_within_radius
 
-
+@dataclass
 class InfostatePiece:
     """
     This represents a piece on the infostate.
     """
 
-    def __init__(self, color: int, rank_floor: int, rank_ceiling: int):
-        self.color = color
-        self.rank_floor = rank_floor
-        self.rank_ceiling = rank_ceiling
-
-    def get_color(self) -> int:
-        """
-        Returns the color of the piece.
-        """
-        return self.color
-
-    def set_color(self, color: int):
-        """
-        Sets the color of the piece.
-        """
-        self.color = color
-
-    def get_rank_floor(self) -> int:
-        """
-        Returns the rank floor of the piece.
-        """
-        return self.rank_floor
-
-    def set_rank_floor(self, rank_floor: int):
-        """
-        Sets the rank floor of the piece.
-        """
-        self.rank_floor = rank_floor
-
-    def get_rank_ceiling(self) -> int:
-        """
-        Returns the rank ceiling of the piece.
-        """
-        return self.rank_ceiling
-
-    def set_rank_ceiling(self, rank_ceiling: int):
-        """
-        Sets the rank ceiling of the piece.
-        """
-        self.rank_ceiling = rank_ceiling
+    color: int
+    rank_floor: int
+    rank_ceiling: int
 
 
 class Infostate(Board):
@@ -652,6 +540,14 @@ class Infostate(Board):
         self.matrix = Infostate._to_matrix(infostate_board=abstracted_board)
         self.anticipating = anticipating
         self.abstracted_board = abstracted_board
+
+    def print_state(self, *args, **kwargs):
+        """
+        This prints the state as seen by either of the players in the terminal.
+        """
+        _, _ = args, kwargs  # Silences the linter's complaints
+        printer = InfostatePrinter(params=StatePrinterParams(infostate=self))
+        printer.print_state()
 
     @staticmethod
     def _to_matrix(infostate_board: list[list[InfostatePiece]]):
@@ -696,55 +592,6 @@ class Infostate(Board):
 
         return Infostate(abstracted_board=infostate_board, owner=owner,
                          player_to_move=Player.BLUE, anticipating=False)
-
-    @staticmethod
-    def _print_blank_square():
-        """
-        This is for representing blank squares in the printed infostate.
-        """
-        Board._print_square("[-----]")
-
-    @staticmethod
-    def _print_column_numbers():
-        """
-        This is for printing the column numbers below the board.
-        """
-        print("\n ", end='')
-        for k in range(Board.COLUMNS):
-            print(f"{k:7}", end=' ')
-
-    def print_state(self, *args, **kwargs):
-        """
-        This prints the state as seen by either of the players in the terminal.
-        """
-        _, _ = args, kwargs  # Stops the linter's complaints
-
-        logger = logging.getLogger(__name__)
-        logger.setLevel(logging.DEBUG)
-
-        print()  # Starts the board to a new line
-        for i, row in enumerate(self.matrix):
-            self._print_number_of_row(i)
-            for entry in row:
-                lowest_possible, highest_possible = entry[0], entry[1]
-                # Label both sides of the entry range
-                labelled_entry = [self.label_piece_by_team(
-                    piece=lowest_possible),
-                    self.label_piece_by_team(
-                    piece=highest_possible)]
-                if (highest_possible == Ranking.BLANK
-                        and lowest_possible == Ranking.BLANK):
-                    self._print_blank_square()
-                else:
-                    # Prints two chars wide
-                    self._print_square(
-                        f"({labelled_entry[0]},{labelled_entry[1]})")
-            print("\n")  # Moves the next row to the next line
-        self._print_column_numbers()
-        print()  # Move the output after the board to a new line
-
-        if self.anticipating:
-            print("\n[WAITING IF OPPONENT CHALLENGES]\n")
 
     @staticmethod
     def _remove_piece(board: list[list[InfostatePiece]],
@@ -969,3 +816,164 @@ class Infostate(Board):
             flattened_matrix.append(0)
 
         return " ".join(list(map(str, flattened_matrix)))
+
+
+@dataclass
+class StatePrinterParams:
+    """
+    This dataclass is for storing the parameters for initializing classes that
+    manage state printing.
+    """
+    board: Board = None
+    infostate: Infostate = None
+
+
+class BoardPrinter:
+    """
+    This class handles the printing of the board state.
+    """
+
+    def __init__(self, params: StatePrinterParams):
+        self.args = params
+
+    @staticmethod
+    def _get_colored(text: str, color_code: str):
+        """
+        This helper method attaches a color code to the provided text string to
+        embue the text with color when printed in the terminal.
+        """
+        return f"\033[{color_code}m{text:2}\033[0m"
+
+    @staticmethod
+    def _print_number_of_row(i: int):
+        """
+        This is for labelling the row with its number.
+        """
+        print(f"{i:2}", end='  ')
+
+    @staticmethod
+    def _print_square(contents: str):
+        """
+        This is for printing the contents of a square on the board.
+        """
+        print(contents, end=' ')
+
+    @staticmethod
+    def _print_blank_square():
+        """
+        This is for representing blank squares in the printed board.
+        """
+        BoardPrinter._print_square(" -")
+
+    @staticmethod
+    def _print_column_numbers():
+        """
+        This is for printing the column numbers below the board.
+        """
+        print("\n    ", end='')
+        for k in range(Board.COLUMNS):
+            print(f"{k:2}", end=' ')
+
+    @staticmethod
+    def label_piece_by_team(piece: int):
+        """
+        This method returns the string that will be printed in the terminal to
+        represent the piece.
+        """
+        labelled_piece = None  # Initialize return value
+        if Board.get_piece_affiliation(piece) == Player.BLUE:
+            labelled_piece = "b" + get_hex_uppercase_string(piece)
+        elif Board.get_piece_affiliation(piece) == Player.RED:
+            labelled_piece = "r" + get_hex_uppercase_string(
+                piece - Ranking.SPY)
+
+        return labelled_piece
+
+    def print_state(self, pov: int, with_color: bool):
+        """
+        This displays the state represented by the Board instance to the
+        terminal. The pov parameter determines which of the pieces have visible
+        rank numbers (see constant definitions in POV class). The with_color
+        parameter determines whether the blue and red flags are colored
+        appropriately for easier identification.
+        """
+
+        # Color codes for printing colored text
+        blue, red = "34", "31"
+
+        # Shorthands for piece rankings
+        blue_flag, red_flag = self.args.board.get_flag_values()
+
+        print()  # Starts the board to a new line
+        for i, row in enumerate(self.args.board.matrix):
+            BoardPrinter._print_number_of_row(i)
+            for entry in row:
+                labelled_entry = self.label_piece_by_team(
+                    piece=entry)
+                if entry == Ranking.BLANK:
+                    BoardPrinter._print_blank_square()
+                elif entry == blue_flag and pov == POV.WORLD and with_color:
+                    BoardPrinter._print_square(
+                        BoardPrinter._get_colored(labelled_entry, blue))
+                elif entry == red_flag and pov == POV.WORLD and with_color:
+                    BoardPrinter._print_square(
+                        BoardPrinter._get_colored(labelled_entry, red))
+                elif pov == POV.WORLD:
+                    # Prints two chars wide
+                    BoardPrinter._print_square(f"{labelled_entry:2}")
+            print()  # Moves the next row to the next line
+        BoardPrinter._print_column_numbers()
+        print()  # Move the output after the board to a new line
+
+
+class InfostatePrinter(BoardPrinter):
+    """
+    This class handles the printing of the infostate.
+    """
+
+    @staticmethod
+    def _print_blank_square():
+        """
+        This is for representing blank squares in the printed infostate.
+        """
+        BoardPrinter._print_square("[-----]")
+
+    @staticmethod
+    def _print_column_numbers():
+        """
+        This is for printing the column numbers below the board.
+        """
+        print("\n ", end='')
+        for k in range(Board.COLUMNS):
+            print(f"{k:7}", end=' ')
+
+    def print_state(self, *args, **kwargs):
+        """
+        This prints the state as seen by either of the players in the terminal.
+        """
+
+        _, _ = args, kwargs  # Silences the linter's complaints
+
+        print()  # Starts the board to a new line
+        for i, row in enumerate(self.args.infostate.matrix):
+            self._print_number_of_row(i)
+            for entry in row:
+                lowest_possible, highest_possible = entry[0], entry[1]
+                # Label both sides of the entry range
+                labelled_entry = [self.label_piece_by_team(
+                    piece=lowest_possible),
+                    self.label_piece_by_team(
+                    piece=highest_possible)]
+                if (highest_possible == Ranking.BLANK
+                        and lowest_possible == Ranking.BLANK):
+                    self._print_blank_square()
+                else:
+                    # Prints two chars wide
+                    self._print_square(
+                        f"({labelled_entry[0]},{labelled_entry[1]})")
+            print("\n")  # Moves the next row to the next line
+        self._print_column_numbers()
+        print()  # Move the output after the board to a new line
+
+        if self.args.infostate.anticipating:
+            print("\n[WAITING IF OPPONENT CHALLENGES]\n")
