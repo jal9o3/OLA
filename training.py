@@ -549,7 +549,8 @@ class CFRTrainingSimulator(MatchSimulator):
                     filtered_strategy.append(strategy[a])
             normalizing_sum = sum(filtered_strategy)
             if normalizing_sum > 0:
-                filtered_strategy = [p/normalizing_sum for p in filtered_strategy]
+                filtered_strategy = [
+                    p/normalizing_sum for p in filtered_strategy]
             else:
                 # Reset options if all evaluated actions seem bad
                 filtered_actions, filtered_strategy = valid_actions, strategy
@@ -557,6 +558,27 @@ class CFRTrainingSimulator(MatchSimulator):
                 filtered_actions, weights=filtered_strategy, k=1)[0]
 
         return action
+
+    @staticmethod
+    def _get_actions_filter(arbiter_board, previous_action, previous_result, attack_location):
+        reduced_branching, radius = 0, 1
+        while reduced_branching <= 0:
+            radius += 1
+            if previous_result in [Result.WIN, Result.LOSS]:
+                center = attack_location
+            elif attack_location is None:
+                center = (int(previous_action[0]), int(previous_action[1]))
+            else:
+                return None
+
+            whitelist = arbiter_board.get_squares_within_radius(
+                center=center, radius=radius)
+            directions = DirectionFilter() if previous_result in [
+                Result.WIN, Result.LOSS] else DirectionFilter(back=False, right=False, left=False)
+            actions_filter = ActionsFilter(
+                state=arbiter_board, directions=directions, square_whitelist=whitelist)
+            reduced_branching = len(actions_filter.filter())
+        return actions_filter
 
     def start(self):
         """
@@ -594,26 +616,9 @@ class CFRTrainingSimulator(MatchSimulator):
                     back=False, right=False, left=False),
                     square_whitelist=[(x, y) for y in range(Board.COLUMNS)
                                       for x in range(Board.ROWS)])
-            # If there has been a challenge, center the evaluation on the piece
-            # that has been attacked
-            elif previous_result in [Result.WIN, Result.LOSS]:
-                whitelist = arbiter_board.get_squares_within_radius(
-                    center=attack_location, radius=2)
-                # TODO: Increase radius until enough pieces are considered
-                actions_filter = ActionsFilter(state=arbiter_board, directions=DirectionFilter(),
-                                               square_whitelist=whitelist)
-            # If there has been no challenge, center the evaluation on the last
-            # allied piece that moved
-            elif attack_location is None:
-                whitelist = arbiter_board.get_squares_within_radius(
-                    center=(int(previous_action[0]), int(previous_action[1])),
-                    radius=2)
-                actions_filter = ActionsFilter(state=arbiter_board, directions=DirectionFilter(
-                    back=False, right=False, left=False
-                ),
-                    square_whitelist=whitelist)
             else:
-                actions_filter = None
+                actions_filter = CFRTrainingSimulator._get_actions_filter(
+                    arbiter_board, previous_action, previous_result, attack_location)
 
             action = self.get_cfr_input(abstraction=current_abstraction,
                                         actions_filter=actions_filter)
@@ -625,7 +630,7 @@ class CFRTrainingSimulator(MatchSimulator):
             new_arbiter_board = arbiter_board.transition(action)
             result = arbiter_board.classify_action_result(action,
                                                           new_arbiter_board)
-            previous_result = result # Store for the next iteration
+            previous_result = result  # Store for the next iteration
             if result in [Result.WIN, Result.LOSS]:
                 attack_location = (int(action[2]), int(action[3]))
             else:
