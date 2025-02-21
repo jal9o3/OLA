@@ -52,6 +52,38 @@ class Abstraction:
         """
         self.infostate = infostate
 
+class TimelessBoard():
+    """
+    A special "board" for listing all the possible moves that can occur in a 
+    game, to be used by the CFRTrainingSimulator in preparing the training data.
+    """
+
+    @staticmethod
+    def actions():
+        """
+        This enumerates all the possible actions that can be chosen in every
+        game for all the players.
+        """
+
+        valid_actions = []  # Initialize return value
+        bottom_row_number = leftmost_column_number = 0
+
+        for row in range(Board.ROWS):
+            for column in range(Board.COLUMNS):
+                # Define change in coordinates per direction (up, down, left,
+                # and right)
+                directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+                for direction in directions:
+                    direction_row, direction_column = direction
+                    new_row, new_column = (row + direction_row,
+                                           column + direction_column)
+
+                    if (bottom_row_number <= new_row < Board.ROWS
+                        and leftmost_column_number <= new_column < Board.COLUMNS):
+                        valid_actions.append(
+                            f"{row}{column}{new_row}{new_column}")
+
+        return valid_actions
 
 @dataclass
 class CFRParameters:
