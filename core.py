@@ -575,10 +575,13 @@ class Board:
         center_row, center_col = center
         squares_within_radius = []
 
-        for row in range(max(0, center_row - radius), min(rows, center_row + radius + 1)):
-            for col in range(max(0, center_col - radius), min(cols, center_col + radius + 1)):
-                if abs(center_row - row) + abs(center_col - col) <= radius:
-                    squares_within_radius.append((row, col))
+        # Get squares within the (2*radius) + 1 section of the board around the
+        # center
+        for i in range(center_row - radius, center_row + radius + 1):
+            for j in range(center_col - radius, center_col + radius + 1):
+                if (0 <= i < rows and 0 <= j < cols
+                        and (i, j) not in squares_within_radius):
+                    squares_within_radius.append((i, j))
 
         return squares_within_radius
 
