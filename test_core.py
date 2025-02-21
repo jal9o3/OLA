@@ -9,7 +9,7 @@ from unittest.mock import patch
 from helpers import (get_random_permutation, get_blank_matrix,
                      get_hex_uppercase_string)
 from constants import Result, Ranking
-from core import Board, Infostate, Player, BoardPrinter, InfostatePrinter
+from core import Board, Infostate, Player, BoardPrinter
 
 
 class TestGetRandomPermutation(unittest.TestCase):
