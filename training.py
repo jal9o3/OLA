@@ -491,8 +491,8 @@ class DepthLimitedCFRTrainer(CFRTrainer):
         for i in range(iterations):
             for player in [Player.BLUE, Player.RED]:
                 arguments = CFRParameters(abstraction=abstraction, current_player=player,
-                                            iteration=i, blue_probability=1, red_probability=1,
-                                            depth=depth, actions_filter=actions_filter)
+                                          iteration=i, blue_probability=1, red_probability=1,
+                                          depth=depth, actions_filter=actions_filter)
                 self.cfr(params=arguments)
 
 
