@@ -537,7 +537,7 @@ class CFRTrainingSimulator(MatchSimulator):
         # Set the lowest probability as the minimum threshold
         threshold = min(strategy)
         for i, probability in enumerate(strategy):
-            if probability < threshold:
+            if probability <= threshold:
                 strategy[i] = 0
         normalizing_sum = sum(strategy)
         if normalizing_sum > 0:
