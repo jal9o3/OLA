@@ -488,18 +488,12 @@ class DepthLimitedCFRTrainer(CFRTrainer):
         This runs the counterfactual regret minimization algorithm to produce
         the tables needed by the AI.
         """
-        end_game = 12  # Branching when three pieces are left
         for i in range(iterations):
             for player in [Player.BLUE, Player.RED]:
-                if len(abstraction.state.actions()) > end_game:
-                    arguments = CFRParameters(abstraction=abstraction, current_player=player,
-                                              iteration=i, blue_probability=1, red_probability=1,
-                                              depth=depth, actions_filter=actions_filter)
-                    self.cfr(params=arguments)
-                else:
-                    arguments = CFRParameters(abstraction=abstraction, current_player=player,
-                                              iteration=i, blue_probability=1, red_probability=1)
-                    self.vanilla_cfr.cfr(params=arguments)
+                arguments = CFRParameters(abstraction=abstraction, current_player=player,
+                                            iteration=i, blue_probability=1, red_probability=1,
+                                            depth=depth, actions_filter=actions_filter)
+                self.cfr(params=arguments)
 
 
 class CFRTrainingSimulator(MatchSimulator):
