@@ -640,6 +640,26 @@ class CFRTrainingSimulator(MatchSimulator):
             attack_location = None
         return new_arbiter_board, result, attack_location
 
+    @staticmethod
+    def _save_strategy_to_csv(current_abstraction: Abstraction,
+                              trainer: DepthLimitedCFRTrainer):
+        # Map the strategy to all possible actions
+        fullgame_actions = TimelessBoard.actions()
+        strategy = CFRTrainingSimulator._distill_strategy(
+            raw_strategy=trainer.strategy_tables[str(current_abstraction.infostate)])
+        # Initialize the full size strategy
+        full_strategy = [0.0 for a in range(len(fullgame_actions))]
+        for action in current_abstraction.state.actions():
+            full_strategy[fullgame_actions.index(action)] = strategy[
+                current_abstraction.state.actions().index(action)]
+        # Store the infostate string with the corresponding strategy in a CSV file
+        with open("training_data.csv", "a", encoding="utf-8") as training_data:
+            writer = csv.writer(training_data)
+            # Split the infostate string
+            infostate_split = list(
+                map(int, str(current_abstraction.infostate).split(" ")))
+            writer.writerow(infostate_split + full_strategy)
+
     def start(self):
         """
         This method simulates a GG match generating training data, using the
@@ -686,23 +706,8 @@ class CFRTrainingSimulator(MatchSimulator):
             )
             turn_number += 1
 
-            # Map the strategy to all possible actions
-            fullgame_actions = TimelessBoard.actions()
-            strategy = CFRTrainingSimulator._distill_strategy(
-                raw_strategy=trainer.strategy_tables[str(current_abstraction.infostate)])
-            full_strategy = [0.0 for a in range(
-                len(fullgame_actions))]  # Initialize the full size strategy
-            for action in current_abstraction.state.actions():
-                full_strategy[fullgame_actions.index(action)] = strategy[
-                    current_abstraction.state.actions().index(action)]
-            # Store the infostate string with the corresponding strategy in a
-            # CSV file
-            with open("training_data.csv", "a", encoding="utf-8") as training_data:
-                writer = csv.writer(training_data)
-                # Split the infostate string
-                infostate_split = list(
-                    map(int, str(current_abstraction.infostate).split(" ")))
-                writer.writerow(infostate_split + full_strategy)
+            self._save_strategy_to_csv(current_abstraction=current_abstraction,
+                                       trainer=trainer)
 
         MatchSimulator._print_result(arbiter_board)
 
