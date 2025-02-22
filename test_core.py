@@ -360,6 +360,9 @@ class TestInfostate(unittest.TestCase):
             infostate_list[:-3],
             flattened_infostate)
         self.assertEqual(len(infostate_string), 307)
+        infostate_split = list(
+                map(int, str(sample_blue_infostate).split(" ")))
+        self.assertEqual(len(infostate_split), 147)
 
 
 class TestPlayer(unittest.TestCase):
