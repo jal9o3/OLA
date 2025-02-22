@@ -33,7 +33,7 @@ class TestTimelessBoard(unittest.TestCase):
             self.assertTrue(0 <= start_col < Board.COLUMNS)
             self.assertTrue(0 <= end_row < Board.ROWS)
             self.assertTrue(0 <= end_col < Board.COLUMNS)
-        
+
         self.assertEqual(len(actions), 254)
 
 
