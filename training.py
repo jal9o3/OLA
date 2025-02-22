@@ -600,7 +600,7 @@ class CFRTrainingSimulator(MatchSimulator):
             action = random.choices(
                 filtered_actions, weights=filtered_strategy, k=1)[0]
 
-        return action
+        return action, trainer
 
     @staticmethod
     def _get_actions_filter(arbiter_board, previous_action, previous_result, attack_location):
@@ -671,8 +671,8 @@ class CFRTrainingSimulator(MatchSimulator):
                 actions_filter = CFRTrainingSimulator._get_actions_filter(
                     arbiter_board, previous_action, previous_result, attack_location)
 
-            action = self.get_cfr_input(abstraction=current_abstraction,
-                                        actions_filter=actions_filter)
+            action, trainer = self.get_cfr_input(abstraction=current_abstraction,
+                                                 actions_filter=actions_filter)
             print(f"Chosen Move: {action}")
             previous_action = action  # Store for the next iteration
             if self.save_data:
@@ -684,6 +684,15 @@ class CFRTrainingSimulator(MatchSimulator):
                 blue_infostate, red_infostate, action=action, result=result
             )
             turn_number += 1
+
+            # Store the infostate string with the corresponding strategy in a
+            # CSV file
+            strategy = CFRTrainingSimulator._distill_strategy(
+                raw_strategy=trainer.strategy_tables[str(current_abstraction.infostate)])
+            # Open the CSV file in append mode
+            with open("training_data.csv", "a", encoding="utf-8") as training_data:
+                training_data.write(
+                    f"{str(current_abstraction.infostate)},{str(strategy)}\n")
 
         MatchSimulator._print_result(arbiter_board)
 
