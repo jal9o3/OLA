@@ -359,6 +359,7 @@ class TestInfostate(unittest.TestCase):
         self.assertListEqual(
             infostate_list[:-3],
             flattened_infostate)
+        self.assertEqual(len(infostate_string), 307)
 
 
 class TestPlayer(unittest.TestCase):
