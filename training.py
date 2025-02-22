@@ -660,70 +660,73 @@ class CFRTrainingSimulator(MatchSimulator):
                 map(int, str(current_abstraction.infostate).split(" ")))
             writer.writerow(infostate_split + full_strategy)
 
-    def start(self):
+    def start(self, iterations: int = 1, target: int = None):
         """
         This method simulates a GG match generating training data, using the
         counterfactual regret minimization algorithm.
         """
-        arbiter_board = self._initialize_arbiter_board()
-        blue_infostate, red_infostate = MatchSimulator._starting_infostates(
-            arbiter_board)
-        action, result, previous_action, previous_result, attack_location = (
-            "", "", "", "", None)  # Initialize needed values
-
-        turn_number = 1
-        while not arbiter_board.is_terminal():
-            MatchSimulator._print_game_status(turn_number, arbiter_board, infostates=[
-                blue_infostate, red_infostate],
-                pov=self.pov)
-            action = ""  # Initialize variable for storing chosen action
-            current_infostate = (blue_infostate if arbiter_board.player_to_move == Player.BLUE
-                                 else red_infostate)
-            current_abstraction = Abstraction(
-                state=arbiter_board, infostate=current_infostate)
-
-            # For the first turns of each player, choose a forward move
-            if turn_number in [1, 2]:
-                actions_filter = ActionsFilter(state=arbiter_board, directions=DirectionFilter(
-                    back=False, right=False, left=False),
-                    square_whitelist=[(x, y) for y in range(Board.COLUMNS)
-                                      for x in range(Board.ROWS)])
-            else:
-                actions_filter = CFRTrainingSimulator._get_actions_filter(
-                    arbiter_board, previous_action, previous_result, attack_location)
-
-            action, trainer = self.get_cfr_input(abstraction=current_abstraction,
-                                                 actions_filter=actions_filter)
-            print(f"Chosen Move: {action}")
-            previous_action = action  # Store for the next iteration
-            if self.save_data:
-                self.game_history.append(action)
-            arbiter_board, result, attack_location = self._process_action(
-                arbiter_board, action)
-            previous_result = result  # Store for the next iteration
-            blue_infostate, red_infostate = MatchSimulator._update_infostates(
-                blue_infostate, red_infostate, action=action, result=result
+        _ = iterations  # Not used in this subclass
+        sampled = 0  # Initialize data sample count
+        while target is not None and sampled < target:
+            self.blue_formation = list(
+                Player.get_sensible_random_formation(
+                    piece_list=Ranking.SORTED_FORMATION)
             )
-            turn_number += 1
+            self.red_formation = self._place_in_red_range(list(
+                Player.get_sensible_random_formation(
+                    piece_list=Ranking.SORTED_FORMATION))
+            )
+            arbiter_board = self._initialize_arbiter_board()
+            blue_infostate, red_infostate = MatchSimulator._starting_infostates(
+                arbiter_board)
+            action, result, previous_action, previous_result, attack_location = (
+                "", "", "", "", None)  # Initialize needed values
 
-            self._save_strategy_to_csv(current_abstraction=current_abstraction,
-                                       trainer=trainer)
+            turn_number = 1
+            while not arbiter_board.is_terminal():
+                MatchSimulator._print_game_status(turn_number, arbiter_board, infostates=[
+                    blue_infostate, red_infostate],
+                    pov=self.pov)
+                action = ""  # Initialize variable for storing chosen action
+                current_infostate = (blue_infostate if arbiter_board.player_to_move == Player.BLUE
+                                     else red_infostate)
+                current_abstraction = Abstraction(
+                    state=arbiter_board, infostate=current_infostate)
 
-        MatchSimulator._print_result(arbiter_board)
+                # For the first turns of each player, choose a forward move
+                if turn_number in [1, 2]:
+                    actions_filter = ActionsFilter(state=arbiter_board, directions=DirectionFilter(
+                        back=False, right=False, left=False),
+                        square_whitelist=[(x, y) for y in range(Board.COLUMNS)
+                                          for x in range(Board.ROWS)])
+                else:
+                    actions_filter = CFRTrainingSimulator._get_actions_filter(
+                        arbiter_board, previous_action, previous_result, attack_location)
+
+                action, trainer = self.get_cfr_input(abstraction=current_abstraction,
+                                                     actions_filter=actions_filter)
+                print(f"Chosen Move: {action}")
+                previous_action = action  # Store for the next iteration
+                if self.save_data:
+                    self.game_history.append(action)
+                arbiter_board, result, attack_location = self._process_action(
+                    arbiter_board, action)
+                previous_result = result  # Store for the next iteration
+                blue_infostate, red_infostate = MatchSimulator._update_infostates(
+                    blue_infostate, red_infostate, action=action, result=result
+                )
+                turn_number += 1
+                sampled += 1
+                print(f"Sampled: {sampled}/{target}")
+
+                self._save_strategy_to_csv(current_abstraction=current_abstraction,
+                                           trainer=trainer)
+
+            MatchSimulator._print_result(arbiter_board)
 
 
 if __name__ == "__main__":
-    # Sample random formations
-    blue_formation = list(
-        Player.get_sensible_random_formation(
-            piece_list=Ranking.SORTED_FORMATION)
-    )
-    red_formation = list(
-        Player.get_sensible_random_formation(
-            piece_list=Ranking.SORTED_FORMATION)
-    )
-
-    simulator = CFRTrainingSimulator(formations=[blue_formation, red_formation],
+    simulator = CFRTrainingSimulator(formations=[None, None],
                                      controllers=None, save_data=False,
                                      pov=POV.WORLD)
-    simulator.start()
+    simulator.start(target=5000)

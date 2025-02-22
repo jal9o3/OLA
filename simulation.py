@@ -21,8 +21,14 @@ class MatchSimulator:
         the moves for either or both sides of the simulated match (see constant
         definitions in the Controller class).
         """
-        self.blue_formation = formations[0]
-        self.red_formation = self._place_in_red_range(formations[1])
+        if formations[0] is not None:
+            self.blue_formation = formations[0]
+        else:
+            self.blue_formation = None
+        if formations[1] is not None:
+            self.red_formation = self._place_in_red_range(formations[1])
+        else:
+            self.red_formation = None
         self.controllers = controllers
         self.player_one_color = random.choice([Player.BLUE, Player.RED])
         self.player_two_color = Player.RED if (
@@ -31,7 +37,7 @@ class MatchSimulator:
         self.game_history = []
         self.pov = pov
 
-    @ staticmethod
+    @staticmethod
     def _place_in_red_range(formation: list[int]):
         """
         This is to ensure that the red player's pieces are between 16 and 30
@@ -44,7 +50,7 @@ class MatchSimulator:
 
         return formation
 
-    @ staticmethod
+    @staticmethod
     def _prepare_empty_matrices():
         """
         This helper method prepares a blank starting matrix for each of the two
@@ -57,7 +63,7 @@ class MatchSimulator:
 
         return blue_player_matrix, red_player_matrix
 
-    @ staticmethod
+    @staticmethod
     def _place_formation_on_matrix(formation: list[int],
                                    matrix: list[list[int]]):
         """
@@ -74,7 +80,7 @@ class MatchSimulator:
 
         return matrix
 
-    @ staticmethod
+    @staticmethod
     def _flip_matrix(matrix: list[list[int]]):
         """
         This helper method is for placing the blue pieces in their starting
@@ -87,7 +93,7 @@ class MatchSimulator:
 
         return matrix
 
-    @ staticmethod
+    @staticmethod
     def _combine_player_matrices(blue_player_matrix: list[list[int]],
                                  red_player_matrix: list[list[int]]):
         """
@@ -120,7 +126,7 @@ class MatchSimulator:
 
         return arbiter_matrix
 
-    @ staticmethod
+    @staticmethod
     def _print_game_status(turn_number: int, arbiter_board: Board,
                            infostates: list[Infostate], pov: int):
 
@@ -208,46 +214,48 @@ class MatchSimulator:
         elif arbiter_board.reward() == 0:
             print("\n[DRAW]\n")
 
-    def start(self):
+    def start(self, iterations: int = 1, target: int = None):
         """
         This method simulates a GG match in the terminal, either taking input
         from humans or choosing moves based on an algorithm or even both.
         """
-        arbiter_board = Board(self.setup_arbiter_matrix(),
-                              player_to_move=Player.BLUE,
-                              blue_anticipating=False, red_anticipating=False)
-        if self.save_data:
-            self.game_history.append(arbiter_board.matrix)
-
-        blue_infostate, red_infostate = MatchSimulator._starting_infostates(
-            arbiter_board)
-
-        turn_number = 1
-        branches_encountered = 0
-        while not arbiter_board.is_terminal():
-            self.manage_pov_switching(arbiter_board)
-
-            MatchSimulator._print_game_status(turn_number, arbiter_board,
-                                              infostates=[
-                                                  blue_infostate,
-                                                  red_infostate],
-                                              pov=self.pov)
-            valid_actions = arbiter_board.actions()
-            branches_encountered += len(valid_actions)
-
-            action = ""  # Initialize variable for storing chosen action
-            action = self.get_controller_input(arbiter_board)
-            print(f"Chosen Move: {action}")
+        _ = target  # Placeholder for use in CFRTrainingSimulator subclass
+        for _ in range(iterations):
+            arbiter_board = Board(self.setup_arbiter_matrix(),
+                                  player_to_move=Player.BLUE,
+                                  blue_anticipating=False, red_anticipating=False)
             if self.save_data:
-                self.game_history.append(action)
+                self.game_history.append(arbiter_board.matrix)
 
-            new_arbiter_board = arbiter_board.transition(action)
-            result = arbiter_board.classify_action_result(action,
-                                                          new_arbiter_board)
-            blue_infostate, red_infostate = MatchSimulator._update_infostates(
-                blue_infostate, red_infostate, action=action, result=result
-            )
-            arbiter_board = new_arbiter_board
-            turn_number += 1
+            blue_infostate, red_infostate = MatchSimulator._starting_infostates(
+                arbiter_board)
 
-        MatchSimulator._print_result(arbiter_board)
+            turn_number = 1
+            branches_encountered = 0
+            while not arbiter_board.is_terminal():
+                self.manage_pov_switching(arbiter_board)
+
+                MatchSimulator._print_game_status(turn_number, arbiter_board,
+                                                  infostates=[
+                                                      blue_infostate,
+                                                      red_infostate],
+                                                  pov=self.pov)
+                valid_actions = arbiter_board.actions()
+                branches_encountered += len(valid_actions)
+
+                action = ""  # Initialize variable for storing chosen action
+                action = self.get_controller_input(arbiter_board)
+                print(f"Chosen Move: {action}")
+                if self.save_data:
+                    self.game_history.append(action)
+
+                new_arbiter_board = arbiter_board.transition(action)
+                result = arbiter_board.classify_action_result(action,
+                                                              new_arbiter_board)
+                blue_infostate, red_infostate = MatchSimulator._update_infostates(
+                    blue_infostate, red_infostate, action=action, result=result
+                )
+                arbiter_board = new_arbiter_board
+                turn_number += 1
+
+            MatchSimulator._print_result(arbiter_board)
