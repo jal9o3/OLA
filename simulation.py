@@ -199,19 +199,32 @@ class MatchSimulator:
         return blue_infostate, red_infostate
 
     @staticmethod
-    def _print_result(arbiter_board: Board):
+    def _get_match_result(arbiter_board: Board):
         win_value = 1000000
+        result = None  # Initialize return value
         if ((arbiter_board.reward() == win_value
                 and arbiter_board.player_to_move == Player.BLUE)
                 or (arbiter_board.reward() == -win_value
                     and arbiter_board.player_to_move == Player.RED)):
-            print("\n[VICTORY FOR BLUE]\n")
+            result = Player.BLUE
         elif ((arbiter_board.reward() == win_value
               and arbiter_board.player_to_move == Player.RED)
               or (arbiter_board.reward() == -win_value
               and arbiter_board.player_to_move == Player.BLUE)):
-            print("\n[VICTORY FOR RED]\n")
+            result = Player.RED
         elif arbiter_board.reward() == 0:
+            result = Player.ARBITER
+
+        return result
+
+    @staticmethod
+    def _print_result(arbiter_board: Board):
+        result = MatchSimulator._get_match_result(arbiter_board)
+        if result == Player.BLUE:
+            print("\n[VICTORY FOR BLUE]\n")
+        elif result == Player.RED:
+            print("\n[VICTORY FOR RED]\n")
+        elif result == Player.ARBITER:
             print("\n[DRAW]\n")
 
     def start(self, iterations: int = 1, target: int = None):
