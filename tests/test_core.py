@@ -2,14 +2,23 @@
 These unit tests ensure that critical components of the OLA engine remain
 operational throughout continued development.
 """
+
+import sys
+import os
+
 import unittest
 from unittest.mock import patch
 
 
 from OLA.helpers import (get_random_permutation, get_blank_matrix,
-                     get_hex_uppercase_string)
+                         get_hex_uppercase_string)
 from OLA.constants import Result, Ranking
 from OLA.core import Board, Infostate, Player, BoardPrinter
+
+
+testdir = os.path.dirname(__file__)
+SRCDIR = '../OLA'
+sys.path.insert(0, os.path.abspath(os.path.join(testdir, SRCDIR)))
 
 
 class TestGetRandomPermutation(unittest.TestCase):
@@ -361,7 +370,7 @@ class TestInfostate(unittest.TestCase):
             flattened_infostate)
         self.assertEqual(len(infostate_string), 307)
         infostate_split = list(
-                map(int, str(sample_blue_infostate).split(" ")))
+            map(int, str(sample_blue_infostate).split(" ")))
         self.assertEqual(len(infostate_split), 147)
 
 

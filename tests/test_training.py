@@ -1,9 +1,17 @@
 """
 This is for testing classes and functions in the training module.
 """
+
+import sys
+import os
+
 import unittest
 from OLA.core import Board
 from OLA.training import TimelessBoard
+
+testdir = os.path.dirname(__file__)
+SRCDIR = '../OLA'
+sys.path.insert(0, os.path.abspath(os.path.join(testdir, SRCDIR)))
 
 
 class TestTimelessBoard(unittest.TestCase):
