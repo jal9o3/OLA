@@ -5,7 +5,7 @@ objects.
 
 import random
 
-from constants import Ranking
+from OLA.constants import Ranking
 
 
 def get_random_permutation(elements: list):

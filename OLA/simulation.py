@@ -4,9 +4,9 @@ This contains the logic for simulating a GG match.
 
 import random
 
-from constants import Ranking, POV, Controller
-from helpers import get_blank_matrix
-from core import Player, Board, Infostate
+from OLA.constants import Ranking, POV, Controller
+from OLA.helpers import get_blank_matrix
+from OLA.core import Player, Board, Infostate
 
 
 class MatchSimulator:

@@ -6,8 +6,8 @@ import copy
 
 from dataclasses import dataclass
 
-from constants import Ranking, Result, POV
-from helpers import get_random_permutation, get_hex_uppercase_string
+from OLA.constants import Ranking, Result, POV
+from OLA.helpers import get_random_permutation, get_hex_uppercase_string
 
 # Configure the logging
 logging.basicConfig(level=logging.WARNING)

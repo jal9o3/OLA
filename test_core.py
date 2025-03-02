@@ -6,10 +6,10 @@ import unittest
 from unittest.mock import patch
 
 
-from helpers import (get_random_permutation, get_blank_matrix,
+from OLA.helpers import (get_random_permutation, get_blank_matrix,
                      get_hex_uppercase_string)
-from constants import Result, Ranking
-from core import Board, Infostate, Player, BoardPrinter
+from OLA.constants import Result, Ranking
+from OLA.core import Board, Infostate, Player, BoardPrinter
 
 
 class TestGetRandomPermutation(unittest.TestCase):

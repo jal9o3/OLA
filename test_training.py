@@ -2,8 +2,8 @@
 This is for testing classes and functions in the training module.
 """
 import unittest
-from core import Board
-from training import TimelessBoard
+from OLA.core import Board
+from OLA.training import TimelessBoard
 
 
 class TestTimelessBoard(unittest.TestCase):

@@ -7,9 +7,9 @@ import csv
 
 from dataclasses import dataclass
 
-from core import Board, Infostate, Player
-from simulation import MatchSimulator
-from constants import POV, Ranking, Result
+from OLA.core import Board, Infostate, Player
+from OLA.simulation import MatchSimulator
+from OLA.constants import POV, Ranking, Result
 
 
 class Abstraction:
