@@ -181,6 +181,7 @@ class MatchSimulator:
         This is for obtaining the controller's chosen action, be it human or
         bot.
         """
+        action = ""  # Initialize variable for storing chosen action
         valid_actions = arbiter_board.actions()
         if self.get_current_controller(arbiter_board) == Controller.RANDOM:
             action = random.choice(valid_actions)
