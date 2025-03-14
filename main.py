@@ -27,7 +27,7 @@ def main():
 
     match_simulator = MatchSimulator(formations=[blue_formation, red_formation],
                                      controllers=[
-                                         Controller.HUMAN, Controller.RANDOM],
+                                         Controller.RANDOM, Controller.RANDOM],
                                      save_data=False,
                                      pov=POV.RED)
     match_simulator.start()

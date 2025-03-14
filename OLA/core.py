@@ -537,7 +537,7 @@ class Infostate(Board):
                          blue_anticipating=False, red_anticipating=False)
         self.owner = owner
         # Override attributes of the parent board class
-        self.matrix = Infostate._to_matrix(infostate_board=abstracted_board)
+        self.matrix = Infostate.to_matrix(infostate_board=abstracted_board)
         self.anticipating = anticipating
         self.abstracted_board = abstracted_board
 
@@ -550,7 +550,24 @@ class Infostate(Board):
         printer.print_state()
 
     @staticmethod
-    def _to_matrix(infostate_board: list[list[InfostatePiece]]):
+    def to_matrix(infostate_board: list[list[InfostatePiece]]):
+        """
+        Converts a 2D list of InfostatePiece objects into a matrix 
+        representation. Each element in the resulting matrix is a list of two 
+        integers representing the rank floor and rank ceiling of the piece. The 
+        values are adjusted based on the color of the piece:
+        - For Player.BLUE, the rank floor and rank ceiling are used as-is.
+        - For Player.RED, the rank floor and rank ceiling are incremented by the
+          value of Ranking.SPY.
+        Args:
+            infostate_board (list[list[InfostatePiece]]): A 2D list representing 
+            the board state, where each element is an InfostatePiece object.
+        Returns:
+            list[list[list[int]]]: A 2D matrix where each element is a list of 
+            two integers representing the rank floor and rank ceiling of the 
+            piece.
+        """
+
         infostate_matrix = [[[0, 0] for col in range(Board.COLUMNS)]
                             for row in range(Board.ROWS)]
         for i, row in enumerate(infostate_board):
