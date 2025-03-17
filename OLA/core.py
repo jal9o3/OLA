@@ -510,6 +510,7 @@ class Board:
 
         return squares_within_radius
 
+
 @dataclass
 class InfostatePiece:
     """
@@ -745,6 +746,38 @@ class Infostate(Board):
             result = True
 
         return result
+
+    def actions(self):
+        """
+        This enumerates the possible actions of the player to move in the game
+        state.
+        """
+        logger = logging.getLogger(__name__)
+        logger.setLevel(logging.DEBUG)
+
+        valid_actions = []  # Initialize return value
+        bottom_row_number = leftmost_column_number = 0
+
+        for row in range(Infostate.ROWS):
+            for column in range(Infostate.COLUMNS):
+                entry = self.abstracted_board[row][column]
+                # Define change in coordinates per direction (up, down, left,
+                # and right)
+                directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+                for direction in directions:
+                    direction_row, direction_column = direction
+                    new_row, new_column = (row + direction_row,
+                                           column + direction_column)
+
+                    if (bottom_row_number <= new_row < Infostate.ROWS
+                        and leftmost_column_number <= new_column < Infostate.COLUMNS
+                        and entry.color != Player.ARBITER
+                        and entry.color == self.owner
+                            and self.abstracted_board[new_row][new_column].color != self.owner):
+                        valid_actions.append(
+                            f"{row}{column}{new_row}{new_column}")
+
+        return valid_actions
 
     def transition(self, action: str, *args, **kwargs):
         """

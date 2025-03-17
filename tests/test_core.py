@@ -272,6 +272,34 @@ class TestInfostate(unittest.TestCase):
     This tests the representation of the board as seen by either of the players.
     """
 
+    def test_actions(self):
+        """
+        This verifies that the actions available to the player to move are
+        correctly enumerated.
+        """
+        sample_state_matrix = [
+            [0, 0, 0, 0, 0, 0, 0, 16, 0],
+            [0, 0, 0, 0, 0, 0, 2, 0, 0],
+            [0, 0, 15, 0, 0, 9, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 23, 0, 29, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        ]
+        sample_board = Board(sample_state_matrix, player_to_move=Player.BLUE,
+                             blue_anticipating=False, red_anticipating=False)
+        sample_blue_infostate = Infostate.at_start(owner=Player.BLUE,
+                                                   board=sample_board)
+        self.assertEqual(sample_board.actions(),
+                         sample_blue_infostate.actions())
+        sample_board = Board(sample_state_matrix, player_to_move=Player.RED,
+                             blue_anticipating=False, red_anticipating=False)
+        sample_red_infostate = Infostate.at_start(owner=Player.RED,
+                                                  board=sample_board)
+        self.assertEqual(sample_board.actions(),
+                         sample_red_infostate.actions())
+
     def test_transition(self):
         """
         This verifies that the infostate representation is configured properly 
