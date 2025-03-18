@@ -772,8 +772,9 @@ class Infostate(Board):
                     if (bottom_row_number <= new_row < Infostate.ROWS
                         and leftmost_column_number <= new_column < Infostate.COLUMNS
                         and entry.color != Player.ARBITER
-                        and entry.color == self.owner
-                            and self.abstracted_board[new_row][new_column].color != self.owner):
+                        and entry.color == self.player_to_move
+                            and self.abstracted_board[
+                                new_row][new_column].color != self.player_to_move):
                         valid_actions.append(
                             f"{row}{column}{new_row}{new_column}")
 

@@ -5,6 +5,7 @@ operational throughout continued development.
 
 import sys
 import os
+import random
 
 import unittest
 from unittest.mock import patch
@@ -293,8 +294,15 @@ class TestInfostate(unittest.TestCase):
                                                    board=sample_board)
         self.assertEqual(sample_board.actions(),
                          sample_blue_infostate.actions())
-        sample_board = Board(sample_state_matrix, player_to_move=Player.RED,
-                             blue_anticipating=False, red_anticipating=False)
+
+        chosen_move = random.choice(sample_board.actions())
+        next_board = sample_board.transition(chosen_move)
+        result = sample_board.classify_action_result(action=chosen_move,
+                                                     new_board=next_board)
+        next_infostate = sample_blue_infostate.transition(chosen_move, result)
+        self.assertEqual(next_board.actions(), next_infostate.actions())
+        self.assertEqual(next_board.player_to_move, next_infostate.player_to_move)
+
         sample_red_infostate = Infostate.at_start(owner=Player.RED,
                                                   board=sample_board)
         self.assertEqual(sample_board.actions(),
