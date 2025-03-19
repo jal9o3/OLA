@@ -315,10 +315,6 @@ class ActionsFilter:
             updated_actions.remove(action)
         actions = copy.deepcopy(updated_actions)
 
-        # Add this inside move_ordering() to debug
-        # print("Initial actions:", self.state.actions())
-        # print("Ordered actions after processing:", ordered_actions)
-
         return ordered_actions
 
 
