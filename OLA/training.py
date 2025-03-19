@@ -164,6 +164,8 @@ class ActionsFilter:
     should be evaluated.
     """
 
+    nodes_visited = 0  # Counter for visited nodes
+
     def __init__(self, state: Board, directions: DirectionFilter,
                  square_whitelist: list[tuple[int, int]]):
         self.state = state
@@ -326,21 +328,37 @@ class ActionsFilter:
         This method is for implementing the alpha-beta search algorithm.
         """
         player = state.player_to_move
-        move = None
+        move, value = None, None
         if player == Player.BLUE:
-            _, move = ActionsFilter._max_value(state=state,
+            value, move = ActionsFilter._max_value(state=state,
                                                alpha=float("-inf"),
                                                beta=float("inf"),
                                                depth=depth - 1)
         elif player == Player.RED:
-            _, move = ActionsFilter._min_value(state=state,
+            value, move = ActionsFilter._min_value(state=state,
                                                alpha=float("-inf"),
                                                beta=float("inf"),
                                                depth=depth - 1)
-        return move
+
+        # Total possible nodes without pruning
+        # branching_factor = len(state.actions())  # Average branching factor
+        branching_factor = min(len(state.actions()), 29) # Estimated average
+        depth = 4  # Depth of the search
+        total_possible_nodes = (branching_factor ** depth - 1) / (branching_factor - 1)
+
+        # Nodes pruned
+        nodes_pruned = total_possible_nodes - ActionsFilter.nodes_visited
+        print(f"Possible Nodes: {int(total_possible_nodes)}")
+        print(f"Nodes Visited: {ActionsFilter.nodes_visited}")
+        ActionsFilter.nodes_visited = 0  # Reset counter
+        print(f"Nodes Pruned: {int(nodes_pruned)}")
+
+        
+        return value, move
 
     @staticmethod
     def _max_value(state: Board, alpha: float, beta: float, depth: int):
+        ActionsFilter.nodes_visited += 1  # Increment counter
         if state.is_terminal():
             return state.reward(), None
         if not state.is_terminal() and depth == 0:
@@ -358,11 +376,12 @@ class ActionsFilter:
                 value, move = value2, action
                 alpha = max(alpha, value)
             if value >= beta:
-                return value, move
+                return value, move  # Pruning occurs here
         return value, move
 
     @staticmethod
     def _min_value(state: Board, alpha: float, beta: float, depth: int):
+        ActionsFilter.nodes_visited += 1  # Increment counter
         if state.is_terminal():
             return -state.reward(), None
         if not state.is_terminal() and depth == 0:
@@ -380,7 +399,7 @@ class ActionsFilter:
                 value, move = value2, action
                 beta = min(beta, value)
             if value <= alpha:
-                return value, move
+                return value, move  # Pruning occurs here
         return value, move
 
 
@@ -891,8 +910,9 @@ class AlphaBetaTrainingSimulator(MatchSimulator):
             time.sleep(2)
             action = ""  # Initialize variable for storing chosen action
 
-            action = ActionsFilter.alpha_beta_search(
+            value, action = ActionsFilter.alpha_beta_search(
                 state=arbiter_board, depth=4)
+            print(f"Value: {value}")
             arbiter_board = arbiter_board.transition(action)
             print(f"Chosen Move: {action}")
 
