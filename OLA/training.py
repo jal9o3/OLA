@@ -566,7 +566,8 @@ class CFRTrainingSimulator(MatchSimulator):
         valid_actions = abstraction.state.actions()
         action = ""
         trainer = DepthLimitedCFRTrainer()
-        trainer.solve(abstraction=abstraction, actions_filter=actions_filter)
+        trainer.solve(abstraction=abstraction, actions_filter=actions_filter,
+                      iterations=5)
         strategy = CFRTrainingSimulator._distill_strategy(
             raw_strategy=trainer.strategy_tables[str(abstraction.infostate)])
         bottom_k = 3  # Number of lowest probabilities to set to 0
@@ -723,10 +724,3 @@ class CFRTrainingSimulator(MatchSimulator):
                                            trainer=trainer)
 
             MatchSimulator._print_result(arbiter_board)
-
-
-if __name__ == "__main__":
-    simulator = CFRTrainingSimulator(formations=[None, None],
-                                     controllers=None, save_data=False,
-                                     pov=POV.WORLD)
-    simulator.start(target=5000)
