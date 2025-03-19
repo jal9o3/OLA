@@ -5,12 +5,13 @@ This contains definitions relevant to the training of an AI for GG.
 import random
 import csv
 import copy
+import time
 
 from dataclasses import dataclass
 
 from OLA.core import Board, Infostate, Player
 from OLA.simulation import MatchSimulator
-from OLA.constants import POV, Ranking, Result
+from OLA.constants import Ranking, Result
 
 
 class Abstraction:
@@ -288,6 +289,8 @@ class ActionsFilter:
                         dest_col + direction[1]] != Ranking.BLANK):
                     ordered_actions.append(action)
                     updated_actions.remove(action)
+                    break  # One threatened target is enough
+
         actions = copy.deepcopy(updated_actions)
 
         # Get the forward moves
@@ -316,6 +319,69 @@ class ActionsFilter:
         actions = copy.deepcopy(updated_actions)
 
         return ordered_actions
+
+    @staticmethod
+    def alpha_beta_search(state: Board, depth: int = 2):
+        """
+        This method is for implementing the alpha-beta search algorithm.
+        """
+        player = state.player_to_move
+        move = None
+        if player == Player.BLUE:
+            _, move = ActionsFilter._max_value(state=state,
+                                               alpha=float("-inf"),
+                                               beta=float("inf"),
+                                               depth=depth - 1)
+        elif player == Player.RED:
+            _, move = ActionsFilter._min_value(state=state,
+                                               alpha=float("-inf"),
+                                               beta=float("inf"),
+                                               depth=depth - 1)
+        return move
+
+    @staticmethod
+    def _max_value(state: Board, alpha: float, beta: float, depth: int):
+        if state.is_terminal():
+            return state.reward(), None
+        if not state.is_terminal() and depth == 0:
+            return state.material(), None
+        value = float("-inf")
+        actions_filter = ActionsFilter(state=state, directions=None,
+                                       square_whitelist=None)
+        move = None
+        for action in actions_filter.move_ordering():
+            value2, _ = ActionsFilter._min_value(state=state.transition(
+                action=action),
+                alpha=alpha, beta=beta,
+                depth=depth - 1)
+            if value2 > value:
+                value, move = value2, action
+                alpha = max(alpha, value)
+            if value >= beta:
+                return value, move
+        return value, move
+
+    @staticmethod
+    def _min_value(state: Board, alpha: float, beta: float, depth: int):
+        if state.is_terminal():
+            return -state.reward(), None
+        if not state.is_terminal() and depth == 0:
+            return -state.material(), None
+        value = float("inf")
+        actions_filter = ActionsFilter(state=state, directions=None,
+                                       square_whitelist=None)
+        move = None
+        for action in actions_filter.move_ordering():
+            value2, _ = ActionsFilter._max_value(state=state.transition(
+                action=action),
+                alpha=alpha, beta=beta,
+                depth=depth - 1)
+            if value2 < value:
+                value, move = value2, action
+                beta = min(beta, value)
+            if value <= alpha:
+                return value, move
+        return value, move
 
 
 class CFRTrainer:
@@ -790,8 +856,46 @@ class CFRTrainingSimulator(MatchSimulator):
             MatchSimulator._print_result(arbiter_board)
 
 
-if __name__ == "__main__":
-    simulator = CFRTrainingSimulator(formations=[None, None],
-                                     controllers=None, save_data=False,
-                                     pov=POV.WORLD)
-    simulator.start(target=5000)
+class AlphaBetaTrainingSimulator(MatchSimulator):
+    """
+    Class for simulating a training time GG match using the alpha-beta search
+    algorithm.
+    """
+
+    def start(self, iterations: int = 1, target: int = None):
+        """
+        This method simulates a GG match generating training data, using the
+        counterfactual regret minimization algorithm.
+        """
+        _ = iterations  # Not used in this subclass
+        self.blue_formation = list(
+            Player.get_sensible_random_formation(
+                piece_list=Ranking.SORTED_FORMATION)
+        )
+        self.red_formation = self._place_in_red_range(list(
+            Player.get_sensible_random_formation(
+                piece_list=Ranking.SORTED_FORMATION))
+        )
+        arbiter_board = arbiter_board = Board(self.setup_arbiter_matrix(),
+                                              player_to_move=Player.BLUE,
+                                              blue_anticipating=False, red_anticipating=False)
+        blue_infostate, red_infostate = MatchSimulator._starting_infostates(
+            arbiter_board)
+        action = ""
+
+        turn_number = 1
+        while not arbiter_board.is_terminal():
+            MatchSimulator._print_game_status(turn_number, arbiter_board, infostates=[
+                blue_infostate, red_infostate],
+                pov=self.pov)
+            time.sleep(2)
+            action = ""  # Initialize variable for storing chosen action
+
+            action = ActionsFilter.alpha_beta_search(
+                state=arbiter_board, depth=4)
+            arbiter_board = arbiter_board.transition(action)
+            print(f"Chosen Move: {action}")
+
+            turn_number += 1
+
+        MatchSimulator._print_result(arbiter_board)
