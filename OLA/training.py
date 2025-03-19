@@ -6,12 +6,16 @@ import random
 import csv
 import copy
 import time
+import logging
 
 from dataclasses import dataclass
 
 from OLA.core import Board, Infostate, Player
 from OLA.simulation import MatchSimulator
 from OLA.constants import Ranking, Result
+
+
+logging.basicConfig(level=logging.INFO)
 
 
 class Abstraction:
@@ -327,33 +331,35 @@ class ActionsFilter:
         """
         This method is for implementing the alpha-beta search algorithm.
         """
+        logger = logging.getLogger(__name__)
+        logger.setLevel(logging.WARNING)
+
         player = state.player_to_move
         move, value = None, None
         if player == Player.BLUE:
             value, move = ActionsFilter._max_value(state=state,
-                                               alpha=float("-inf"),
-                                               beta=float("inf"),
-                                               depth=depth - 1)
+                                                   alpha=float("-inf"),
+                                                   beta=float("inf"),
+                                                   depth=depth - 1)
         elif player == Player.RED:
             value, move = ActionsFilter._min_value(state=state,
-                                               alpha=float("-inf"),
-                                               beta=float("inf"),
-                                               depth=depth - 1)
+                                                   alpha=float("-inf"),
+                                                   beta=float("inf"),
+                                                   depth=depth - 1)
 
-        # Total possible nodes without pruning
-        # branching_factor = len(state.actions())  # Average branching factor
-        branching_factor = min(len(state.actions()), 29) # Estimated average
+        # Estimated possible nodes without pruning
+        branching_factor = min(len(state.actions()), 29)  # Estimated average
         depth = 4  # Depth of the search
-        total_possible_nodes = (branching_factor ** depth - 1) / (branching_factor - 1)
+        total_possible_nodes = (
+            branching_factor ** depth - 1) / (branching_factor - 1)
 
         # Nodes pruned
         nodes_pruned = total_possible_nodes - ActionsFilter.nodes_visited
-        print(f"Possible Nodes: {int(total_possible_nodes)}")
-        print(f"Nodes Visited: {ActionsFilter.nodes_visited}")
+        logger.info("Possible Nodes: %d", int(total_possible_nodes))
+        logger.info("Nodes Visited: %d", ActionsFilter.nodes_visited)
         ActionsFilter.nodes_visited = 0  # Reset counter
-        print(f"Nodes Pruned: {int(nodes_pruned)}")
+        logger.info("Nodes Pruned: %d", int(nodes_pruned))
 
-        
         return value, move
 
     @staticmethod
