@@ -40,13 +40,13 @@ def main():
     elif choice == "2":
         print("Selected training data generation.")
 
-        # simulator = CFRTrainingSimulator(formations=[None, None],
-        #                                  controllers=None, save_data=False,
-        #                                  pov=POV.WORLD)
+        simulator = CFRTrainingSimulator(formations=[None, None],
+                                         controllers=None, save_data=False,
+                                         pov=POV.WORLD)
 
-        simulator = AlphaBetaTrainingSimulator(formations=[None, None],
-                                               controllers=None, save_data=False,
-                                               pov=POV.WORLD)
+        # simulator = AlphaBetaTrainingSimulator(formations=[None, None],
+        #                                        controllers=None, save_data=False,
+        #                                        pov=POV.WORLD)
 
         simulator.start(target=1)
 

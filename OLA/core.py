@@ -81,6 +81,12 @@ class Board:
         self.blue_anticipating = blue_anticipating
         self.red_anticipating = red_anticipating
 
+    def __eq__(self, other: 'Board'):
+        """
+        This checks if two board instances are equal.
+        """
+        return self.matrix == other.matrix
+
     @staticmethod
     def get_piece_affiliation(piece: int):
         """

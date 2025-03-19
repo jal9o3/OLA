@@ -107,6 +107,7 @@ class CFRParameters:
     red_probability: float
     depth: int = None
     actions_filter: 'ActionsFilter' = None
+    relevant_nodes: list[Board] = None
 
 
 @dataclass
@@ -327,7 +328,8 @@ class ActionsFilter:
         return ordered_actions
 
     @staticmethod
-    def alpha_beta_search(state: Board, depth: int = 2):
+    def alpha_beta_search(state: Board, depth: int = 2,
+                          relevant_nodes: list[Board] = None):
         """
         This method is for implementing the alpha-beta search algorithm.
         """
@@ -340,12 +342,16 @@ class ActionsFilter:
             value, move = ActionsFilter._max_value(state=state,
                                                    alpha=float("-inf"),
                                                    beta=float("inf"),
-                                                   depth=depth - 1)
+                                                   depth=depth - 1,
+                                                   relevant_nodes=relevant_nodes
+                                                   )
         elif player == Player.RED:
             value, move = ActionsFilter._min_value(state=state,
                                                    alpha=float("-inf"),
                                                    beta=float("inf"),
-                                                   depth=depth - 1)
+                                                   depth=depth - 1,
+                                                   relevant_nodes=relevant_nodes
+                                                   )
 
         # Estimated possible nodes without pruning
         branching_factor = min(len(state.actions()), 29)  # Estimated average
@@ -363,8 +369,10 @@ class ActionsFilter:
         return value, move
 
     @staticmethod
-    def _max_value(state: Board, alpha: float, beta: float, depth: int):
+    def _max_value(state: Board, alpha: float, beta: float, depth: int,
+                   relevant_nodes: list[Board]):
         ActionsFilter.nodes_visited += 1  # Increment counter
+        relevant_nodes.append(state)
         if state.is_terminal():
             return state.reward(), None
         if not state.is_terminal() and depth == 0:
@@ -377,7 +385,7 @@ class ActionsFilter:
             value2, _ = ActionsFilter._min_value(state=state.transition(
                 action=action),
                 alpha=alpha, beta=beta,
-                depth=depth - 1)
+                depth=depth - 1, relevant_nodes=relevant_nodes)
             if value2 > value:
                 value, move = value2, action
                 alpha = max(alpha, value)
@@ -386,8 +394,10 @@ class ActionsFilter:
         return value, move
 
     @staticmethod
-    def _min_value(state: Board, alpha: float, beta: float, depth: int):
+    def _min_value(state: Board, alpha: float, beta: float, depth: int,
+                   relevant_nodes: list[Board]):
         ActionsFilter.nodes_visited += 1  # Increment counter
+        relevant_nodes.append(state)
         if state.is_terminal():
             return -state.reward(), None
         if not state.is_terminal() and depth == 0:
@@ -400,7 +410,7 @@ class ActionsFilter:
             value2, _ = ActionsFilter._max_value(state=state.transition(
                 action=action),
                 alpha=alpha, beta=beta,
-                depth=depth - 1)
+                depth=depth - 1, relevant_nodes=relevant_nodes)
             if value2 < value:
                 value, move = value2, action
                 beta = min(beta, value)
@@ -605,10 +615,26 @@ class DepthLimitedCFRTrainer(CFRTrainer):
             filtered_actions = parameters.actions_filter.filter()
         else:
             filtered_actions = None
+
+        local_branching = 0
+        for action in state.actions():
+            if state.transition(action=action) in parameters.relevant_nodes:
+                local_branching += 1
+
+        # print(f"Original Local Branching: {len(state.actions())}")
+        # print(f"Pruned Local Branching: {local_branching}")
+
         for a, action in enumerate(state.actions()):
             if filtered_actions is not None and action not in filtered_actions:
                 utilities[a] = state.material()
                 node_utility += profile[a]*utilities[a]
+                continue
+            if (parameters.relevant_nodes is not None
+                and len(parameters.relevant_nodes) > 0
+                and state.transition(
+                    action=action) not in parameters.relevant_nodes):
+                utilities[a] = 0
+                # node_utility += profile[a]*utilities[a]
                 continue
             next_state, next_infostate = CFRTrainer._get_next(
                 state=state, infostate=infostate, action=action)
@@ -621,7 +647,7 @@ class DepthLimitedCFRTrainer(CFRTrainer):
                 state=next_state, infostate=next_infostate),
                 current_player=parameters.current_player, iteration=parameters.iteration,
                 blue_probability=new_blue_probability, red_probability=new_red_probability,
-                depth=parameters.depth-1)
+                depth=parameters.depth-1, relevant_nodes=parameters.relevant_nodes)
             utilities[a] = self.cfr(params=arguments)
 
             node_utility += profile[a]*utilities[a]
@@ -680,11 +706,18 @@ class DepthLimitedCFRTrainer(CFRTrainer):
         This runs the counterfactual regret minimization algorithm to produce
         the tables needed by the AI.
         """
+
+        # Perform alpha-beta search to obtain the relevant nodes
+        relevant_nodes = []
+        ActionsFilter.alpha_beta_search(state=abstraction.state, depth=4,
+                                        relevant_nodes=relevant_nodes)
+
         for i in range(iterations):
             for player in [Player.BLUE, Player.RED]:
                 arguments = CFRParameters(abstraction=abstraction, current_player=player,
                                           iteration=i, blue_probability=1, red_probability=1,
-                                          depth=depth, actions_filter=actions_filter)
+                                          depth=depth, actions_filter=actions_filter,
+                                          relevant_nodes=relevant_nodes)
                 self.cfr(params=arguments)
 
 
@@ -816,14 +849,14 @@ class CFRTrainingSimulator(MatchSimulator):
                 map(int, str(current_abstraction.infostate).split(" ")))
             writer.writerow(infostate_split + full_strategy)
 
-    def start(self, iterations: int = 1, target: int = None):
+    def start(self, iterations: int = 1, target: int = 0):
         """
         This method simulates a GG match generating training data, using the
         counterfactual regret minimization algorithm.
         """
         _ = iterations  # Not used in this subclass
         sampled = 0  # Initialize data sample count
-        while target is not None and sampled < target:
+        while sampled < target:
             self.blue_formation = list(
                 Player.get_sensible_random_formation(
                     piece_list=Ranking.SORTED_FORMATION)
@@ -849,18 +882,8 @@ class CFRTrainingSimulator(MatchSimulator):
                 current_abstraction = Abstraction(
                     state=arbiter_board, infostate=current_infostate)
 
-                # For the first turns of each player, choose a forward move
-                if turn_number in [1, 2]:
-                    actions_filter = ActionsFilter(state=arbiter_board, directions=DirectionFilter(
-                        back=False, right=False, left=False),
-                        square_whitelist=[(x, y) for y in range(Board.COLUMNS)
-                                          for x in range(Board.ROWS)])
-                else:
-                    actions_filter = CFRTrainingSimulator._get_actions_filter(
-                        arbiter_board, previous_action, previous_result, attack_location)
-
-                action, trainer = self.get_cfr_input(abstraction=current_abstraction,
-                                                     actions_filter=actions_filter)
+                action, trainer = self.get_cfr_input(
+                    abstraction=current_abstraction)
                 print(f"Chosen Move: {action}")
                 previous_action = action  # Store for the next iteration
                 if self.save_data:
