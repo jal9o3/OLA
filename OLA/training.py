@@ -4,6 +4,7 @@ This contains definitions relevant to the training of an AI for GG.
 
 import random
 import csv
+import copy
 
 from dataclasses import dataclass
 
@@ -251,6 +252,74 @@ class ActionsFilter:
                 and int(action[1]) > int(action[3]) and not self.directions.left):
             is_included = False
         return is_included
+
+    def move_ordering(self):
+        """
+        This method is for ordering the moves in the current game state, for
+        use with game tree pruning.
+        """
+        bottom_row_number = leftmost_column_number = 0
+        actions = self.state.actions()
+        updated_actions = copy.deepcopy(actions)  # To protect the iterable
+        ordered_actions = []
+
+        # Get attacking moves first
+        for action in actions:
+            if (self.state.not_allied_piece(self.state.matrix[int(action[2])][int(action[3])])
+                    and self.state.matrix[int(action[2])][int(action[3])] != Ranking.BLANK):
+                ordered_actions.append(action)
+                updated_actions.remove(action)
+        actions = copy.deepcopy(updated_actions)
+
+        # Get the threatening moves
+        for action in actions:
+            directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+            move_direction = (int(action[2])-int(action[0]),
+                              int(action[3])-int(action[1]))
+            reversed_direction = (-move_direction[0], -move_direction[1])
+            dest_row, dest_col = int(action[2]), int(action[3])
+            for direction in directions:
+                if (direction != reversed_direction
+                    and bottom_row_number <= dest_row + direction[0] < Board.ROWS
+                    and leftmost_column_number <= dest_col + direction[1] < Board.COLUMNS
+                    and self.state.not_allied_piece(self.state.matrix[
+                        dest_row + direction[0]][dest_col + direction[1]])
+                    and self.state.matrix[dest_row + direction[0]][
+                        dest_col + direction[1]] != Ranking.BLANK):
+                    ordered_actions.append(action)
+                    updated_actions.remove(action)
+        actions = copy.deepcopy(updated_actions)
+
+        # Get the forward moves
+        for action in actions:
+            if (self.state.player_to_move == Player.BLUE
+                    and int(action[0]) < int(action[2])):
+                ordered_actions.append(action)
+                updated_actions.remove(action)
+            elif (self.state.player_to_move == Player.RED
+                  and int(action[0]) > int(action[2])):
+                ordered_actions.append(action)
+                updated_actions.remove(action)
+        actions = copy.deepcopy(updated_actions)
+
+        # Get the sidewards moves
+        for action in actions:
+            if int(action[1]) != int(action[3]):
+                ordered_actions.append(action)
+                updated_actions.remove(action)
+        actions = copy.deepcopy(updated_actions)
+
+        # Get the rest of the actions
+        for action in actions:
+            ordered_actions.append(action)
+            updated_actions.remove(action)
+        actions = copy.deepcopy(updated_actions)
+
+        # Add this inside move_ordering() to debug
+        # print("Initial actions:", self.state.actions())
+        # print("Ordered actions after processing:", ordered_actions)
+
+        return ordered_actions
 
 
 class CFRTrainer:

@@ -6,8 +6,8 @@ import sys
 import os
 
 import unittest
-from OLA.core import Board
-from OLA.training import TimelessBoard
+from OLA.core import Board, Player
+from OLA.training import TimelessBoard, ActionsFilter
 
 testdir = os.path.dirname(__file__)
 SRCDIR = '../OLA'
@@ -43,6 +43,45 @@ class TestTimelessBoard(unittest.TestCase):
             self.assertTrue(0 <= end_col < Board.COLUMNS)
 
         self.assertEqual(len(actions), 254)
+
+
+class TestActionsFilter(unittest.TestCase):
+    """
+    This is for testing the ActionsFilter class.
+    """
+
+    def test_move_ordering(self):
+        """
+        This is for making sure the move ordering works as intended.
+        """
+        sample_state_matrix = [
+            [0, 0, 0, 0, 0, 0, 0, 16, 0],
+            [0, 0, 0, 0, 0, 0, 2, 0, 0],
+            [0, 0, 15, 0, 0, 9, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 23, 0, 29, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        ]
+        sample_board = Board(sample_state_matrix, player_to_move=Player.BLUE,
+                             blue_anticipating=False, red_anticipating=False)
+        actions_filter = ActionsFilter(state=sample_board, directions=None,
+                                       square_whitelist=None)
+
+        self.assertEqual(len(sample_board.actions()),
+                         len(actions_filter.move_ordering()))
+
+        sample_board = Board(sample_state_matrix, player_to_move=Player.RED,
+                             blue_anticipating=False, red_anticipating=False)
+        actions_filter = ActionsFilter(state=sample_board, directions=None,
+                                       square_whitelist=None)
+
+        print(sample_board.actions())
+        print(actions_filter.move_ordering())
+        
+        self.assertEqual(len(sample_board.actions()),
+                         len(actions_filter.move_ordering()))
 
 
 if __name__ == '__main__':
