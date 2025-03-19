@@ -77,9 +77,6 @@ class TestActionsFilter(unittest.TestCase):
         actions_filter = ActionsFilter(state=sample_board, directions=None,
                                        square_whitelist=None)
 
-        print(sample_board.actions())
-        print(actions_filter.move_ordering())
-        
         self.assertEqual(len(sample_board.actions()),
                          len(actions_filter.move_ordering()))
 
