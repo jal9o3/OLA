@@ -3,6 +3,7 @@ Here we define the core components of the OLA engine.
 """
 import logging
 import copy
+import random
 
 from dataclasses import dataclass
 
@@ -46,14 +47,58 @@ class Player:
 
         # Sample initial formation
         formation = Player.get_random_formation(piece_list)
+        formation = list(formation)
         # The front line pieces are listed first in the formation
         front_line = formation[:Board.COLUMNS*2]
 
         while Ranking.FLAG in front_line:
             formation = Player.get_random_formation(piece_list)
+            formation = list(formation)
             front_line = formation[:Board.COLUMNS*2]
 
-        return formation
+        # Make sure Colonel, Lt. Colonel, 3-4 Star Generals are at the lead
+        if Ranking.COLONEL not in formation[:Board.COLUMNS]:
+            # Choose location in front to place the colonel
+            front_index = random.choice(range(Board.COLUMNS))
+            while front_index in [Ranking.LIEUTENANT_COLONEL,
+                                  Ranking.LIEUTENANT_GENERAL,
+                                  Ranking.GENERAL]:
+                front_index = random.choice(range(Board.COLUMNS))
+            colonel_index = formation.index(Ranking.COLONEL)
+            formation[front_index], formation[colonel_index] = (
+                formation[colonel_index], formation[front_index])
+
+        if Ranking.LIEUTENANT_COLONEL not in formation[:Board.COLUMNS]:
+            front_index = random.choice(range(Board.COLUMNS))
+            while front_index in [Ranking.COLONEL,
+                                  Ranking.LIEUTENANT_GENERAL,
+                                  Ranking.GENERAL]:
+                front_index = random.choice(range(Board.COLUMNS))
+            lt_colonel_index = formation.index(Ranking.LIEUTENANT_COLONEL)
+            formation[front_index], formation[lt_colonel_index] = (
+                formation[lt_colonel_index], formation[front_index])
+
+        if Ranking.LIEUTENANT_GENERAL not in formation[:Board.COLUMNS]:
+            front_index = random.choice(range(Board.COLUMNS))
+            while front_index in [Ranking.COLONEL,
+                                  Ranking.LIEUTENANT_COLONEL,
+                                  Ranking.GENERAL]:
+                front_index = random.choice(range(Board.COLUMNS))
+            lt_general_index = formation.index(Ranking.LIEUTENANT_GENERAL)
+            formation[front_index], formation[lt_general_index] = (
+                formation[lt_general_index], formation[front_index])
+
+        if Ranking.GENERAL not in formation[:Board.COLUMNS]:
+            front_index = random.choice(range(Board.COLUMNS))
+            while front_index in [Ranking.COLONEL,
+                                  Ranking.LIEUTENANT_COLONEL,
+                                  Ranking.LIEUTENANT_GENERAL]:
+                front_index = random.choice(range(Board.COLUMNS))
+            general_index = formation.index(Ranking.GENERAL)
+            formation[front_index], formation[general_index] = (
+                formation[general_index], formation[front_index])
+
+        return tuple(formation)
 
 
 class Board:
