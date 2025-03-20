@@ -621,7 +621,7 @@ class CFRTrainingSimulator(MatchSimulator):
             action = random.choices(
                 filtered_actions, weights=filtered_strategy, k=1)[0]
 
-        return action, trainer
+        return action, trainer, strategy[valid_actions.index(action)]
 
     @staticmethod
     def _get_actions_filter(arbiter_board, previous_action, previous_result, attack_location):
@@ -723,9 +723,10 @@ class CFRTrainingSimulator(MatchSimulator):
                     actions_filter = CFRTrainingSimulator._get_actions_filter(
                         arbiter_board, previous_action, previous_result, attack_location)
 
-                action, trainer = self.get_cfr_input(abstraction=current_abstraction,
-                                                     actions_filter=actions_filter)
+                action, trainer, chance = self.get_cfr_input(abstraction=current_abstraction,
+                                                             actions_filter=actions_filter)
                 print(f"Chosen Move: {action}")
+                print(f"{chance*100:.2f}% chance")
                 previous_action = action  # Store for the next iteration
                 if self.save_data:
                     self.game_history.append(action)
