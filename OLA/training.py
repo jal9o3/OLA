@@ -4,12 +4,13 @@ This contains definitions relevant to the training of an AI for GG.
 
 import random
 import csv
+import time
 
 from dataclasses import dataclass
 
 from OLA.core import Board, Infostate, Player
 from OLA.simulation import MatchSimulator
-from OLA.constants import POV, Ranking, Result
+from OLA.constants import Ranking, Result
 
 
 class Abstraction:
@@ -685,6 +686,7 @@ class CFRTrainingSimulator(MatchSimulator):
         This method simulates a GG match generating training data, using the
         counterfactual regret minimization algorithm.
         """
+        start = time.time()
         _ = iterations  # Not used in this subclass
         sampled = 0  # Initialize data sample count
         while target is not None and sampled < target:
@@ -744,3 +746,5 @@ class CFRTrainingSimulator(MatchSimulator):
                                            trainer=trainer)
 
             MatchSimulator._print_result(arbiter_board)
+            end = time.time()
+            print(f"{(end - start)/60/60:.2f} hours elapsed.")
