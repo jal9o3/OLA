@@ -325,10 +325,17 @@ class CFRTrainer:
     @staticmethod
     def _regret_match(state: Board, regret_table: list[float]):
         # Calculate next profile using nonnegative regret matching
-        next_profile = [0.0 for action in state.actions()]
-        if sum(regret_table) < 0:
+        next_profile = [0.0 for _ in state.actions()]
+
+        # Only get the nonnegative entries in the regret table
+        nonnegative_table = [0.0 for _ in state.actions()]
+        for i, entry in enumerate(regret_table):
+            if entry > 0:
+                nonnegative_table[i] = regret_table[i]
+
+        if sum(nonnegative_table) < 0:
             next_profile = [1/len(state.actions())
-                            for action in state.actions()]
+                            for _ in state.actions()]
         else:
             positive_regret_sum = 0
             for regret in regret_table:
@@ -556,6 +563,18 @@ class CFRTrainingSimulator(MatchSimulator):
         for i, probability in enumerate(raw_strategy):
             if probability > 0:
                 normalized_strategy[i] = probability/positive_sum
+
+        # Apply a power transformation
+        transformed_strategy = [pow(p, 2) for p in normalized_strategy]
+
+        # Renormalize
+        strategy_sum = sum(transformed_strategy)
+        if strategy_sum > 0:
+            normalized_strategy = [
+                p/strategy_sum for p in transformed_strategy]
+        else:
+            normalized_strategy = [1/len(transformed_strategy)
+                                   for _ in transformed_strategy]
 
         return normalized_strategy
 
