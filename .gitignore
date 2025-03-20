@@ -4,7 +4,5 @@ history/
 pump_caller.py
 *.so
 cfr
-utility.csv
-policy.csv
-training_data.csv*
+*.csv*
 throwaway.py
