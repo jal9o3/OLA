@@ -515,8 +515,8 @@ class DepthLimitedCFRTrainer(CFRTrainer):
 
     def _depth_limited_utility(self, state: Board, current_player: int):
         if state.player_to_move == current_player:
-            return state.material()
-        return -state.material()
+            return state.evaluation()
+        return -state.evaluation()
 
     def solve(self, abstraction: Abstraction, iterations: int = 10,
               depth: int = 2, actions_filter: ActionsFilter = None):
