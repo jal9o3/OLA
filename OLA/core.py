@@ -452,9 +452,17 @@ class Board:
             reward = -win_value
         elif self.piece_not_found(red_flag):
             reward = win_value
+        elif (blue_flag in self.matrix[red_end] and not self.blue_anticipating
+              and Board.has_none_adjacent(self.matrix[red_end].index(blue_flag),
+                                          self.matrix[red_end])):
+            reward = win_value
         elif blue_flag in self.matrix[red_end] and self.blue_anticipating:
             # If the flag has already survived a turn in the board's red end
             reward = win_value
+        elif (red_flag in self.matrix[blue_end] and not self.red_anticipating
+              and Board.has_none_adjacent(self.matrix[blue_end].index(red_flag),
+                                          self.matrix[blue_end])):
+            reward = -win_value
         elif red_flag in self.matrix[blue_end] and self.red_anticipating:
             # If the flag has already survived a turn in the board's blue end
             reward = -win_value
@@ -505,11 +513,11 @@ class Board:
 
         for i, row in enumerate(self.matrix):
             for piece in row:
-                if Ranking.PRIVATE <= piece <= Ranking.SPY:
+                if Ranking.FLAG <= piece <= Ranking.SPY:
                     blue_sum += piece
-                    # Stop bonus at enemy trench
+                    # Give advancement bonus until enemy trench
                     blue_sum += min(i*forward_value, 5*forward_value)
-                elif Ranking.PRIVATE + red_offset <= piece <= red_offset*2:
+                elif Ranking.FLAG + red_offset <= piece <= red_offset*2:
                     red_sum += piece - red_offset
                     red_sum += min((Board.ROWS - 1 - i)*forward_value,
                                    5*forward_value)
