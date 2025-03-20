@@ -47,11 +47,11 @@ class Player:
         # Sample initial formation
         formation = Player.get_random_formation(piece_list)
         # The front line pieces are listed first in the formation
-        front_line = formation[:Board.COLUMNS]
+        front_line = formation[:Board.COLUMNS*2]
 
         while Ranking.FLAG in front_line:
             formation = Player.get_random_formation(piece_list)
-            front_line = formation[:Board.COLUMNS]
+            front_line = formation[:Board.COLUMNS*2]
 
         return formation
 
