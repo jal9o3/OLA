@@ -566,7 +566,7 @@ class CFRTrainingSimulator(MatchSimulator):
                 normalized_strategy[i] = probability/positive_sum
 
         # Apply a power transformation
-        transformed_strategy = [pow(p, 2) for p in normalized_strategy]
+        transformed_strategy = [pow(p, 4) for p in normalized_strategy]
 
         # Renormalize
         strategy_sum = sum(transformed_strategy)
