@@ -746,5 +746,5 @@ class CFRTrainingSimulator(MatchSimulator):
                                            trainer=trainer)
 
             MatchSimulator._print_result(arbiter_board)
-            end = time.time()
-            print(f"{(end - start)/60/60:.2f} hours elapsed.")
+        end = time.time()
+        print(f"{(end - start)/60/60:.2f} hours elapsed.")
