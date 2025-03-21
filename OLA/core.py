@@ -8,7 +8,8 @@ import random
 from dataclasses import dataclass
 
 from OLA.constants import Ranking, Result, POV
-from OLA.helpers import get_random_permutation, get_hex_uppercase_string
+from OLA.helpers import (get_random_permutation, get_hex_uppercase_string,
+                         find_indices)
 
 # Configure the logging
 logging.basicConfig(level=logging.WARNING)
@@ -97,6 +98,30 @@ class Player:
             general_index = formation.index(Ranking.GENERAL)
             formation[front_index], formation[general_index] = (
                 formation[general_index], formation[front_index])
+
+        # Ensure that the spies are guarding the flag
+        flag_index = formation.index(Ranking.FLAG)
+        # If the flag is not at the edges of the formation
+        spy_posts, spies = None, None
+        if Board.COLUMNS*2 < flag_index < Board.COLUMNS*3 - 1:
+            from_left_edge = flag_index - Board.COLUMNS*2  # Distance from edge
+            # Position spies diagonal from flag
+            spy_posts = (Board.COLUMNS + from_left_edge - 1,
+                         Board.COLUMNS + from_left_edge + 1)
+        elif flag_index == Board.COLUMNS*2:  # Leftmost edge
+            # Diagonal and beside flag
+            spy_posts = Board.COLUMNS + 1, Board.COLUMNS*2 + 1
+        elif flag_index == Board.COLUMNS*3 - 1:
+            spy_posts = Board.COLUMNS*2 - 2, Board.COLUMNS*3 - 2
+
+        spies = find_indices(formation, value=Ranking.SPY)
+        # Move the spies to their supposed location
+        formation[spy_posts[0]], formation[spies[0]] = (
+            formation[spies[0]], formation[spy_posts[0]]
+        )
+        formation[spy_posts[1]], formation[spies[1]] = (
+            formation[spies[1]], formation[spy_posts[1]]
+        )
 
         return tuple(formation)
 

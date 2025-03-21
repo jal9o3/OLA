@@ -33,3 +33,10 @@ def get_hex_uppercase_string(number: int):
     hex_string = hex(number)[2:].upper()
 
     return hex_string
+
+
+def find_indices(lst: list, value):
+    """
+    Find all the indices in which the value appears in a given list.
+    """
+    return [index for index, element in enumerate(lst) if element == value]

@@ -301,7 +301,8 @@ class TestInfostate(unittest.TestCase):
                                                      new_board=next_board)
         next_infostate = sample_blue_infostate.transition(chosen_move, result)
         self.assertEqual(next_board.actions(), next_infostate.actions())
-        self.assertEqual(next_board.player_to_move, next_infostate.player_to_move)
+        self.assertEqual(next_board.player_to_move,
+                         next_infostate.player_to_move)
 
         sample_red_infostate = Infostate.at_start(owner=Player.RED,
                                                   board=sample_board)
@@ -440,9 +441,9 @@ class TestPlayer(unittest.TestCase):
         This ensures that the sampled random formation does not assign the flag
         in the front line.
         """
-        piece_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]  # example piece list
 
-        formation = Player.get_sensible_random_formation(piece_list)
+        formation = Player.get_sensible_random_formation(
+            Ranking.SORTED_FORMATION)
         front_line = formation[:Board.COLUMNS]
 
         self.assertNotIn(
