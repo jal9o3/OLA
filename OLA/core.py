@@ -9,7 +9,8 @@ from dataclasses import dataclass
 
 from OLA.constants import Ranking, Result, POV
 from OLA.helpers import (get_random_permutation, get_hex_uppercase_string,
-                         find_indices)
+                         find_indices, is_column_zero_from_row,
+                         is_column_zero_up_to_row)
 
 # Configure the logging
 logging.basicConfig(level=logging.WARNING)
@@ -575,6 +576,7 @@ class Board:
         magnitude is negated if the current player is red.
         """
         forward_value = 2  # Estimated value of advancing piece
+        open_value = 10000  # Estimated value of a vulnerable opponent column
 
         blue_sum = 0
         red_sum = 0  # Initialize material sums
@@ -623,6 +625,10 @@ class Board:
                           )):
                         blue_sum += self.matrix[i][j - 1]
 
+                    # Punish RED for opening a row for the blue flag
+                    if is_column_zero_from_row(self.matrix, start_row=i, col=j):
+                        blue_sum += open_value
+
                 elif Ranking.FLAG + red_offset <= piece <= red_offset*2:
                     red_sum += piece - red_offset
                     red_sum += min((Board.ROWS - 1 - i)*forward_value,
@@ -640,33 +646,37 @@ class Board:
                           and self.is_allied_piece(
                               self.matrix[i - 1][j + 1] - red_offset
                           )):
-                        blue_sum += self.matrix[i - 1][j + 1]
+                        red_sum += self.matrix[i - 1][j + 1]
                     # If flag at the leftmost edge
                     elif (piece == Ranking.FLAG + red_offset
                           and 0 < i < Board.ROWS - 1
                           and j == 0 and self.is_allied_piece(
                               self.matrix[i - 1][j + 1]
                           )):
-                        blue_sum += self.matrix[i + 1][j + 1] - red_offset
+                        red_sum += self.matrix[i + 1][j + 1] - red_offset
                     elif (piece == Ranking.FLAG + red_offset
                           and 0 < i < Board.ROWS - 1
                           and j == 0 and self.is_allied_piece(
                               # Piece to the right of flag
                               self.matrix[i][j + 1]
                           )):
-                        blue_sum += self.matrix[i][j + 1] - red_offset
+                        red_sum += self.matrix[i][j + 1] - red_offset
                     elif (piece == Ranking.FLAG + red_offset
                           and 0 < i < Board.ROWS - 1
                           and j == Board.COLUMNS - 1 and self.is_allied_piece(
                               self.matrix[i - 1][j - 1]
                           )):
-                        blue_sum += self.matrix[i - 1][j - 1] - red_offset
+                        red_sum += self.matrix[i - 1][j - 1] - red_offset
                     elif (piece == Ranking.FLAG + red_offset
                           and 0 < i < Board.ROWS - 1
                           and j == Board.COLUMNS - 1 and self.is_allied_piece(
                               self.matrix[i][j - 1]
                           )):
-                        blue_sum += self.matrix[i][j - 1]
+                        red_sum += self.matrix[i][j - 1] - red_offset
+
+                    # Punish BLUE for opening a row for the blue flag
+                    if is_column_zero_up_to_row(self.matrix, start_row=i, col=j):
+                        red_sum += open_value
 
         advantage = blue_sum - red_sum
         if self.player_to_move == Player.RED:

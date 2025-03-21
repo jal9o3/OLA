@@ -709,6 +709,7 @@ class CFRTrainingSimulator(MatchSimulator):
                 MatchSimulator._print_game_status(turn_number, arbiter_board, infostates=[
                     blue_infostate, red_infostate],
                     pov=self.pov)
+                print(f"Estimated Value: {arbiter_board.evaluation()}")
                 action = ""  # Initialize variable for storing chosen action
                 current_infostate = (blue_infostate if arbiter_board.player_to_move == Player.BLUE
                                      else red_infostate)

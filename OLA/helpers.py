@@ -40,3 +40,23 @@ def find_indices(lst: list, value):
     Find all the indices in which the value appears in a given list.
     """
     return [index for index, element in enumerate(lst) if element == value]
+
+
+def is_column_zero_from_row(matrix: list[list[int]], start_row: int, col: int):
+    """
+    Checks if all entries below a row in a given column are all zero.
+    """
+    for row in range(start_row, len(matrix)):
+        if matrix[row][col] != 0:
+            return False
+    return True
+
+
+def is_column_zero_up_to_row(matrix: list[list[int]], start_row: int, col: int):
+    """
+    Checks if all entries above a row in a given column are all zero.
+    """
+    for row in range(start_row, -1, -1):
+        if matrix[row][col] != 0:
+            return False
+    return True
