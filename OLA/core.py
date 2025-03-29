@@ -39,90 +39,173 @@ class Player:
         return get_random_permutation(piece_list)
 
     @staticmethod
+    def get_blitz_formation(piece_list: list[int]):
+        """
+        This returns a formation for the most common GG strategy, the 
+        blitzkrieg.
+        """
+        # Copy the piece list to avoid modifying the original
+        pieces = piece_list[:]
+
+        # Initialize 3x9 matrix
+        formation = [[0] * 9 for _ in range(3)]
+
+        # Initialize 3x3 matrix
+        core = [[0] * 3 for _ in range(3)]
+
+        # Randomly choose between left (0) and right (1) flank
+        left_flank = random.choice([True, False])
+
+        # Determine five-star general (14) position
+        five_star = Ranking.GENERAL_OF_THE_ARMY
+        four_star = Ranking.GENERAL
+        private = Ranking.PRIVATE
+        flag = Ranking.FLAG
+        spy = Ranking.SPY
+
+        # Choose whether five-star goes left or right
+        five_star_left = random.choice([True, False])
+
+        if five_star_left:
+            core[0][0] = five_star
+            core[0][2] = four_star
+        else:
+            core[0][2] = five_star
+            core[0][0] = four_star
+
+        pieces.remove(five_star)
+        pieces.remove(four_star)
+
+        # Place a private in the center
+        core[0][1] = private
+        pieces.remove(private)
+
+        # Place the flag
+        if left_flank:
+            core[2][0] = flag
+        else:
+            core[2][2] = flag
+        pieces.remove(flag)
+
+        # Place spies in the center
+        core[1][1] = spy
+        core[2][1] = spy
+        pieces.remove(spy)
+        pieces.remove(spy)
+
+        # Fill the remaining spots in the 3x3 with privates
+        for i in range(3):
+            for j in range(3):
+                if core[i][j] == Ranking.BLANK:
+                    core[i][j] = private
+                    pieces.remove(private)
+
+        # Insert the 3x3 matrix into the 3x9 formation
+        start_col = 0 if left_flank else 6
+        for i in range(3):
+            for j in range(3):
+                formation[i][start_col + j] = core[i][j]
+
+        # Fill the remaining slots in the 3x9 formation
+        piece_index = 0
+        for i in range(3):
+            for j in range(9):
+                if formation[i][j] == 0 and piece_index < len(pieces):
+                    formation[i][j] = pieces[piece_index]
+                    piece_index += 1
+
+        # Flatten and return
+        return [num for row in formation for num in row]
+
+    @staticmethod
     def get_sensible_random_formation(piece_list: list[int]):
         """
         This is to ensure that the sampled random formation does not have the
         flag in the front line.
         """
-        logger = logging.getLogger(__name__)
-        logger.setLevel(logging.DEBUG)
+        blitz, rampage = 0, 1  # Types of formations to choose from
+        formation_type = random.choice([blitz, rampage])
 
-        # Sample initial formation
-        formation = Player.get_random_formation(piece_list)
-        formation = list(formation)
-        # The front line pieces are listed first in the formation
-        front_line = formation[:Board.COLUMNS*2]
-
-        while Ranking.FLAG in front_line:
+        if formation_type == rampage:
+            # Sample initial formation
             formation = Player.get_random_formation(piece_list)
             formation = list(formation)
+            # The front line pieces are listed first in the formation
             front_line = formation[:Board.COLUMNS*2]
 
-        # Make sure Colonel, Lt. Colonel, 3-4 Star Generals are at the lead
-        if Ranking.COLONEL not in formation[:Board.COLUMNS]:
-            # Choose location in front to place the colonel
-            front_index = random.choice(range(Board.COLUMNS))
-            while front_index in [Ranking.LIEUTENANT_COLONEL,
-                                  Ranking.LIEUTENANT_GENERAL,
-                                  Ranking.GENERAL]:
+            while Ranking.FLAG in front_line:
+                formation = Player.get_random_formation(piece_list)
+                formation = list(formation)
+                front_line = formation[:Board.COLUMNS*2]
+
+            # Make sure Colonel, Lt. Colonel, 3-4 Star Generals are at the lead
+            if Ranking.COLONEL not in formation[:Board.COLUMNS]:
+                # Choose location in front to place the colonel
                 front_index = random.choice(range(Board.COLUMNS))
-            colonel_index = formation.index(Ranking.COLONEL)
-            formation[front_index], formation[colonel_index] = (
-                formation[colonel_index], formation[front_index])
+                while front_index in [Ranking.LIEUTENANT_COLONEL,
+                                      Ranking.LIEUTENANT_GENERAL,
+                                      Ranking.GENERAL]:
+                    front_index = random.choice(range(Board.COLUMNS))
+                colonel_index = formation.index(Ranking.COLONEL)
+                formation[front_index], formation[colonel_index] = (
+                    formation[colonel_index], formation[front_index])
 
-        if Ranking.LIEUTENANT_COLONEL not in formation[:Board.COLUMNS]:
-            front_index = random.choice(range(Board.COLUMNS))
-            while front_index in [Ranking.COLONEL,
-                                  Ranking.LIEUTENANT_GENERAL,
-                                  Ranking.GENERAL]:
+            if Ranking.LIEUTENANT_COLONEL not in formation[:Board.COLUMNS]:
                 front_index = random.choice(range(Board.COLUMNS))
-            lt_colonel_index = formation.index(Ranking.LIEUTENANT_COLONEL)
-            formation[front_index], formation[lt_colonel_index] = (
-                formation[lt_colonel_index], formation[front_index])
+                while front_index in [Ranking.COLONEL,
+                                      Ranking.LIEUTENANT_GENERAL,
+                                      Ranking.GENERAL]:
+                    front_index = random.choice(range(Board.COLUMNS))
+                lt_colonel_index = formation.index(Ranking.LIEUTENANT_COLONEL)
+                formation[front_index], formation[lt_colonel_index] = (
+                    formation[lt_colonel_index], formation[front_index])
 
-        if Ranking.LIEUTENANT_GENERAL not in formation[:Board.COLUMNS]:
-            front_index = random.choice(range(Board.COLUMNS))
-            while front_index in [Ranking.COLONEL,
-                                  Ranking.LIEUTENANT_COLONEL,
-                                  Ranking.GENERAL]:
+            if Ranking.LIEUTENANT_GENERAL not in formation[:Board.COLUMNS]:
                 front_index = random.choice(range(Board.COLUMNS))
-            lt_general_index = formation.index(Ranking.LIEUTENANT_GENERAL)
-            formation[front_index], formation[lt_general_index] = (
-                formation[lt_general_index], formation[front_index])
+                while front_index in [Ranking.COLONEL,
+                                      Ranking.LIEUTENANT_COLONEL,
+                                      Ranking.GENERAL]:
+                    front_index = random.choice(range(Board.COLUMNS))
+                lt_general_index = formation.index(Ranking.LIEUTENANT_GENERAL)
+                formation[front_index], formation[lt_general_index] = (
+                    formation[lt_general_index], formation[front_index])
 
-        if Ranking.GENERAL not in formation[:Board.COLUMNS]:
-            front_index = random.choice(range(Board.COLUMNS))
-            while front_index in [Ranking.COLONEL,
-                                  Ranking.LIEUTENANT_COLONEL,
-                                  Ranking.LIEUTENANT_GENERAL]:
+            if Ranking.GENERAL not in formation[:Board.COLUMNS]:
                 front_index = random.choice(range(Board.COLUMNS))
-            general_index = formation.index(Ranking.GENERAL)
-            formation[front_index], formation[general_index] = (
-                formation[general_index], formation[front_index])
+                while front_index in [Ranking.COLONEL,
+                                      Ranking.LIEUTENANT_COLONEL,
+                                      Ranking.LIEUTENANT_GENERAL]:
+                    front_index = random.choice(range(Board.COLUMNS))
+                general_index = formation.index(Ranking.GENERAL)
+                formation[front_index], formation[general_index] = (
+                    formation[general_index], formation[front_index])
 
-        # Ensure that the spies are guarding the flag
-        flag_index = formation.index(Ranking.FLAG)
-        # If the flag is not at the edges of the formation
-        spy_posts, spies = None, None
-        if Board.COLUMNS*2 < flag_index < Board.COLUMNS*3 - 1:
-            from_left_edge = flag_index - Board.COLUMNS*2  # Distance from edge
-            # Position spies diagonal from flag
-            spy_posts = (Board.COLUMNS + from_left_edge - 1,
-                         Board.COLUMNS + from_left_edge + 1)
-        elif flag_index == Board.COLUMNS*2:  # Leftmost edge
-            # Diagonal and beside flag
-            spy_posts = Board.COLUMNS + 1, Board.COLUMNS*2 + 1
-        elif flag_index == Board.COLUMNS*3 - 1:
-            spy_posts = Board.COLUMNS*2 - 2, Board.COLUMNS*3 - 2
+            # Ensure that the spies are guarding the flag
+            flag_index = formation.index(Ranking.FLAG)
+            # If the flag is not at the edges of the formation
+            spy_posts, spies = None, None
+            if Board.COLUMNS*2 < flag_index < Board.COLUMNS*3 - 1:
+                from_left_edge = flag_index - Board.COLUMNS*2  # Distance from edge
+                # Position spies diagonal from flag
+                spy_posts = (Board.COLUMNS + from_left_edge - 1,
+                             Board.COLUMNS + from_left_edge + 1)
+            elif flag_index == Board.COLUMNS*2:  # Leftmost edge
+                # Diagonal and beside flag
+                spy_posts = Board.COLUMNS + 1, Board.COLUMNS*2 + 1
+            elif flag_index == Board.COLUMNS*3 - 1:
+                spy_posts = Board.COLUMNS*2 - 2, Board.COLUMNS*3 - 2
 
-        spies = find_indices(formation, value=Ranking.SPY)
-        # Move the spies to their supposed location
-        formation[spy_posts[0]], formation[spies[0]] = (
-            formation[spies[0]], formation[spy_posts[0]]
-        )
-        formation[spy_posts[1]], formation[spies[1]] = (
-            formation[spies[1]], formation[spy_posts[1]]
-        )
+            spies = find_indices(formation, value=Ranking.SPY)
+            # Move the spies to their supposed location
+            formation[spy_posts[0]], formation[spies[0]] = (
+                formation[spies[0]], formation[spy_posts[0]]
+            )
+            formation[spy_posts[1]], formation[spies[1]] = (
+                formation[spies[1]], formation[spy_posts[1]]
+            )
+
+        elif formation_type == blitz:
+            formation = Player.get_blitz_formation(piece_list)
 
         return tuple(formation)
 
