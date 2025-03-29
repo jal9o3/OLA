@@ -750,10 +750,11 @@ class CFRTrainingSimulator(MatchSimulator):
                     blue_infostate, red_infostate, action=action, result=result
                 )
                 turn_number += 1
-                sampled += 1
-                print(f"Sampled: {sampled}/{target}")
+                
                 if arbiter_board.player_to_move == self.player_one_color:
                     # Since the arbiter board has transitioned to the next player
+                    sampled += 1
+                    print(f"Sampled: {sampled}/{target}")
                     self._save_strategy_to_csv(current_abstraction=current_abstraction,
                                                trainer=trainer)
 
