@@ -10,7 +10,7 @@ from dataclasses import dataclass
 
 from OLA.core import Board, Infostate, Player
 from OLA.simulation import MatchSimulator
-from OLA.constants import Ranking, Result
+from OLA.constants import Ranking, Result, POV
 
 
 class Abstraction:
@@ -686,6 +686,14 @@ class CFRTrainingSimulator(MatchSimulator):
         This method simulates a GG match generating training data, using the
         counterfactual regret minimization algorithm.
         """
+
+        if self.player_one_color == Player.BLUE:
+            self.pov = POV.BLUE
+        elif self.player_one_color == Player.RED:
+            self.pov = POV.RED
+
+        trainer = None
+
         start = time.time()
         _ = iterations  # Not used in this subclass
         sampled = 0  # Initialize data sample count
@@ -726,13 +734,15 @@ class CFRTrainingSimulator(MatchSimulator):
                     actions_filter = CFRTrainingSimulator._get_actions_filter(
                         arbiter_board, previous_action, previous_result, attack_location)
 
-                action, trainer, chance = self.get_cfr_input(abstraction=current_abstraction,
-                                                             actions_filter=actions_filter)
+                if arbiter_board.player_to_move != self.player_one_color:
+                    action, trainer, _ = self.get_cfr_input(abstraction=current_abstraction,
+                                                            actions_filter=actions_filter)
+                else:
+                    while action not in arbiter_board.actions():
+                        action = input("Select move: ")
+
                 print(f"Chosen Move: {action}")
-                print(f"{chance*100:.2f}% chance")
                 previous_action = action  # Store for the next iteration
-                if self.save_data:
-                    self.game_history.append(action)
                 arbiter_board, result, attack_location = self._process_action(
                     arbiter_board, action)
                 previous_result = result  # Store for the next iteration
@@ -742,9 +752,10 @@ class CFRTrainingSimulator(MatchSimulator):
                 turn_number += 1
                 sampled += 1
                 print(f"Sampled: {sampled}/{target}")
-
-                self._save_strategy_to_csv(current_abstraction=current_abstraction,
-                                           trainer=trainer)
+                if arbiter_board.player_to_move == self.player_one_color:
+                    # Since the arbiter board has transitioned to the next player
+                    self._save_strategy_to_csv(current_abstraction=current_abstraction,
+                                               trainer=trainer)
 
             MatchSimulator._print_result(arbiter_board)
         end = time.time()
