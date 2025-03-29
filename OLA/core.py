@@ -107,6 +107,7 @@ class Player:
                 formation[i][start_col + j] = core[i][j]
 
         # Fill the remaining slots in the 3x9 formation
+        random.shuffle(pieces)
         piece_index = 0
         for i in range(3):
             for j in range(9):
