@@ -27,8 +27,14 @@ class MatrixApp:
     def create_widgets(self):
         for r, row in enumerate(self.matrix):
             for c, value in enumerate(row):
+                if value[0] is None:
+                    to_show = "   --   "
+                elif value[0] == value[1]:
+                    to_show = f"   {value[0]}   "
+                else:
+                    to_show = f"({value[0]}, {value[1]})"
                 btn = tk.Button(self.root, text=str(
-                    value), command=lambda r=r, c=c: self.on_cell_click(r, c))
+                    to_show), command=lambda r=r, c=c: self.on_cell_click(r, c))
                 btn.grid(row=r, column=c)
 
     def on_cell_click(self, row, col):
