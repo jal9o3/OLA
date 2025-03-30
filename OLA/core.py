@@ -9,8 +9,7 @@ from dataclasses import dataclass
 
 from OLA.constants import Ranking, Result, POV
 from OLA.helpers import (get_random_permutation, get_hex_uppercase_string,
-                         find_indices, is_column_zero_from_row,
-                         is_column_zero_up_to_row)
+                         find_indices, find_unique_value)
 
 # Configure the logging
 logging.basicConfig(level=logging.WARNING)
@@ -660,10 +659,13 @@ class Board:
         magnitude is negated if the current player is red.
         """
         forward_value = 2  # Estimated value of advancing piece
-        open_value = 10000  # Estimated value of a vulnerable opponent column
-
+        flag_hunt_bonus = 500  # Estimated value of getting close to enemy flag
         blue_sum = 0
         red_sum = 0  # Initialize material sums
+
+        blue_flag_loc = find_unique_value(self.matrix, Ranking.FLAG)
+        red_flag_loc = find_unique_value(
+            self.matrix, Ranking.FLAG + Ranking.SPY)
 
         red_offset = Ranking.SPY  # See Ranking class for details
 
@@ -709,9 +711,11 @@ class Board:
                           )):
                         blue_sum += self.matrix[i][j - 1]
 
-                    # Punish RED for opening a row for the blue flag
-                    if is_column_zero_from_row(self.matrix, start_row=i, col=j):
-                        blue_sum += open_value
+                    # Reward for closing distance to enemy flag
+                    row_distance = abs(red_flag_loc[0] - i)
+                    col_distance = abs(red_flag_loc[1] - j)
+                    blue_sum += (Board.ROWS - row_distance)*flag_hunt_bonus
+                    blue_sum += (Board.COLUMNS - col_distance)*flag_hunt_bonus
 
                 elif Ranking.FLAG + red_offset <= piece <= red_offset*2:
                     red_sum += piece - red_offset
@@ -758,9 +762,10 @@ class Board:
                           )):
                         red_sum += self.matrix[i][j - 1] - red_offset
 
-                    # Punish BLUE for opening a row for the blue flag
-                    if is_column_zero_up_to_row(self.matrix, start_row=i, col=j):
-                        red_sum += open_value
+                    row_distance = abs(blue_flag_loc[0] - i)
+                    col_distance = abs(blue_flag_loc[1] - j)
+                    red_sum += (Board.ROWS - row_distance)*flag_hunt_bonus
+                    red_sum += (Board.COLUMNS - col_distance)*flag_hunt_bonus
 
         advantage = blue_sum - red_sum
         if self.player_to_move == Player.RED:

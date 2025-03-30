@@ -60,3 +60,23 @@ def is_column_zero_up_to_row(matrix: list[list[int]], start_row: int, col: int):
         if matrix[row][col] != 0:
             return False
     return True
+
+
+def find_unique_value(matrix: list[list[int]], target: int):
+    """
+    Finds the first occurrence of a specified value in a 2D list (matrix).
+
+    Args:
+        matrix (list of list of int/float): The matrix to search within.
+        target (int/float): The value to find in the matrix.
+
+    Returns:
+        tuple: A tuple (row_index, col_index) indicating the position of the 
+        target value.
+        None: If the target value is not found in the matrix.
+    """
+    for row_index, row in enumerate(matrix):
+        for col_index, element in enumerate(row):
+            if element == target:
+                return row_index, col_index
+    return None  # Return None if the target value is not found
