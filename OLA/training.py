@@ -25,6 +25,20 @@ class MatrixApp:
         self.create_widgets()
 
     def create_widgets(self):
+        rows = len(self.matrix)
+        cols = len(self.matrix[0])
+
+        # Add row numbers
+        for r in range(rows):
+            label = tk.Label(self.root, text=str(r))
+            label.grid(row=r + 1, column=0)
+
+        # Add column numbers
+        for c in range(cols):
+            label = tk.Label(self.root, text=str(c))
+            label.grid(row=rows + 1, column=c + 1)
+
+        # Create buttons
         for r, row in enumerate(self.matrix):
             for c, value in enumerate(row):
                 if value[0] is None:
@@ -35,7 +49,7 @@ class MatrixApp:
                     to_show = f"({value[0]}, {value[1]})"
                 btn = tk.Button(self.root, text=str(
                     to_show), command=lambda r=r, c=c: self.on_cell_click(r, c))
-                btn.grid(row=r, column=c)
+                btn.grid(row=r + 1, column=c + 1)
 
     def on_cell_click(self, row, col):
         self.cells.append((row, col))
