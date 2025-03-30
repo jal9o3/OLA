@@ -658,8 +658,8 @@ class Board:
         Initially, the value for the blue player is calculated, and the
         magnitude is negated if the current player is red.
         """
-        forward_value = 2  # Estimated value of advancing piece
-        flag_hunt_bonus = 500  # Estimated value of getting close to enemy flag
+        forward_value = 100  # Estimated value of advancing piece
+        flag_hunt_bonus = 2  # Estimated value of getting close to enemy flag
         blue_sum = 0
         red_sum = 0  # Initialize material sums
 
@@ -674,7 +674,7 @@ class Board:
                 if Ranking.FLAG <= piece <= Ranking.SPY:
                     blue_sum += piece
                     # Give advancement bonus until enemy trench
-                    blue_sum += min(i*forward_value, 5*forward_value)
+                    blue_sum += pow(min(i*forward_value, 5*forward_value), 2)
                     # Reward having guards for the flag
                     if (piece == Ranking.FLAG and 0 < i < Board.ROWS - 1
                             and 0 < j < Board.COLUMNS - 1
@@ -714,13 +714,15 @@ class Board:
                     # Reward for closing distance to enemy flag
                     row_distance = abs(red_flag_loc[0] - i)
                     col_distance = abs(red_flag_loc[1] - j)
-                    blue_sum += (Board.ROWS - row_distance)*flag_hunt_bonus
-                    blue_sum += (Board.COLUMNS - col_distance)*flag_hunt_bonus
+                    blue_sum += pow((Board.ROWS - row_distance - 1)
+                                    * flag_hunt_bonus, 2)
+                    blue_sum += pow((Board.COLUMNS - col_distance - 1)
+                                    * flag_hunt_bonus, 2)
 
                 elif Ranking.FLAG + red_offset <= piece <= red_offset*2:
                     red_sum += piece - red_offset
-                    red_sum += min((Board.ROWS - 1 - i)*forward_value,
-                                   5*forward_value)
+                    red_sum += pow(min((Board.ROWS - 1 - i)*forward_value,
+                                   5*forward_value), 2)
                     if (piece == Ranking.FLAG + red_offset
                         and 0 < i < Board.ROWS - 1
                             and 0 < j < Board.COLUMNS - 1
@@ -764,8 +766,10 @@ class Board:
 
                     row_distance = abs(blue_flag_loc[0] - i)
                     col_distance = abs(blue_flag_loc[1] - j)
-                    red_sum += (Board.ROWS - row_distance)*flag_hunt_bonus
-                    red_sum += (Board.COLUMNS - col_distance)*flag_hunt_bonus
+                    red_sum += pow((Board.ROWS - row_distance - 1)
+                                   * flag_hunt_bonus, 2)
+                    red_sum += pow((Board.COLUMNS - col_distance - 1)
+                                   * flag_hunt_bonus, 2)
 
         advantage = blue_sum - red_sum
         if self.player_to_move == Player.RED:

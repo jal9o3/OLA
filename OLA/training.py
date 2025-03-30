@@ -735,13 +735,15 @@ class CFRTrainingSimulator(MatchSimulator):
                         arbiter_board, previous_action, previous_result, attack_location)
 
                 if arbiter_board.player_to_move != self.player_one_color:
-                    action, trainer, _ = self.get_cfr_input(abstraction=current_abstraction,
-                                                            actions_filter=actions_filter)
+                    action, trainer, chance = self.get_cfr_input(abstraction=current_abstraction,
+                                                                 actions_filter=actions_filter)
                 else:
                     while action not in arbiter_board.actions():
                         action = input("Select move: ")
 
                 print(f"Chosen Move: {action}")
+                if arbiter_board.player_to_move != self.player_one_color:
+                    print(f"{chance*100:.2f} chance")
                 previous_action = action  # Store for the next iteration
                 arbiter_board, result, attack_location = self._process_action(
                     arbiter_board, action)
@@ -750,7 +752,7 @@ class CFRTrainingSimulator(MatchSimulator):
                     blue_infostate, red_infostate, action=action, result=result
                 )
                 turn_number += 1
-                
+
                 if arbiter_board.player_to_move == self.player_one_color:
                     # Since the arbiter board has transitioned to the next player
                     sampled += 1
