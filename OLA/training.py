@@ -6,11 +6,33 @@ import random
 import csv
 import time
 
+import tkinter as tk
+
 from dataclasses import dataclass
 
 from OLA.core import Board, Infostate, Player
 from OLA.simulation import MatchSimulator
 from OLA.constants import Ranking, Result, POV
+
+
+class MatrixApp:
+    def __init__(self, root, matrix):
+        self.root = root
+        self.matrix = matrix
+        self.cells = []
+        self.create_widgets()
+
+    def create_widgets(self):
+        for r, row in enumerate(self.matrix):
+            for c, value in enumerate(row):
+                btn = tk.Button(self.root, text=str(
+                    value), command=lambda r=r, c=c: self.on_cell_click(r, c))
+                btn.grid(row=r, column=c)
+
+    def on_cell_click(self, row, col):
+        self.cells.append((row, col))
+        if len(self.cells) == 2:
+            self.root.destroy()
 
 
 class Abstraction:
@@ -739,7 +761,15 @@ class CFRTrainingSimulator(MatchSimulator):
                                                                  actions_filter=actions_filter)
                 else:
                     while action not in arbiter_board.actions():
-                        action = input("Select move: ")
+                        # action = input("Select move: ")
+                        relevant_infostate = (
+                            blue_infostate if self.player_one_color == Player.BLUE
+                            else red_infostate)
+                        root = tk.Tk()
+                        app = MatrixApp(root, relevant_infostate.matrix)
+                        root.mainloop()
+                        action = ''.join(str(number)
+                                         for tup in app.cells for number in tup)
 
                 print(f"Chosen Move: {action}")
                 if arbiter_board.player_to_move != self.player_one_color:
