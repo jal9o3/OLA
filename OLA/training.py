@@ -5,12 +5,13 @@ This contains definitions relevant to the training of an AI for GG.
 import random
 import csv
 import time
+import copy
 
 import tkinter as tk
 
 from dataclasses import dataclass
 
-from OLA.core import Board, Infostate, Player
+from OLA.core import Board, Infostate, Player, BoardPrinter
 from OLA.simulation import MatchSimulator
 from OLA.constants import Ranking, Result, POV
 
@@ -20,6 +21,7 @@ class MatrixApp:
         self.root = root
         self.matrix = matrix
         self.cells = []
+        self.root.wm_attributes('-type', 'dialog')  # Force floating in i3wm
         self.create_widgets()
 
     def create_widgets(self):
@@ -766,7 +768,14 @@ class CFRTrainingSimulator(MatchSimulator):
                             blue_infostate if self.player_one_color == Player.BLUE
                             else red_infostate)
                         root = tk.Tk()
-                        app = MatrixApp(root, relevant_infostate.matrix)
+                        labelled_matrix = copy.deepcopy(
+                            relevant_infostate.matrix)
+                        for i, row in enumerate(labelled_matrix):
+                            for j, _ in enumerate(row):
+                                labelled_matrix[i][j] = (
+                                    list(map(BoardPrinter.label_piece_by_team, labelled_matrix[i][j])))
+
+                        app = MatrixApp(root, labelled_matrix)
                         root.mainloop()
                         action = ''.join(str(number)
                                          for tup in app.cells for number in tup)
