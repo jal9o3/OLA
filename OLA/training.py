@@ -144,7 +144,11 @@ class CFRParameters:
     iteration: int
     blue_probability: float
     red_probability: float
+    turn_number: int
     depth: int = None
+    previous_action: str = None
+    previous_result: str = None
+    attack_location: tuple[int, int] = None
     actions_filter: 'ActionsFilter' = None
 
 
@@ -471,7 +475,8 @@ class CFRTrainer:
             state=params.state, regret_table=params.tables.regret_table)
         self.profiles[str(params.infostate)] = next_profile
 
-    def solve(self, abstraction: Abstraction, iterations: int = 100000):
+    def solve(self, abstraction: Abstraction, turn_number: int,
+              iterations: int = 100000):
         """
         This runs the counterfactual regret minimization algorithm to produce
         the tables needed by the AI.
@@ -493,25 +498,71 @@ class DepthLimitedCFRTrainer(CFRTrainer):
         super().__init__()
         self.vanilla_cfr = CFRTrainer()  # FOr accessing original implementation
 
+    @staticmethod
+    def _get_actions_filter(arbiter_board: Board, previous_action: str, previous_result: str,
+                            attack_location: tuple[int, int]):
+        reduced_branching, radius = 0, 1
+        while reduced_branching <= 0:
+            radius += 1
+            if previous_result in [Result.WIN, Result.LOSS]:
+                center = attack_location
+            elif attack_location is None:
+                center = (int(previous_action[0]), int(previous_action[1]))
+            else:
+                return None
+
+            whitelist = arbiter_board.get_squares_within_radius(
+                center=center, radius=radius)
+            actions_filter = ActionsFilter(
+                state=arbiter_board, directions=DirectionFilter(), square_whitelist=whitelist)
+            reduced_branching = len(actions_filter.filter())
+        return actions_filter
+
     def _cfr_children(self, parameters: CFRParameters, profile: list[float], utilities: list[float],
                       node_utility: float
                       ):
         state, infostate = parameters.abstraction.state, parameters.abstraction.infostate
-        if parameters.actions_filter is not None:
-            filtered_actions = parameters.actions_filter.filter()
+
+        actions_filter = None
+        # Get new actions filter
+        if (parameters.previous_action is not None
+            and parameters.previous_result is not None
+                and parameters.turn_number not in [1, 2]):
+            actions_filter = DepthLimitedCFRTrainer._get_actions_filter(
+                arbiter_board=state, previous_action=parameters.previous_action,
+                previous_result=parameters.previous_result,
+                attack_location=parameters.attack_location
+            )
+        elif (parameters.previous_action is not None
+              and parameters.previous_result is not None
+                and parameters.turn_number in [1, 2]):
+            actions_filter = ActionsFilter(state=state, directions=DirectionFilter(
+                back=False, right=False, left=False),
+                square_whitelist=[(x, y) for y in range(Board.COLUMNS)
+                                  for x in range(Board.ROWS)])
+
+        if actions_filter is not None:
+            filtered_actions = actions_filter.filter()
         else:
             filtered_actions = None
         for a, action in enumerate(state.actions()):
             if filtered_actions is not None and action not in filtered_actions:
-                utilities[a] = state.material()
-                node_utility += profile[a]*utilities[a]
-                continue
-            
-            # Only descend a 0 probability branch every 10 iterations
-            if ((parameters.blue_probability == 0 or parameters.red_probability == 0)
-                and parameters.iteration % 10 != 0):
                 utilities[a] = 0
                 continue
+
+            # Only descend a 0 probability branch every 10 iterations
+            if ((parameters.blue_probability == 0 or parameters.red_probability == 0)
+                    and parameters.iteration % 10 != 0):
+                utilities[a] = 0
+                continue
+
+            new_state = state.transition(action)
+            result = state.classify_action_result(
+                action, new_state)
+            if result in [Result.WIN, Result.LOSS]:
+                attack_location = (int(action[2]), int(action[3]))
+            else:
+                attack_location = None
 
             next_state, next_infostate = CFRTrainer._get_next(
                 state=state, infostate=infostate, action=action)
@@ -524,7 +575,9 @@ class DepthLimitedCFRTrainer(CFRTrainer):
                 state=next_state, infostate=next_infostate),
                 current_player=parameters.current_player, iteration=parameters.iteration,
                 blue_probability=new_blue_probability, red_probability=new_red_probability,
-                depth=parameters.depth-1, actions_filter=parameters.actions_filter)
+                depth=parameters.depth-1, actions_filter=actions_filter,
+                previous_action=action, previous_result=result, attack_location=attack_location,
+                turn_number=parameters.turn_number + 1)
             utilities[a] = self.cfr(params=arguments)
 
             node_utility += profile[a]*utilities[a]
@@ -577,8 +630,10 @@ class DepthLimitedCFRTrainer(CFRTrainer):
             return state.evaluation()
         return -state.evaluation()
 
-    def solve(self, abstraction: Abstraction, iterations: int = 10,
-              depth: int = 2, actions_filter: ActionsFilter = None):
+    def solve(self, abstraction: Abstraction, turn_number: int,
+              iterations: int = 10, depth: int = 2,
+              actions_filter: ActionsFilter = None, previous_action: str = None,
+              previous_result: str = None, attack_location: tuple[int, int] = None):
         """
         This runs the counterfactual regret minimization algorithm to produce
         the tables needed by the AI.
@@ -588,13 +643,17 @@ class DepthLimitedCFRTrainer(CFRTrainer):
             if i % 10 == 0:
                 depth = 2
             else:
-                depth = 8
-            # print(f"Iteration {i}/{iterations - 1}")
+                depth = 4
+            print(f"{i} ", end='', flush=True)
             for player in [Player.BLUE, Player.RED]:
                 arguments = CFRParameters(abstraction=abstraction, current_player=player,
                                           iteration=i, blue_probability=1, red_probability=1,
-                                          depth=depth, actions_filter=actions_filter)
+                                          depth=depth, actions_filter=actions_filter,
+                                          turn_number=turn_number, previous_action=previous_action,
+                                          previous_result=previous_result,
+                                          attack_location=attack_location)
                 self.cfr(params=arguments)
+        print()
 
 
 class CFRTrainingSimulator(MatchSimulator):
@@ -623,7 +682,7 @@ class CFRTrainingSimulator(MatchSimulator):
                 normalized_strategy[i] = probability/positive_sum
 
         # Apply a power transformation
-        transformed_strategy = [pow(p, 4) for p in normalized_strategy]
+        transformed_strategy = [pow(p, 2) for p in normalized_strategy]
 
         # Renormalize
         strategy_sum = sum(transformed_strategy)
@@ -636,7 +695,10 @@ class CFRTrainingSimulator(MatchSimulator):
 
         return normalized_strategy
 
-    def get_cfr_input(self, abstraction: Abstraction, actions_filter: ActionsFilter = None):
+    def get_cfr_input(self, abstraction: Abstraction, turn_number: int,
+                      actions_filter: ActionsFilter = None,
+                      previous_action: str = None, previous_result: str = None,
+                      attack_location: tuple[int, int] = None):
         """
         This is for obtaining the CFR controller's chosen action
         """
@@ -644,7 +706,9 @@ class CFRTrainingSimulator(MatchSimulator):
         action = ""
         trainer = DepthLimitedCFRTrainer()
         trainer.solve(abstraction=abstraction, actions_filter=actions_filter,
-                      iterations=30, depth=2)
+                      iterations=30, depth=2, turn_number=turn_number,
+                      previous_action=previous_action, previous_result=previous_result,
+                      attack_location=attack_location)
         strategy = CFRTrainingSimulator._distill_strategy(
             raw_strategy=trainer.strategy_tables[str(abstraction.infostate)])
         bottom_k = 3  # Number of lowest probabilities to set to 0
@@ -762,7 +826,7 @@ class CFRTrainingSimulator(MatchSimulator):
             blue_infostate, red_infostate = MatchSimulator._starting_infostates(
                 arbiter_board)
             action, result, previous_action, previous_result, attack_location = (
-                "", "", "", "", None)  # Initialize needed values
+                "", "", None, None, None)  # Initialize needed values
 
             turn_number = 1
             while not arbiter_board.is_terminal():
@@ -788,10 +852,14 @@ class CFRTrainingSimulator(MatchSimulator):
 
                 # Do not pass in the actions filter for now
                 action, trainer, chance = self.get_cfr_input(abstraction=current_abstraction,
-                                                             actions_filter=actions_filter)
+                                                             actions_filter=actions_filter,
+                                                             turn_number=turn_number,
+                                                             previous_action=previous_action,
+                                                             previous_result=previous_result,
+                                                             attack_location=attack_location)
 
                 print(f"Chosen Move: {action}")
-                print(f"{chance*100:.2f} chance")
+                print(f"{chance*100:.5f} chance")
                 previous_action = action  # Store for the next iteration
                 arbiter_board, result, attack_location = self._process_action(
                     arbiter_board, action)
