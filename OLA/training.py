@@ -588,8 +588,8 @@ class DepthLimitedCFRTrainer(CFRTrainer):
             if i % 10 == 0:
                 depth = 2
             else:
-                depth = 4
-            print(f"Iteration {i}/{iterations - 1}")
+                depth = 8
+            # print(f"Iteration {i}/{iterations - 1}")
             for player in [Player.BLUE, Player.RED]:
                 arguments = CFRParameters(abstraction=abstraction, current_player=player,
                                           iteration=i, blue_probability=1, red_probability=1,

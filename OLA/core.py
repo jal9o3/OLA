@@ -658,7 +658,7 @@ class Board:
         Initially, the value for the blue player is calculated, and the
         magnitude is negated if the current player is red.
         """
-        forward_value = 14  # Estimated value of advancing piece
+        forward_value = 2  # Estimated value of advancing piece
         blue_sum = 0
         red_sum = 0  # Initialize material sums
 
