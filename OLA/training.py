@@ -698,13 +698,15 @@ class CFRTrainingSimulator(MatchSimulator):
     def get_cfr_input(self, abstraction: Abstraction, turn_number: int,
                       actions_filter: ActionsFilter = None,
                       previous_action: str = None, previous_result: str = None,
-                      attack_location: tuple[int, int] = None):
+                      attack_location: tuple[int, int] = None,
+                      trainer: DepthLimitedCFRTrainer = None):
         """
         This is for obtaining the CFR controller's chosen action
         """
         valid_actions = abstraction.state.actions()
         action = ""
-        trainer = DepthLimitedCFRTrainer()
+        if trainer is None:
+            trainer = DepthLimitedCFRTrainer()
         trainer.solve(abstraction=abstraction, actions_filter=actions_filter,
                       iterations=30, depth=2, turn_number=turn_number,
                       previous_action=previous_action, previous_result=previous_result,
@@ -827,6 +829,7 @@ class CFRTrainingSimulator(MatchSimulator):
                 arbiter_board)
             action, result, previous_action, previous_result, attack_location = (
                 "", "", None, None, None)  # Initialize needed values
+            trainer = None
 
             turn_number = 1
             while not arbiter_board.is_terminal():
@@ -856,7 +859,8 @@ class CFRTrainingSimulator(MatchSimulator):
                                                              turn_number=turn_number,
                                                              previous_action=previous_action,
                                                              previous_result=previous_result,
-                                                             attack_location=attack_location)
+                                                             attack_location=attack_location,
+                                                             trainer=trainer)
 
                 print(f"Chosen Move: {action}")
                 print(f"{chance*100:.5f} chance")
