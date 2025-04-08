@@ -658,14 +658,9 @@ class Board:
         Initially, the value for the blue player is calculated, and the
         magnitude is negated if the current player is red.
         """
-        forward_value = 100  # Estimated value of advancing piece
-        flag_hunt_bonus = 2  # Estimated value of getting close to enemy flag
+        forward_value = 14  # Estimated value of advancing piece
         blue_sum = 0
         red_sum = 0  # Initialize material sums
-
-        blue_flag_loc = find_unique_value(self.matrix, Ranking.FLAG)
-        red_flag_loc = find_unique_value(
-            self.matrix, Ranking.FLAG + Ranking.SPY)
 
         red_offset = Ranking.SPY  # See Ranking class for details
 
@@ -674,102 +669,12 @@ class Board:
                 if Ranking.FLAG <= piece <= Ranking.SPY:
                     blue_sum += piece
                     # Give advancement bonus until enemy trench
-                    blue_sum += min(i*forward_value, 6*forward_value)
-                    # Reward having guards for the flag
-                    if (piece == Ranking.FLAG and 0 < i < Board.ROWS - 1
-                            and 0 < j < Board.COLUMNS - 1
-                            and self.is_allied_piece(
-                                self.matrix[i + 1][j - 1]
-                            )):
-                        blue_sum += self.matrix[i + 1][j - 1]
-                    elif (piece == Ranking.FLAG and 0 < i < Board.ROWS - 1
-                          and 0 < j < Board.COLUMNS - 1
-                          and self.is_allied_piece(
-                              self.matrix[i + 1][j + 1]
-                          )):
-                        blue_sum += self.matrix[i + 1][j + 1]
-                    # If flag at the leftmost edge
-                    elif (piece == Ranking.FLAG and 0 < i < Board.ROWS - 1
-                          and j == 0 and self.is_allied_piece(
-                              self.matrix[i + 1][j + 1]
-                          )):
-                        blue_sum += self.matrix[i + 1][j + 1]
-                    elif (piece == Ranking.FLAG and 0 < i < Board.ROWS - 1
-                          and j == 0 and self.is_allied_piece(
-                              # Piece to the right of flag
-                              self.matrix[i][j + 1]
-                          )):
-                        blue_sum += self.matrix[i][j + 1]
-                    elif (piece == Ranking.FLAG and 0 < i < Board.ROWS - 1
-                          and j == Board.COLUMNS - 1 and self.is_allied_piece(
-                              self.matrix[i + 1][j - 1]
-                          )):
-                        blue_sum += self.matrix[i + 1][j - 1]
-                    elif (piece == Ranking.FLAG and 0 < i < Board.ROWS - 1
-                          and j == Board.COLUMNS - 1 and self.is_allied_piece(
-                              self.matrix[i][j - 1]
-                          )):
-                        blue_sum += self.matrix[i][j - 1]
-
-                    # Reward for closing distance to enemy flag
-                    row_distance = abs(red_flag_loc[0] - i)
-                    col_distance = abs(red_flag_loc[1] - j)
-                    blue_sum += (Board.ROWS - row_distance - 1) * \
-                        flag_hunt_bonus
-                    blue_sum += (Board.COLUMNS - col_distance -
-                                 1) * flag_hunt_bonus
+                    blue_sum += min(i*forward_value, 5*forward_value)
 
                 elif Ranking.FLAG + red_offset <= piece <= red_offset*2:
                     red_sum += piece - red_offset
                     red_sum += min((Board.ROWS - 1 - i)*forward_value,
-                                   6*forward_value)
-                    if (piece == Ranking.FLAG + red_offset
-                        and 0 < i < Board.ROWS - 1
-                            and 0 < j < Board.COLUMNS - 1
-                            and self.is_allied_piece(
-                                self.matrix[i - 1][j - 1]
-                            )):
-                        red_sum += self.matrix[i - 1][j - 1] - red_offset
-                    elif (piece == Ranking.FLAG + red_offset
-                          and 0 < i < Board.ROWS - 1
-                          and 0 < j < Board.COLUMNS - 1
-                          and self.is_allied_piece(
-                              self.matrix[i - 1][j + 1] - red_offset
-                          )):
-                        red_sum += self.matrix[i - 1][j + 1]
-                    # If flag at the leftmost edge
-                    elif (piece == Ranking.FLAG + red_offset
-                          and 0 < i < Board.ROWS - 1
-                          and j == 0 and self.is_allied_piece(
-                              self.matrix[i - 1][j + 1]
-                          )):
-                        red_sum += self.matrix[i + 1][j + 1] - red_offset
-                    elif (piece == Ranking.FLAG + red_offset
-                          and 0 < i < Board.ROWS - 1
-                          and j == 0 and self.is_allied_piece(
-                              # Piece to the right of flag
-                              self.matrix[i][j + 1]
-                          )):
-                        red_sum += self.matrix[i][j + 1] - red_offset
-                    elif (piece == Ranking.FLAG + red_offset
-                          and 0 < i < Board.ROWS - 1
-                          and j == Board.COLUMNS - 1 and self.is_allied_piece(
-                              self.matrix[i - 1][j - 1]
-                          )):
-                        red_sum += self.matrix[i - 1][j - 1] - red_offset
-                    elif (piece == Ranking.FLAG + red_offset
-                          and 0 < i < Board.ROWS - 1
-                          and j == Board.COLUMNS - 1 and self.is_allied_piece(
-                              self.matrix[i][j - 1]
-                          )):
-                        red_sum += self.matrix[i][j - 1] - red_offset
-
-                    row_distance = abs(blue_flag_loc[0] - i)
-                    col_distance = abs(blue_flag_loc[1] - j)
-                    red_sum += (Board.ROWS - row_distance - 1) * \
-                        flag_hunt_bonus
-                    red_sum += (Board.COLUMNS - col_distance - 1) * \
-                        flag_hunt_bonus
+                                   5*forward_value)
 
         advantage = blue_sum - red_sum
         if self.player_to_move == Player.RED:

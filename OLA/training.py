@@ -506,6 +506,13 @@ class DepthLimitedCFRTrainer(CFRTrainer):
                 utilities[a] = state.material()
                 node_utility += profile[a]*utilities[a]
                 continue
+            
+            # Only descend a 0 probability branch every 10 iterations
+            if ((parameters.blue_probability == 0 or parameters.red_probability == 0)
+                and parameters.iteration % 10 != 0):
+                utilities[a] = 0
+                continue
+
             next_state, next_infostate = CFRTrainer._get_next(
                 state=state, infostate=infostate, action=action)
 
@@ -517,7 +524,7 @@ class DepthLimitedCFRTrainer(CFRTrainer):
                 state=next_state, infostate=next_infostate),
                 current_player=parameters.current_player, iteration=parameters.iteration,
                 blue_probability=new_blue_probability, red_probability=new_red_probability,
-                depth=parameters.depth-1)
+                depth=parameters.depth-1, actions_filter=parameters.actions_filter)
             utilities[a] = self.cfr(params=arguments)
 
             node_utility += profile[a]*utilities[a]
@@ -576,7 +583,13 @@ class DepthLimitedCFRTrainer(CFRTrainer):
         This runs the counterfactual regret minimization algorithm to produce
         the tables needed by the AI.
         """
+
         for i in range(iterations):
+            if i % 10 == 0:
+                depth = 2
+            else:
+                depth = 4
+            print(f"Iteration {i}/{iterations - 1}")
             for player in [Player.BLUE, Player.RED]:
                 arguments = CFRParameters(abstraction=abstraction, current_player=player,
                                           iteration=i, blue_probability=1, red_probability=1,
@@ -631,7 +644,7 @@ class CFRTrainingSimulator(MatchSimulator):
         action = ""
         trainer = DepthLimitedCFRTrainer()
         trainer.solve(abstraction=abstraction, actions_filter=actions_filter,
-                      iterations=10)
+                      iterations=30, depth=2)
         strategy = CFRTrainingSimulator._distill_strategy(
             raw_strategy=trainer.strategy_tables[str(abstraction.infostate)])
         bottom_k = 3  # Number of lowest probabilities to set to 0
@@ -773,8 +786,9 @@ class CFRTrainingSimulator(MatchSimulator):
                     actions_filter = CFRTrainingSimulator._get_actions_filter(
                         arbiter_board, previous_action, previous_result, attack_location)
 
+                # Do not pass in the actions filter for now
                 action, trainer, chance = self.get_cfr_input(abstraction=current_abstraction,
-                                                                actions_filter=actions_filter)
+                                                             actions_filter=actions_filter)
 
                 print(f"Chosen Move: {action}")
                 print(f"{chance*100:.2f} chance")
@@ -789,7 +803,7 @@ class CFRTrainingSimulator(MatchSimulator):
                 sampled += 1
                 print(f"Sampled: {sampled}/{target}")
                 self._save_strategy_to_csv(current_abstraction=current_abstraction,
-                                            trainer=trainer)
+                                           trainer=trainer)
 
             MatchSimulator._print_result(arbiter_board)
         end = time.time()
