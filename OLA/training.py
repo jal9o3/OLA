@@ -731,11 +731,6 @@ class CFRTrainingSimulator(MatchSimulator):
         counterfactual regret minimization algorithm.
         """
 
-        if self.player_one_color == Player.BLUE:
-            self.pov = POV.BLUE
-        elif self.player_one_color == Player.RED:
-            self.pov = POV.RED
-
         trainer = None
 
         start = time.time()
@@ -778,31 +773,11 @@ class CFRTrainingSimulator(MatchSimulator):
                     actions_filter = CFRTrainingSimulator._get_actions_filter(
                         arbiter_board, previous_action, previous_result, attack_location)
 
-                if arbiter_board.player_to_move != self.player_one_color:
-                    action, trainer, chance = self.get_cfr_input(abstraction=current_abstraction,
-                                                                 actions_filter=actions_filter)
-                else:
-                    while action not in arbiter_board.actions():
-                        # action = input("Select move: ")
-                        relevant_infostate = (
-                            blue_infostate if self.player_one_color == Player.BLUE
-                            else red_infostate)
-                        root = tk.Tk()
-                        labelled_matrix = copy.deepcopy(
-                            relevant_infostate.matrix)
-                        for i, row in enumerate(labelled_matrix):
-                            for j, _ in enumerate(row):
-                                labelled_matrix[i][j] = (
-                                    list(map(BoardPrinter.label_piece_by_team, labelled_matrix[i][j])))
-
-                        app = MatrixApp(root, labelled_matrix)
-                        root.mainloop()
-                        action = ''.join(str(number)
-                                         for tup in app.cells for number in tup)
+                action, trainer, chance = self.get_cfr_input(abstraction=current_abstraction,
+                                                                actions_filter=actions_filter)
 
                 print(f"Chosen Move: {action}")
-                if arbiter_board.player_to_move != self.player_one_color:
-                    print(f"{chance*100:.2f} chance")
+                print(f"{chance*100:.2f} chance")
                 previous_action = action  # Store for the next iteration
                 arbiter_board, result, attack_location = self._process_action(
                     arbiter_board, action)
@@ -811,13 +786,10 @@ class CFRTrainingSimulator(MatchSimulator):
                     blue_infostate, red_infostate, action=action, result=result
                 )
                 turn_number += 1
-
-                if arbiter_board.player_to_move == self.player_one_color:
-                    # Since the arbiter board has transitioned to the next player
-                    sampled += 1
-                    print(f"Sampled: {sampled}/{target}")
-                    self._save_strategy_to_csv(current_abstraction=current_abstraction,
-                                               trainer=trainer)
+                sampled += 1
+                print(f"Sampled: {sampled}/{target}")
+                self._save_strategy_to_csv(current_abstraction=current_abstraction,
+                                            trainer=trainer)
 
             MatchSimulator._print_result(arbiter_board)
         end = time.time()
