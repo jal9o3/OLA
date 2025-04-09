@@ -484,7 +484,8 @@ class CFRTrainer:
         for i in range(iterations):
             for player in [Player.BLUE, Player.RED]:
                 arguments = CFRParameters(abstraction=abstraction, current_player=player,
-                                          iteration=i, blue_probability=1, red_probability=1)
+                                          iteration=i, blue_probability=1, red_probability=1,
+                                          turn_number=turn_number)
                 self.cfr(params=arguments)
 
 
@@ -650,6 +651,9 @@ class DepthLimitedCFRTrainer(CFRTrainer):
         the tables needed by the AI.
         """
 
+        # To avoid running out of memory
+        self.memo_cache = {}
+
         for i in range(iterations):
             if i % 10 == 0:
                 depth = 2
@@ -691,18 +695,6 @@ class CFRTrainingSimulator(MatchSimulator):
         for i, probability in enumerate(raw_strategy):
             if probability > 0:
                 normalized_strategy[i] = probability/positive_sum
-
-        # Apply a power transformation
-        transformed_strategy = [pow(p, 2) for p in normalized_strategy]
-
-        # Renormalize
-        strategy_sum = sum(transformed_strategy)
-        if strategy_sum > 0:
-            normalized_strategy = [
-                p/strategy_sum for p in transformed_strategy]
-        else:
-            normalized_strategy = [1/len(transformed_strategy)
-                                   for _ in transformed_strategy]
 
         return normalized_strategy
 
@@ -847,7 +839,7 @@ class CFRTrainingSimulator(MatchSimulator):
                 MatchSimulator._print_game_status(turn_number, arbiter_board, infostates=[
                     blue_infostate, red_infostate],
                     pov=self.pov)
-                print(f"Estimated Value: {arbiter_board.evaluation()}")
+                print(f"Naive Evaluation: {arbiter_board.evaluation()}")
                 action = ""  # Initialize variable for storing chosen action
                 current_infostate = (blue_infostate if arbiter_board.player_to_move == Player.BLUE
                                      else red_infostate)
@@ -874,7 +866,7 @@ class CFRTrainingSimulator(MatchSimulator):
                                                              trainer=trainer)
 
                 print(f"Chosen Move: {action}")
-                print(f"{chance*100:.5f} chance")
+                print(f"{chance*100:.5f}% chance")
                 previous_action = action  # Store for the next iteration
                 arbiter_board, result, attack_location = self._process_action(
                     arbiter_board, action)
