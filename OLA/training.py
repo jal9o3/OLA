@@ -719,7 +719,7 @@ class CFRTrainingSimulator(MatchSimulator):
         if trainer is None:
             trainer = DepthLimitedCFRTrainer()
         trainer.solve(abstraction=abstraction, actions_filter=actions_filter,
-                      iterations=20, depth=2, turn_number=turn_number,
+                      iterations=21, depth=2, turn_number=turn_number,
                       previous_action=previous_action, previous_result=previous_result,
                       attack_location=attack_location)
         strategy = CFRTrainingSimulator._distill_strategy(
