@@ -599,10 +599,16 @@ class DepthLimitedCFRTrainer(CFRTrainer):
             return self.memo_cache[key]
 
         if abstraction.state.is_terminal():
-            return self._terminal_state_utility(abstraction.state, current_player)
+            node_utility = self._terminal_state_utility(
+                abstraction.state, current_player)
+            self.memo_cache[key] = node_utility
+            return node_utility
 
         if depth == 0:
-            return self._depth_limited_utility(abstraction.state, current_player)
+            node_utility = self._depth_limited_utility(
+                abstraction.state, current_player)
+            self.memo_cache[key] = node_utility
+            return node_utility
 
         node_utility, utilities = CFRTrainer._initialize_utilities(
             state=abstraction.state)
@@ -628,7 +634,6 @@ class DepthLimitedCFRTrainer(CFRTrainer):
                         opponent_probability=opponent_probability,
                         player_probability=player_probability), infostate=abstraction.infostate))
 
-        self.memo_cache[key] = node_utility
         return node_utility
 
     def _depth_limited_utility(self, state: Board, current_player: int):
