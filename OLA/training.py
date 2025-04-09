@@ -496,7 +496,8 @@ class DepthLimitedCFRTrainer(CFRTrainer):
 
     def __init__(self):
         super().__init__()
-        self.vanilla_cfr = CFRTrainer()  # FOr accessing original implementation
+        self.vanilla_cfr = CFRTrainer()  # For accessing original implementation
+        self.memo_cache = {}
 
     @staticmethod
     def _get_actions_filter(arbiter_board: Board, previous_action: str, previous_result: str,
@@ -593,6 +594,10 @@ class DepthLimitedCFRTrainer(CFRTrainer):
             params.red_probability, params.depth
         )
 
+        key = (abstraction.infostate, depth, abstraction.state.player_to_move)
+        if params.iteration > 1 and key in self.memo_cache:
+            return self.memo_cache[key]
+
         if abstraction.state.is_terminal():
             return self._terminal_state_utility(abstraction.state, current_player)
 
@@ -623,6 +628,7 @@ class DepthLimitedCFRTrainer(CFRTrainer):
                         opponent_probability=opponent_probability,
                         player_probability=player_probability), infostate=abstraction.infostate))
 
+        self.memo_cache[key] = node_utility
         return node_utility
 
     def _depth_limited_utility(self, state: Board, current_player: int):
