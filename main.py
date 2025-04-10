@@ -1,7 +1,6 @@
 """
 This is the entry point for interacting with the OLA engine.
 """
-import logging
 
 from OLA.constants import Ranking, Controller
 from OLA.core import Player, POV
@@ -13,9 +12,6 @@ def main():
     """
     Here we simulate a GG match.
     """
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.DEBUG)
-
     choice = input("1 - Simulate match\n2 - Generate training data\n>> ")
 
     if choice == "1":
