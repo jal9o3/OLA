@@ -21,20 +21,16 @@ def main():
     if choice == "1":
         print("Selected match simulation.")
         # Sample random formations
-        blue_formation = list(
-            Player.get_sensible_random_formation(
-                piece_list=Ranking.SORTED_FORMATION)
-        )
-        red_formation = list(
-            Player.get_sensible_random_formation(
-                piece_list=Ranking.SORTED_FORMATION)
-        )
+        blue_formation = list(Player.get_sensible_random_formation(
+            piece_list=Ranking.SORTED_FORMATION))
+        red_formation = list(Player.get_sensible_random_formation(
+            piece_list=Ranking.SORTED_FORMATION))
 
         match_simulator = MatchSimulator(formations=[blue_formation, red_formation],
                                          controllers=[
-            Controller.RANDOM, Controller.RANDOM],
-            save_data=False,
-            pov=POV.RED)
+                                             Controller.RANDOM, Controller.RANDOM],
+                                         save_data=False,
+                                         pov=POV.RED)
         match_simulator.start()
     elif choice == "2":
         print("Selected data generation.")
