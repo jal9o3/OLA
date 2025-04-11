@@ -699,23 +699,24 @@ class CFRTrainingSimulator(MatchSimulator):
         return normalized_strategy
 
     def get_cfr_input(self, abstraction: Abstraction, turn_number: int,
-                      actions_filter: ActionsFilter = None,
-                      previous_action: str = None, previous_result: str = None,
-                      attack_location: tuple[int, int] = None,
+                      actions_filter: ActionsFilter = None, previous_action: str = None,
+                      previous_result: str = None, attack_location: tuple[int, int] = None,
                       trainer: DepthLimitedCFRTrainer = None):
-        """
-        This is for obtaining the CFR controller's chosen action
-        """
+        """This is for obtaining the CFR controller's chosen action"""
+
         valid_actions = abstraction.state.actions()
         action = ""
+
         if trainer is None:
             trainer = DepthLimitedCFRTrainer()
-        trainer.solve(abstraction=abstraction, actions_filter=actions_filter,
-                      iterations=21, depth=2, turn_number=turn_number,
-                      previous_action=previous_action, previous_result=previous_result,
-                      attack_location=attack_location)
+
+        trainer.solve(abstraction, iterations=21, actions_filter=actions_filter,
+                      turn_number=turn_number, previous_action=previous_action,
+                      previous_result=previous_result, attack_location=attack_location)
+
         strategy = CFRTrainingSimulator._distill_strategy(
-            raw_strategy=trainer.strategy_tables[str(abstraction.infostate)])
+            trainer.strategy_tables[str(abstraction.infostate)])
+
         bottom_k = 3  # Number of lowest probabilities to set to 0
         for i in range(bottom_k):
             # Set the lowest probability as the minimum threshold
@@ -723,6 +724,7 @@ class CFRTrainingSimulator(MatchSimulator):
             for i, probability in enumerate(strategy):
                 if probability <= threshold:
                     strategy[i] = 0
+
         normalizing_sum = sum(strategy)
         if normalizing_sum > 0:
             strategy = [p/normalizing_sum for p in strategy]
@@ -735,9 +737,11 @@ class CFRTrainingSimulator(MatchSimulator):
         else:
             filtered_actions = actions_filter.filter()
             filtered_strategy = []
+
             for a, action in enumerate(valid_actions):
                 if action in filtered_actions:
                     filtered_strategy.append(strategy[a])
+
             normalizing_sum = sum(filtered_strategy)
             if normalizing_sum > 0:
                 filtered_strategy = [
@@ -745,6 +749,7 @@ class CFRTrainingSimulator(MatchSimulator):
             else:
                 # Reset options if all evaluated actions seem bad
                 filtered_actions, filtered_strategy = valid_actions, strategy
+
             action = random.choices(
                 filtered_actions, weights=filtered_strategy, k=1)[0]
 
