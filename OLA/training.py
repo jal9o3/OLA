@@ -5,6 +5,7 @@ This contains definitions relevant to the training of an AI for GG.
 import random
 import csv
 import time
+import copy
 
 from dataclasses import dataclass
 
@@ -586,7 +587,8 @@ class DepthLimitedCFRTrainer(CFRTrainer):
                 blue_probability=new_blue_probability, red_probability=new_red_probability,
                 depth=parameters.depth-1, actions_filter=actions_filter,
                 previous_action=action, previous_result=result, attack_location=attack_location,
-                turn_number=parameters.turn_number + 1)
+                turn_number=parameters.turn_number + 1, visualize=parameters.visualize,
+                parent_data_node=parameters.parent_data_node)
 
             utilities[a] = self.cfr(params=arguments)
 
@@ -607,15 +609,39 @@ class DepthLimitedCFRTrainer(CFRTrainer):
         if params.iteration > 1 and key in self.memo_cache:
             return self.memo_cache[key]
 
+        player_probability, opponent_probability = CFRTrainer._probabilities(
+            current_player=current_player, blue_probability=blue_probability,
+            red_probability=red_probability)
+
+        if params.visualize and params.parent_data_node is not None:
+            data_node = Node(
+                f"Utility: Unknown {opponent_probability:.2f}",
+                parent=params.parent_data_node
+            )
+            params.data_node = data_node
+        elif params.visualize and params.parent_data_node is None:
+            data_node = Node(
+                f"Utility: Unknown {opponent_probability:.2f}"
+            )
+            params.data_node = data_node
+
         if abstraction.state.is_terminal():
             node_utility = self._terminal_state_utility(
                 abstraction.state, current_player)
+
+            if params.visualize and params.data_node is not None:
+                params.data_node.name = f"Utility: {node_utility:.2f} {opponent_probability:.2f}"
+
             self.memo_cache[key] = node_utility
             return node_utility
 
         if depth == 0:
             node_utility = self._depth_limited_utility(
                 abstraction.state, current_player)
+
+            if params.visualize and params.data_node is not None:
+                params.data_node.name = f"Utility: {node_utility:.2f} {opponent_probability:.2f}"
+
             self.memo_cache[key] = node_utility
             return node_utility
 
@@ -625,11 +651,15 @@ class DepthLimitedCFRTrainer(CFRTrainer):
         regret_table, strategy_table, profile = self._get_tables(
             state=abstraction.state, infostate=abstraction.infostate)
 
-        player_probability, opponent_probability = CFRTrainer._probabilities(
-            current_player=current_player, blue_probability=blue_probability,
-            red_probability=red_probability)
-        node_utility = self._cfr_children(parameters=params, profile=profile,
+        new_params = copy.deepcopy(params)
+        if params.visualize and params.data_node is not None:
+            new_params.parent_data_node = data_node
+
+        node_utility = self._cfr_children(parameters=new_params, profile=profile,
                                           utilities=utilities, node_utility=node_utility)
+
+        if params.visualize and params.data_node is not None:
+            params.data_node.name = f"Utility: {node_utility:.2f} {opponent_probability:.2f}"
 
         if abstraction.state.player_to_move == current_player:
             self._update_tables(
@@ -659,23 +689,37 @@ class DepthLimitedCFRTrainer(CFRTrainer):
         the tables needed by the AI.
         """
 
+        visualize = False
+
         # To avoid running out of memory
         self.memo_cache = {}
 
         for i in range(iterations):
-            if i % 10 == 0:
-                depth = 2
-            else:
-                depth = 4
+            # if i % 10 == 0:
+            #     depth = 2
+            # else:
+            #     depth = 4
+
+            depth = 2
+
             print(f"{i} ", end='', flush=True)
             for player in [Player.BLUE, Player.RED]:
+                if turn_number == 1 and i == 0:
+                    visualize = True
+
                 arguments = CFRParameters(abstraction=abstraction, current_player=player,
                                           iteration=i, blue_probability=1, red_probability=1,
                                           depth=depth, actions_filter=actions_filter,
                                           turn_number=turn_number, previous_action=previous_action,
                                           previous_result=previous_result,
-                                          attack_location=attack_location)
+                                          attack_location=attack_location,
+                                          visualize=visualize)
+
                 self.cfr(params=arguments)
+
+                if visualize and turn_number == 1 and i == 1:
+                    UniqueDotExporter(arguments.data_node).to_picture(
+                        "/home/romlor/Desktop/cfr.png")
         print()
 
 
