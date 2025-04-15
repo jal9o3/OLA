@@ -381,23 +381,13 @@ class CFRTrainer:
         # Calculate next profile using nonnegative regret matching
         next_profile = [0.0 for _ in state.actions()]
 
-        # Only get the nonnegative entries in the regret table
-        nonnegative_table = [0.0 for _ in state.actions()]
-        for i, entry in enumerate(regret_table):
-            if entry > 0:
-                nonnegative_table[i] = regret_table[i]
-
-        if sum(nonnegative_table) < 0:
-            next_profile = [1/len(state.actions())
-                            for _ in state.actions()]
+        if all(r <= 0 for r in regret_table):
+            next_profile = [1 / len(state.actions()) for _ in state.actions()]
         else:
-            positive_regret_sum = 0
-            for regret in regret_table:
-                if regret > 0:
-                    positive_regret_sum += regret
+            positive_regret_sum = sum(r for r in regret_table if r > 0)
             for r, regret in enumerate(regret_table):
                 if regret > 0:
-                    next_profile[r] = regret/positive_regret_sum
+                    next_profile[r] = regret / positive_regret_sum
 
         return next_profile
 
@@ -594,7 +584,7 @@ class DepthLimitedCFRTrainer(CFRTrainer):
 
             node_utility += profile[a]*utilities[a]
 
-        return node_utility
+        return node_utility, utilities
 
     def cfr(self, params: CFRParameters):
         """
@@ -610,7 +600,7 @@ class DepthLimitedCFRTrainer(CFRTrainer):
             return self.memo_cache[key]
 
         player_probability, opponent_probability = CFRTrainer._probabilities(
-            current_player=current_player, blue_probability=blue_probability,
+            current_player=abstraction.state.player_to_move, blue_probability=blue_probability,
             red_probability=red_probability)
 
         if params.visualize and params.parent_data_node is not None:
@@ -626,8 +616,7 @@ class DepthLimitedCFRTrainer(CFRTrainer):
             params.data_node = data_node
 
         if abstraction.state.is_terminal():
-            node_utility = self._terminal_state_utility(
-                abstraction.state, current_player)
+            node_utility = abstraction.state.reward()
 
             if params.visualize and params.data_node is not None:
                 params.data_node.name = (
@@ -637,8 +626,7 @@ class DepthLimitedCFRTrainer(CFRTrainer):
             return node_utility
 
         if depth == 0:
-            node_utility = self._depth_limited_utility(
-                abstraction.state, current_player)
+            node_utility = abstraction.state.evaluation()
 
             if params.visualize and params.data_node is not None:
                 params.data_node.name = (
@@ -657,11 +645,8 @@ class DepthLimitedCFRTrainer(CFRTrainer):
         if params.visualize and params.data_node is not None:
             new_params.parent_data_node = data_node
 
-        node_utility = self._cfr_children(parameters=new_params, profile=profile,
-                                          utilities=utilities, node_utility=node_utility)
-
-        if params.visualize and params.data_node is not None:
-            params.data_node.name = f"Utility: {node_utility:.2f}\n{opponent_probability*100:.2f}%"
+        node_utility, utilities = self._cfr_children(parameters=new_params, profile=profile,
+                                                     utilities=utilities, node_utility=node_utility)
 
         if abstraction.state.player_to_move == current_player:
             self._update_tables(
@@ -674,6 +659,9 @@ class DepthLimitedCFRTrainer(CFRTrainer):
                     probabilities=Probabilities(
                         opponent_probability=opponent_probability,
                         player_probability=player_probability), infostate=abstraction.infostate))
+
+        if params.visualize and params.data_node is not None:
+            params.data_node.name = f"Utility: {node_utility:.2f}\n{opponent_probability*100:.2f}%"
 
         return node_utility
 
@@ -697,18 +685,13 @@ class DepthLimitedCFRTrainer(CFRTrainer):
         self.memo_cache = {}
 
         for i in range(iterations):
-            # if i % 10 == 0:
-            #     depth = 2
-            # else:
-            #     depth = 4
-
             depth = 2
+
+            if turn_number == 1 and i == 0:
+                visualize = True
 
             print(f"{i} ", end='', flush=True)
             for player in [Player.BLUE, Player.RED]:
-                if turn_number == 1 and i == 0:
-                    visualize = True
-
                 arguments = CFRParameters(abstraction=abstraction, current_player=player,
                                           iteration=i, blue_probability=1, red_probability=1,
                                           depth=depth, actions_filter=actions_filter,
@@ -719,9 +702,10 @@ class DepthLimitedCFRTrainer(CFRTrainer):
 
                 self.cfr(params=arguments)
 
-                if visualize and turn_number == 1 and i == 1:
-                    UniqueDotExporter(arguments.data_node).to_picture(
-                        "/home/romlor/Desktop/cfr.png")
+            if visualize and turn_number == 1 and i == 1:
+                UniqueDotExporter(arguments.data_node).to_picture(
+                    "/home/romlor/Desktop/cfr.png")
+
         print()
 
 
