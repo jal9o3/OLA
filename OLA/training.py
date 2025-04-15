@@ -615,13 +615,13 @@ class DepthLimitedCFRTrainer(CFRTrainer):
 
         if params.visualize and params.parent_data_node is not None:
             data_node = Node(
-                f"Utility: Unknown\n{opponent_probability:.2f}%",
+                f"Utility: Unknown\n{opponent_probability*100:.2f}%",
                 parent=params.parent_data_node
             )
             params.data_node = data_node
         elif params.visualize and params.parent_data_node is None:
             data_node = Node(
-                f"Utility: Unknown\n{opponent_probability:.2f}%"
+                f"Utility: Unknown\n{opponent_probability*100:.2f}%"
             )
             params.data_node = data_node
 
@@ -630,7 +630,7 @@ class DepthLimitedCFRTrainer(CFRTrainer):
                 abstraction.state, current_player)
 
             if params.visualize and params.data_node is not None:
-                params.data_node.name = f"Utility: {node_utility:.2f}\n{opponent_probability:.2f}%"
+                params.data_node.name = f"Utility: {node_utility:.2f}\n{opponent_probability*100:.2f}%"
 
             self.memo_cache[key] = node_utility
             return node_utility
@@ -640,7 +640,7 @@ class DepthLimitedCFRTrainer(CFRTrainer):
                 abstraction.state, current_player)
 
             if params.visualize and params.data_node is not None:
-                params.data_node.name = f"Utility: {node_utility:.2f}\n{opponent_probability:.2f}%"
+                params.data_node.name = f"Utility: {node_utility:.2f}\n{opponent_probability*100:.2f}%"
 
             self.memo_cache[key] = node_utility
             return node_utility
@@ -659,7 +659,7 @@ class DepthLimitedCFRTrainer(CFRTrainer):
                                           utilities=utilities, node_utility=node_utility)
 
         if params.visualize and params.data_node is not None:
-            params.data_node.name = f"Utility: {node_utility:.2f}\n{opponent_probability:.2f}%"
+            params.data_node.name = f"Utility: {node_utility:.2f}\n{opponent_probability*100:.2f}%"
 
         if abstraction.state.player_to_move == current_player:
             self._update_tables(
