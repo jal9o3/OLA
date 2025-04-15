@@ -5,11 +5,12 @@ This contains definitions relevant to the training of an AI for GG.
 import random
 import csv
 import time
-import copy
-
-import tkinter as tk
 
 from dataclasses import dataclass
+
+import tkinter as tk
+from anytree import Node
+from anytree.exporter import UniqueDotExporter  # Graphviz has to be installed
 
 from OLA.core import Board, Infostate, Player, BoardPrinter
 from OLA.simulation import MatchSimulator
@@ -150,6 +151,9 @@ class CFRParameters:
     previous_result: str = None
     attack_location: tuple[int, int] = None
     actions_filter: 'ActionsFilter' = None
+    visualize: bool = False
+    data_node: Node = None
+    parent_data_node: Node = None
 
 
 @dataclass
@@ -547,6 +551,7 @@ class DepthLimitedCFRTrainer(CFRTrainer):
             filtered_actions = actions_filter.filter()
         else:
             filtered_actions = None
+
         for a, action in enumerate(state.actions()):
             if filtered_actions is not None and action not in filtered_actions:
                 utilities[a] = 0
@@ -561,6 +566,7 @@ class DepthLimitedCFRTrainer(CFRTrainer):
             new_state = state.transition(action)
             result = state.classify_action_result(
                 action, new_state)
+
             if result in [Result.WIN, Result.LOSS]:
                 attack_location = (int(action[2]), int(action[3]))
             else:
@@ -573,6 +579,7 @@ class DepthLimitedCFRTrainer(CFRTrainer):
                 CFRTrainer._update_probabilities(
                     state=state, profile=profile, blue_probability=parameters.blue_probability,
                     red_probability=parameters.red_probability, action_index=a))
+
             arguments = CFRParameters(abstraction=Abstraction(
                 state=next_state, infostate=next_infostate),
                 current_player=parameters.current_player, iteration=parameters.iteration,
@@ -580,6 +587,7 @@ class DepthLimitedCFRTrainer(CFRTrainer):
                 depth=parameters.depth-1, actions_filter=actions_filter,
                 previous_action=action, previous_result=result, attack_location=attack_location,
                 turn_number=parameters.turn_number + 1)
+
             utilities[a] = self.cfr(params=arguments)
 
             node_utility += profile[a]*utilities[a]
@@ -817,12 +825,11 @@ class CFRTrainingSimulator(MatchSimulator):
         This method simulates a GG match generating training data, using the
         counterfactual regret minimization algorithm.
         """
-
         trainer = None
-
         start = time.time()
         _ = iterations  # Not used in this subclass
         sampled = 0  # Initialize data sample count
+
         while target is not None and sampled < target:
             self.blue_formation = list(
                 Player.get_sensible_random_formation(
@@ -832,19 +839,23 @@ class CFRTrainingSimulator(MatchSimulator):
                 Player.get_sensible_random_formation(
                     piece_list=Ranking.SORTED_FORMATION))
             )
+
             arbiter_board = self._initialize_arbiter_board()
             blue_infostate, red_infostate = MatchSimulator._starting_infostates(
                 arbiter_board)
+
             action, result, previous_action, previous_result, attack_location = (
                 "", "", None, None, None)  # Initialize needed values
             trainer = None
-
             turn_number = 1
+
             while not arbiter_board.is_terminal():
                 MatchSimulator._print_game_status(turn_number, arbiter_board, infostates=[
                     blue_infostate, red_infostate],
                     pov=self.pov)
+
                 print(f"Naive Evaluation: {arbiter_board.evaluation()}")
+
                 action = ""  # Initialize variable for storing chosen action
                 current_infostate = (blue_infostate if arbiter_board.player_to_move == Player.BLUE
                                      else red_infostate)
@@ -861,7 +872,6 @@ class CFRTrainingSimulator(MatchSimulator):
                     actions_filter = CFRTrainingSimulator._get_actions_filter(
                         arbiter_board, previous_action, previous_result, attack_location)
 
-                # Do not pass in the actions filter for now
                 action, trainer, chance = self.get_cfr_input(abstraction=current_abstraction,
                                                              actions_filter=actions_filter,
                                                              turn_number=turn_number,
@@ -872,19 +882,26 @@ class CFRTrainingSimulator(MatchSimulator):
 
                 print(f"Chosen Move: {action}")
                 print(f"{chance*100:.5f}% chance")
+
                 previous_action = action  # Store for the next iteration
+
                 arbiter_board, result, attack_location = self._process_action(
                     arbiter_board, action)
+
                 previous_result = result  # Store for the next iteration
+
                 blue_infostate, red_infostate = MatchSimulator._update_infostates(
                     blue_infostate, red_infostate, action=action, result=result
                 )
+
                 turn_number += 1
                 sampled += 1
                 print(f"Sampled: {sampled}/{target}")
+
                 self._save_strategy_to_csv(current_abstraction=current_abstraction,
                                            trainer=trainer)
 
             MatchSimulator._print_result(arbiter_board)
+
         end = time.time()
         print(f"{(end - start)/60/60:.2f} hours elapsed.")
