@@ -155,6 +155,7 @@ class CFRParameters:
     visualize: bool = False
     data_node: Node = None
     parent_data_node: Node = None
+    action_taken: str = None
 
 
 @dataclass
@@ -578,7 +579,7 @@ class DepthLimitedCFRTrainer(CFRTrainer):
                 depth=parameters.depth-1, actions_filter=actions_filter,
                 previous_action=action, previous_result=result, attack_location=attack_location,
                 turn_number=parameters.turn_number + 1, visualize=parameters.visualize,
-                parent_data_node=parameters.parent_data_node)
+                parent_data_node=parameters.parent_data_node, action_taken=action)
 
             utilities[a] = -self.cfr(params=arguments)
 
@@ -618,8 +619,10 @@ class DepthLimitedCFRTrainer(CFRTrainer):
         if abstraction.state.is_terminal():
             node_utility = abstraction.state.reward()
 
-            if params.visualize and params.data_node is not None:
+            if (params.visualize and params.data_node is not None
+            and params.action_taken is not None):
                 params.data_node.name = (
+                    f"{params.action_taken}\n"
                     f"Utility: {node_utility:.2f}\n{opponent_probability*100:.2f}%")
 
             self.memo_cache[key] = node_utility
@@ -630,6 +633,7 @@ class DepthLimitedCFRTrainer(CFRTrainer):
 
             if params.visualize and params.data_node is not None:
                 params.data_node.name = (
+                    f"{params.action_taken}\n"
                     f"Utility: {node_utility:.2f}\n{opponent_probability*100:.2f}%")
 
             self.memo_cache[key] = node_utility
@@ -662,6 +666,9 @@ class DepthLimitedCFRTrainer(CFRTrainer):
 
         if params.visualize and params.data_node is not None:
             params.data_node.name = f"Utility: {node_utility:.2f}\n{opponent_probability*100:.2f}%"
+
+            if params.action_taken is not None:
+                params.data_node.name = f"{params.action_taken}\n" + params.data_node.name
 
         return node_utility
 
@@ -702,7 +709,7 @@ class DepthLimitedCFRTrainer(CFRTrainer):
 
                 self.cfr(params=arguments)
 
-            if visualize and turn_number == 1 and i == 1:
+            if visualize and turn_number == 1 and i == 20:
                 UniqueDotExporter(arguments.data_node).to_picture(
                     "/home/romlor/Desktop/cfr.png")
 
