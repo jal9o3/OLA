@@ -630,7 +630,8 @@ class DepthLimitedCFRTrainer(CFRTrainer):
                 abstraction.state, current_player)
 
             if params.visualize and params.data_node is not None:
-                params.data_node.name = f"Utility: {node_utility:.2f}\n{opponent_probability*100:.2f}%"
+                params.data_node.name = (
+                    f"Utility: {node_utility:.2f}\n{opponent_probability*100:.2f}%")
 
             self.memo_cache[key] = node_utility
             return node_utility
@@ -640,7 +641,8 @@ class DepthLimitedCFRTrainer(CFRTrainer):
                 abstraction.state, current_player)
 
             if params.visualize and params.data_node is not None:
-                params.data_node.name = f"Utility: {node_utility:.2f}\n{opponent_probability*100:.2f}%"
+                params.data_node.name = (
+                    f"Utility: {node_utility:.2f}\n{opponent_probability*100:.2f}%")
 
             self.memo_cache[key] = node_utility
             return node_utility
