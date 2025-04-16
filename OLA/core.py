@@ -672,13 +672,14 @@ class Board:
             for j, piece in enumerate(row):
                 if Ranking.PRIVATE <= piece <= Ranking.SPY:
                     blue_sum += piece
-                    # Give advancement bonus until enemy trench
-                    blue_sum += min(i*forward_value, 5*forward_value)
+                    # Give advancement bonus until enemy trench, with the values
+                    # proportional to the piece's rank
+                    blue_sum += min(i*forward_value, 5*forward_value)*piece
 
                 elif Ranking.PRIVATE + red_offset <= piece <= red_offset*2:
                     red_sum += piece - red_offset
                     red_sum += min((Board.ROWS - 1 - i)*forward_value,
-                                   5*forward_value)
+                                   5*forward_value)*(piece - red_offset)
 
         advantage = blue_sum - red_sum
         if self.player_to_move == Player.RED:

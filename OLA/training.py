@@ -692,7 +692,7 @@ class DepthLimitedCFRTrainer(CFRTrainer):
             print(f"{i} ", end='', flush=True)
             for player in [Player.BLUE, Player.RED]:
 
-                if (turn_number == 1 and i == 20
+                if (turn_number == 1 and i == iterations - 1
                         and abstraction.state.player_to_move == player):
                     visualize = True
 
@@ -706,7 +706,7 @@ class DepthLimitedCFRTrainer(CFRTrainer):
 
                 self.cfr(params=arguments)
 
-                if (visualize and turn_number == 1 and i == 20
+                if (visualize and turn_number == 1 and i == iterations - 1
                         and abstraction.state.player_to_move == player):
                     UniqueDotExporter(arguments.data_node).to_picture(
                         "/home/romlor/Desktop/cfr.png")
@@ -753,7 +753,7 @@ class CFRTrainingSimulator(MatchSimulator):
         if trainer is None:
             trainer = DepthLimitedCFRTrainer()
 
-        trainer.solve(abstraction, iterations=21, actions_filter=actions_filter,
+        trainer.solve(abstraction, iterations=11, actions_filter=actions_filter,
                       turn_number=turn_number, previous_action=previous_action,
                       previous_result=previous_result, attack_location=attack_location)
 
