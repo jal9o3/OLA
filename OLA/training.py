@@ -8,6 +8,7 @@ import time
 import copy
 
 from dataclasses import dataclass
+from collections import deque, Counter
 
 import tkinter as tk
 from anytree import Node
@@ -692,7 +693,7 @@ class DepthLimitedCFRTrainer(CFRTrainer):
             print(f"{i} ", end='', flush=True)
             for player in [Player.BLUE, Player.RED]:
 
-                if (turn_number == 1 and i == iterations - 1
+                if (i == iterations - 1
                         and abstraction.state.player_to_move == player):
                     visualize = True
 
@@ -706,12 +707,32 @@ class DepthLimitedCFRTrainer(CFRTrainer):
 
                 self.cfr(params=arguments)
 
-                if (visualize and turn_number == 1 and i == iterations - 1
+                if (visualize and i == iterations - 1
                         and abstraction.state.player_to_move == player):
                     UniqueDotExporter(arguments.data_node).to_picture(
                         "/home/romlor/Desktop/cfr.png")
 
         print()
+
+
+class RepetitionDetector:
+    def __init__(self, window_size=6, max_repeats=2):
+        self.history = deque(maxlen=100)  # full move history (for reference)
+        self.recent_sequences = Counter()
+        self.window_size = window_size
+        self.max_repeats = max_repeats
+
+    def add_move(self, move):
+        self.history.append(move)
+        if len(self.history) >= self.window_size:
+            recent_chunk = tuple(list(self.history)[-self.window_size:])
+            self.recent_sequences[recent_chunk] += 1
+            return self.recent_sequences[recent_chunk] >= self.max_repeats
+        return False
+
+    def reset(self):
+        self.history.clear()
+        self.recent_sequences.clear()
 
 
 class CFRTrainingSimulator(MatchSimulator):
@@ -893,6 +914,8 @@ class CFRTrainingSimulator(MatchSimulator):
             trainer = None
             turn_number = 1
 
+            detector = RepetitionDetector()  # For detecting repetition of moves
+
             while not arbiter_board.is_terminal():
                 MatchSimulator._print_game_status(turn_number, arbiter_board, infostates=[
                     blue_infostate, red_infostate],
@@ -944,6 +967,10 @@ class CFRTrainingSimulator(MatchSimulator):
 
                 self._save_strategy_to_csv(current_abstraction=current_abstraction,
                                            trainer=trainer)
+
+                if detector.add_move(action):
+                    print("De facto draw by repetition")
+                    break
 
             MatchSimulator._print_result(arbiter_board)
 
