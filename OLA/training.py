@@ -549,11 +549,11 @@ class DepthLimitedCFRTrainer(CFRTrainer):
                 utilities[a] = 0
                 continue
 
-            # Only descend a 0 probability branch every 10 iterations
-            if ((parameters.blue_probability == 0 or parameters.red_probability == 0)
-                    and parameters.iteration % 10 != 0):
-                utilities[a] = 0
-                continue
+            # # Only descend a 0 probability branch every 10 iterations
+            # if ((parameters.blue_probability == 0 or parameters.red_probability == 0)
+            #         and parameters.iteration % 10 != 0):
+            #     utilities[a] = 0
+            #     continue
 
             new_state = state.transition(action)
             result = state.classify_action_result(
@@ -620,7 +620,7 @@ class DepthLimitedCFRTrainer(CFRTrainer):
             node_utility = abstraction.state.reward()
 
             if (params.visualize and params.data_node is not None
-            and params.action_taken is not None):
+                    and params.action_taken is not None):
                 params.data_node.name = (
                     f"{params.action_taken}\n"
                     f"Utility: {node_utility:.2f}\n{opponent_probability*100:.2f}%")
@@ -668,7 +668,8 @@ class DepthLimitedCFRTrainer(CFRTrainer):
             params.data_node.name = f"Utility: {node_utility:.2f}\n{opponent_probability*100:.2f}%"
 
             if params.action_taken is not None:
-                params.data_node.name = f"{params.action_taken}\n" + params.data_node.name
+                params.data_node.name = f"{params.action_taken}\n" + \
+                    params.data_node.name
 
         return node_utility
 
@@ -762,9 +763,9 @@ class CFRTrainingSimulator(MatchSimulator):
         strategy = CFRTrainingSimulator._distill_strategy(
             trainer.strategy_tables[str(abstraction.infostate)])
 
-        bottom_k = 3  # Number of lowest probabilities to set to 0
-        for i in range(bottom_k):
-            # Set the lowest probability as the minimum threshold
+        # Set the bottom_k lowest probabilities to 0
+        bottom_k = 3
+        for _ in range(bottom_k):
             threshold = min(strategy)
             for i, probability in enumerate(strategy):
                 if probability <= threshold:
@@ -772,13 +773,18 @@ class CFRTrainingSimulator(MatchSimulator):
 
         normalizing_sum = sum(strategy)
         if normalizing_sum > 0:
-            strategy = [p/normalizing_sum for p in strategy]
+            strategy = [p / normalizing_sum for p in strategy]
         else:
             # Reset options if all evaluated actions seem bad
-            strategy = [1/len(valid_actions) for a in valid_actions]
+            strategy = [1 / len(valid_actions) for _ in valid_actions]
 
         if actions_filter is None:
-            action = random.choices(valid_actions, weights=strategy, k=1)[0]
+            # Find all actions with the maximum probability
+            max_probability = max(strategy)
+            max_indices = [i for i, p in enumerate(
+                strategy) if p == max_probability]
+            # Choose randomly among them
+            action = valid_actions[random.choice(max_indices)]
         else:
             filtered_actions = actions_filter.filter()
             filtered_strategy = []
@@ -790,13 +796,17 @@ class CFRTrainingSimulator(MatchSimulator):
             normalizing_sum = sum(filtered_strategy)
             if normalizing_sum > 0:
                 filtered_strategy = [
-                    p/normalizing_sum for p in filtered_strategy]
+                    p / normalizing_sum for p in filtered_strategy]
             else:
                 # Reset options if all evaluated actions seem bad
                 filtered_actions, filtered_strategy = valid_actions, strategy
 
-            action = random.choices(
-                filtered_actions, weights=filtered_strategy, k=1)[0]
+            # Find all actions with the maximum probability
+            max_probability = max(filtered_strategy)
+            max_indices = [i for i, p in enumerate(
+                filtered_strategy) if p == max_probability]
+            # Choose randomly among them
+            action = filtered_actions[random.choice(max_indices)]
 
         return action, trainer, strategy[valid_actions.index(action)]
 
