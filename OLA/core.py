@@ -663,6 +663,7 @@ class Board:
             return self.reward()
 
         forward_value = 2  # Estimated value of advancing piece
+        flag_rush_weight = 100  # Value of moving flag towards the other side
         blue_sum = 0
         red_sum = 0  # Initialize material sums
 
@@ -670,16 +671,22 @@ class Board:
 
         for i, row in enumerate(self.matrix):
             for j, piece in enumerate(row):
-                if Ranking.PRIVATE <= piece <= Ranking.SPY:
+                if Ranking.FLAG <= piece <= Ranking.SPY:
                     blue_sum += piece
                     # Give advancement bonus until enemy trench, with the values
                     # proportional to the piece's rank
-                    blue_sum += min(i*forward_value, 5*forward_value)*piece
+                    if piece != Ranking.FLAG:
+                        blue_sum += min(i*forward_value, 5*forward_value)*piece
+                    else:
+                        blue_sum += i*forward_value*flag_rush_weight
 
-                elif Ranking.PRIVATE + red_offset <= piece <= red_offset*2:
+                elif Ranking.FLAG + red_offset <= piece <= red_offset*2:
                     red_sum += piece - red_offset
-                    red_sum += min((Board.ROWS - 1 - i)*forward_value,
-                                   5*forward_value)*(piece - red_offset)
+                    if piece - red_offset != Ranking.FLAG:
+                        red_sum += min((Board.ROWS - 1 - i)*forward_value,
+                                       5*forward_value)*(piece - red_offset)
+                    else:
+                        red_sum += (Board.ROWS - 1 - i)*forward_value*flag_rush_weight
 
         advantage = blue_sum - red_sum
         if self.player_to_move == Player.RED:
