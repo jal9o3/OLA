@@ -692,8 +692,8 @@ class DepthLimitedCFRTrainer(CFRTrainer):
             print(f"{i} ", end='', flush=True)
             for player in [Player.BLUE, Player.RED]:
 
-                if (turn_number == 1 and i == 20 
-                    and abstraction.state.player_to_move == player):
+                if (turn_number == 1 and i == 20
+                        and abstraction.state.player_to_move == player):
                     visualize = True
 
                 arguments = CFRParameters(abstraction=abstraction, current_player=player,
@@ -706,8 +706,8 @@ class DepthLimitedCFRTrainer(CFRTrainer):
 
                 self.cfr(params=arguments)
 
-                if (visualize and turn_number == 1 and i == 20 
-                    and abstraction.state.player_to_move == player):
+                if (visualize and turn_number == 1 and i == 20
+                        and abstraction.state.player_to_move == player):
                     UniqueDotExporter(arguments.data_node).to_picture(
                         "/home/romlor/Desktop/cfr.png")
 
