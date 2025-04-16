@@ -549,12 +549,6 @@ class DepthLimitedCFRTrainer(CFRTrainer):
                 utilities[a] = 0
                 continue
 
-            # # Only descend a 0 probability branch every 10 iterations
-            # if ((parameters.blue_probability == 0 or parameters.red_probability == 0)
-            #         and parameters.iteration % 10 != 0):
-            #     utilities[a] = 0
-            #     continue
-
             new_state = state.transition(action)
             result = state.classify_action_result(
                 action, new_state)
@@ -695,11 +689,13 @@ class DepthLimitedCFRTrainer(CFRTrainer):
         for i in range(iterations):
             depth = 2
 
-            if turn_number == 1 and i == 0:
-                visualize = True
-
             print(f"{i} ", end='', flush=True)
             for player in [Player.BLUE, Player.RED]:
+
+                if (turn_number == 1 and i == 20 
+                    and abstraction.state.player_to_move == player):
+                    visualize = True
+
                 arguments = CFRParameters(abstraction=abstraction, current_player=player,
                                           iteration=i, blue_probability=1, red_probability=1,
                                           depth=depth, actions_filter=actions_filter,
@@ -710,9 +706,10 @@ class DepthLimitedCFRTrainer(CFRTrainer):
 
                 self.cfr(params=arguments)
 
-            if visualize and turn_number == 1 and i == 20:
-                UniqueDotExporter(arguments.data_node).to_picture(
-                    "/home/romlor/Desktop/cfr.png")
+                if (visualize and turn_number == 1 and i == 20 
+                    and abstraction.state.player_to_move == player):
+                    UniqueDotExporter(arguments.data_node).to_picture(
+                        "/home/romlor/Desktop/cfr.png")
 
         print()
 

@@ -599,7 +599,7 @@ class Board:
         red_flag = Ranking.FLAG + Ranking.SPY  # See ranking class for details
         blue_end = 0
         red_end = -1  # The first and last row numbers, respectively
-        win_value = 1000000
+        win_value = float('inf')
 
         reward = 0  # Initialize return value
         if self.piece_not_found(blue_flag):
