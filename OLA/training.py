@@ -695,7 +695,8 @@ class DepthLimitedCFRTrainer(CFRTrainer):
 
                 if (i == iterations - 1
                         and abstraction.state.player_to_move == player):
-                    visualize = True
+                    # visualize = True
+                    pass
 
                 arguments = CFRParameters(abstraction=abstraction, current_player=player,
                                           iteration=i, blue_probability=1, red_probability=1,
