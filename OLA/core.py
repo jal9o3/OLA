@@ -532,7 +532,7 @@ class Board:
             player_anticipations[0] = True
         elif (red_flag in self.matrix[0] and not self.red_anticipating
               and not self.has_none_adjacent(
-                  self.matrix[0].index(0), self.matrix[0]
+                  self.matrix[0].index(red_flag), self.matrix[0]
         )):
             player_anticipations[1] = True
 
