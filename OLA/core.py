@@ -9,7 +9,7 @@ from dataclasses import dataclass
 
 from OLA.constants import Ranking, Result, POV
 from OLA.helpers import (get_random_permutation, get_hex_uppercase_string,
-                         find_indices, find_unique_value)
+                         find_indices, find_unique_value, defeats)
 
 # Configure the logging
 logging.basicConfig(level=logging.WARNING)
@@ -208,6 +208,18 @@ class Player:
             formation = Player.get_blitz_formation(piece_list)
 
         return tuple(formation)
+
+
+@dataclass
+class AccessPointPieces:
+    """
+    These are the values of the pieces in front, to the left, right and
+    back of the flag.
+    """
+    front: int = None
+    back: int = None
+    left: int = None
+    right: int = None
 
 
 class Board:
@@ -652,6 +664,94 @@ class Board:
 
         return advantage
 
+    @staticmethod
+    def _in_blue_range(piece: int):
+        return Ranking.FLAG <= piece <= Ranking.SPY
+
+    @staticmethod
+    def _in_red_range(piece: int):
+        return Ranking.FLAG + Ranking.SPY <= piece <= Ranking.SPY*2
+
+    def _get_blue_access_values(self):
+        blue_flag_loc = find_unique_value(self.matrix, Ranking.FLAG)
+        blue_access = AccessPointPieces()
+
+        # Note for the following: piece value is zero when the square is blank
+
+        # If the blue flag is not at the last row, find the value of piece in front
+        if blue_flag_loc[0] < Board.ROWS - 1:
+            front = self.matrix[blue_flag_loc[0] + 1][blue_flag_loc[1]]
+            if Board._in_blue_range(front):
+                blue_access.front = front
+            else:
+                blue_access.front = Ranking.BLANK  # Consider an allied piece as a blank
+
+        # If the blue flag is not at the first row, find the value of piece at the back
+        if blue_flag_loc[0] > 0:
+            back = self.matrix[blue_flag_loc[0] - 1][blue_flag_loc[1]]
+            if Board._in_blue_range(back):
+                blue_access.back = back
+            else:
+                blue_access.back = Ranking.BLANK
+
+        # Find value of piece to the right (perspective of blue)
+        if blue_flag_loc[1] > 0:
+            right = self.matrix[blue_flag_loc[0]][blue_flag_loc[1] - 1]
+            if Board._in_blue_range(right):
+                blue_access.right = right
+            else:
+                blue_access.right = Ranking.BLANK
+
+        # Find the value of piece to the left of blue flag
+        if blue_flag_loc[1] < Board.COLUMNS - 1:
+            left = self.matrix[blue_flag_loc[0]][blue_flag_loc[1] + 1]
+            if Board._in_blue_range(left):
+                blue_access.left = left
+            else:
+                blue_access.left = Ranking.BLANK
+
+        return blue_access
+
+    def _get_red_access_values(self):
+        red_offset = Ranking.SPY
+        red_flag_loc = find_unique_value(
+            self.matrix, Ranking.FLAG + red_offset)
+        red_access = AccessPointPieces()
+
+        # Find piece value in front of red flag (perspective of red)
+        if red_flag_loc[0] > 0:
+            front = self.matrix[red_flag_loc[0] - 1][red_flag_loc[1]]
+            if Board._in_red_range(front):
+                red_access.front = front - red_offset
+            else:
+                red_access.front = Ranking.BLANK  # An allied piece is considered blank
+
+        # Find piece value at the back of the red flag
+        if red_flag_loc[0] < Board.ROWS - 1:
+            back = self.matrix[red_flag_loc[0] + 1][red_flag_loc[1]]
+            if Board._in_red_range(back):
+                red_access.back = back - red_offset
+            else:
+                red_access.back = Ranking.BLANK
+
+        # Find piece value to the left of red flag (perspective of red)
+        if red_flag_loc[1] > 0:
+            left = self.matrix[red_flag_loc[0]][red_flag_loc[1] - 1]
+            if Board._in_red_range(left):
+                red_access.left = left - red_offset
+            else:
+                red_access.left = Ranking.BLANK
+
+        # Find piece value to the right of red flag
+        if red_flag_loc[1] < Board.COLUMNS - 1:
+            right = self.matrix[red_flag_loc[0]][red_flag_loc[1] + 1]
+            if Board._in_red_range(right):
+                red_access.right = right - red_offset
+            else:
+                red_access.right = Ranking.BLANK
+
+        return red_access
+
     def evaluation(self):
         """
         Attempts to assign a value to a given world state.
@@ -662,31 +762,92 @@ class Board:
         if self.is_terminal():
             return self.reward()
 
-        forward_value = 2  # Estimated value of advancing piece
-        flag_rush_weight = 100  # Value of moving flag towards the other side
         blue_sum = 0
         red_sum = 0  # Initialize material sums
 
         red_offset = Ranking.SPY  # See Ranking class for details
+        material_weight = 50 # Multiplier for winning or losing material
+
+        blue_flag_loc = find_unique_value(self.matrix, Ranking.FLAG)
+        red_flag_loc = find_unique_value(
+            self.matrix, Ranking.FLAG + red_offset)
+
+        blue_access = self._get_blue_access_values()
+        red_access = self._get_red_access_values()
 
         for i, row in enumerate(self.matrix):
             for j, piece in enumerate(row):
-                if Ranking.FLAG <= piece <= Ranking.SPY:
-                    blue_sum += piece
-                    # Give advancement bonus until enemy trench, with the values
-                    # proportional to the piece's rank
-                    if piece != Ranking.FLAG:
-                        blue_sum += min(i*forward_value, 5*forward_value)*piece
-                    else:
-                        blue_sum += i*forward_value*flag_rush_weight
+                if Ranking.PRIVATE <= piece <= Ranking.SPY:
+                    blue_sum += piece * material_weight
 
-                elif Ranking.FLAG + red_offset <= piece <= red_offset*2:
-                    red_sum += piece - red_offset
-                    if piece - red_offset != Ranking.FLAG:
-                        red_sum += min((Board.ROWS - 1 - i)*forward_value,
-                                       5*forward_value)*(piece - red_offset)
+                    # Obtain the minimum distance to an open enemy access point
+                    access_point_distances = []
+                    total_guards = 0
+
+                    if red_access.front is not None and defeats(piece, red_access.front):
+                        access_point_distances.append(
+                            abs(i - (red_flag_loc[0] - 1)) + abs(j - red_flag_loc[1]))
+                        total_guards += piece
+
+                    if red_access.back is not None and defeats(piece, red_access.back):
+                        access_point_distances.append(
+                            abs(i - (red_flag_loc[0] + 1)
+                                ) + abs(j - red_flag_loc[1]))
+                        total_guards += piece
+
+                    if red_access.left is not None and defeats(piece, red_access.left):
+                        access_point_distances.append(
+                            abs(i - red_flag_loc[0]) + abs(j - (red_flag_loc[1] - 1)))
+                        total_guards += piece
+
+                    if red_access.right is not None and defeats(piece, red_access.right):
+                        access_point_distances.append(
+                            abs(i - red_flag_loc[0]) + abs(red_flag_loc[1] + 1))
+                        total_guards += piece
+
+                    # Apply the shortest distance as penalty to self, weighted by the piece value
+                    # This is to incentivize making the distance even shorter
+                    if access_point_distances:
+                        blue_sum -= min(access_point_distances) * piece
                     else:
-                        red_sum += (Board.ROWS - 1 - i)*forward_value*flag_rush_weight
+                        blue_sum -= total_guards # If all guards are stronger, their sum is the penalty
+
+                elif Ranking.PRIVATE + red_offset <= piece <= red_offset*2:
+                    red_sum += (piece - red_offset) * material_weight
+
+                    # Apply the logic above for blue's access points
+                    access_point_distances = []
+                    total_guards = 0
+
+                    if blue_access.front is not None and defeats(piece - red_offset,
+                                                                 blue_access.front):
+                        access_point_distances.append(
+                            abs(i - (blue_flag_loc[0] + 1)) + abs(j - blue_flag_loc[1]))
+                        total_guards += piece - red_offset
+
+                    if blue_access.back is not None and defeats(piece - red_offset,
+                                                                blue_access.back):
+                        access_point_distances.append(
+                            abs(i - (blue_flag_loc[0] - 1)) + abs(j - blue_flag_loc[1]))
+                        total_guards += piece - red_offset
+
+                    if blue_access.left is not None and defeats(piece - red_offset,
+                                                                blue_access.left):
+                        access_point_distances.append(
+                            abs(i - blue_flag_loc[0]) + abs(j - (blue_flag_loc[0] - 1)))
+                        total_guards += piece - red_offset
+
+                    if blue_access.right is not None and defeats(piece - red_offset,
+                                                                 blue_access.right):
+                        access_point_distances.append(
+                            abs(i - blue_flag_loc[0]) + abs(j - (blue_flag_loc[0] + 1)))
+                        total_guards += piece - red_offset
+
+                    if access_point_distances:
+                        red_sum -= min(access_point_distances) * \
+                            (piece - red_offset)
+                    else:
+                        red_sum -= total_guards
 
         advantage = blue_sum - red_sum
         if self.player_to_move == Player.RED:

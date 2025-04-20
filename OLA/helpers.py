@@ -80,3 +80,26 @@ def find_unique_value(matrix: list[list[int]], target: int):
             if element == target:
                 return row_index, col_index
     return None  # Return None if the target value is not found
+
+
+def defeats(attacker: int, defender: int):
+    """
+    Determines if the first (attacker) piece rank defeats the second (defender)
+    piece rank. A draw is considered a defeat for the attacker. This function
+    is intended to be used with the access point heuristic in the evaluation.
+    """
+    if attacker == defender:
+        if attacker == Ranking.FLAG:
+            return True  # Unneccessary clause but included for thoroughness
+        return False
+
+    if attacker == Ranking.PRIVATE and defender == Ranking.SPY:
+        return True
+
+    if attacker == Ranking.SPY and defender == Ranking.PRIVATE:
+        return False
+
+    if attacker > defender:
+        return True
+
+    return False
