@@ -6,3 +6,4 @@ pump_caller.py
 cfr
 *.csv*
 throwaway.py
+models/*
