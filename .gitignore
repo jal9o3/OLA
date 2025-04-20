@@ -7,3 +7,4 @@ cfr
 *.csv*
 throwaway.py
 models/*
+*.o
