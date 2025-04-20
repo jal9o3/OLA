@@ -4,6 +4,9 @@ This contains the logic for simulating a GG match.
 
 import random
 
+import matplotlib.pyplot as plt
+from matplotlib.ticker import MultipleLocator
+
 from OLA.constants import Ranking, POV, Controller
 from OLA.helpers import get_blank_matrix
 from OLA.core import Player, Board, Infostate
@@ -234,7 +237,9 @@ class MatchSimulator:
         from humans or choosing moves based on an algorithm or even both.
         """
         _ = target  # Placeholder for use in CFRTrainingSimulator subclass
+        branching_lists = []
         for _ in range(iterations):
+            branching_list = []  # List for branching at every turn
             arbiter_board = Board(self.setup_arbiter_matrix(),
                                   player_to_move=Player.BLUE,
                                   blue_anticipating=False, red_anticipating=False)
@@ -245,7 +250,6 @@ class MatchSimulator:
                 arbiter_board)
 
             turn_number = 1
-            branches_encountered = 0
             while not arbiter_board.is_terminal():
                 self.manage_pov_switching(arbiter_board)
 
@@ -255,7 +259,7 @@ class MatchSimulator:
                                                       red_infostate],
                                                   pov=self.pov)
                 valid_actions = arbiter_board.actions()
-                branches_encountered += len(valid_actions)
+                branching_list.append((turn_number, len(valid_actions)))
 
                 action = ""  # Initialize variable for storing chosen action
                 action = self.get_controller_input(arbiter_board)
@@ -271,5 +275,24 @@ class MatchSimulator:
                 )
                 arbiter_board = new_arbiter_board
                 turn_number += 1
+            branching_lists.append(branching_list)
 
             MatchSimulator._print_result(arbiter_board)
+
+        for line_data in branching_lists:
+            x, y = zip(*line_data)
+            plt.scatter(x, y)
+
+        plt.xlabel('Turn Number')
+        plt.ylabel('Number of Possible Actions')
+        plt.title('Number of Possible Actions Per Turn In 5 Random Games')
+        plt.grid(True)
+
+        plt.gca().xaxis.set_major_locator(MultipleLocator(40))  # X-axis interval
+        plt.gca().yaxis.set_major_locator(MultipleLocator(5))  # y-axis every 1 unit
+
+        # Lock x-limits to data range
+        # all_x = [x for group in branching_lists for x, _ in group]
+        # plt.xlim(min(all_x), max(all_x))
+
+        plt.show()

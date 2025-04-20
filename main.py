@@ -27,7 +27,7 @@ def main():
                                              Controller.RANDOM, Controller.RANDOM],
                                          save_data=False,
                                          pov=POV.RED)
-        match_simulator.start()
+        match_simulator.start(iterations=5)
     elif choice == "2":
         print("Selected data generation.")
         simulator = CFRTrainingSimulator(formations=[None, None],
