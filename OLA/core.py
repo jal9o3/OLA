@@ -672,8 +672,7 @@ class Board:
     def _in_red_range(piece: int):
         return Ranking.FLAG + Ranking.SPY <= piece <= Ranking.SPY*2
 
-    def _get_blue_access_values(self):
-        blue_flag_loc = find_unique_value(self.matrix, Ranking.FLAG)
+    def _get_blue_access_values(self, blue_flag_loc: tuple[int, int]):
         blue_access = AccessPointPieces()
 
         # Note for the following: piece value is zero when the square is blank
@@ -712,10 +711,8 @@ class Board:
 
         return blue_access
 
-    def _get_red_access_values(self):
+    def _get_red_access_values(self, red_flag_loc: tuple[int, int]):
         red_offset = Ranking.SPY
-        red_flag_loc = find_unique_value(
-            self.matrix, Ranking.FLAG + red_offset)
         red_access = AccessPointPieces()
 
         # Find piece value in front of red flag (perspective of red)
@@ -772,8 +769,8 @@ class Board:
         red_flag_loc = find_unique_value(
             self.matrix, Ranking.FLAG + red_offset)
 
-        blue_access = self._get_blue_access_values()
-        red_access = self._get_red_access_values()
+        blue_access = self._get_blue_access_values(blue_flag_loc)
+        red_access = self._get_red_access_values(red_flag_loc)
 
         for i, row in enumerate(self.matrix):
             for j, piece in enumerate(row):
