@@ -103,3 +103,20 @@ def defeats(attacker: int, defender: int):
         return True
 
     return False
+
+
+def find_unique_locations(unique_values: list[int], matrix: list[list[int]]):
+    """
+    This returns a tuple of locations for each of the values in the provided
+    list.
+    """
+    targets = set(unique_values)
+    locations = {}
+    for i, row in enumerate(matrix):
+        for j, val in enumerate(row):
+            if val in targets:
+                locations[val] = (i, j)
+                if len(locations) == len(unique_values):
+                    return [locations[v] for v in unique_values]
+
+    return None

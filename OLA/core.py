@@ -9,7 +9,7 @@ from dataclasses import dataclass
 
 from OLA.constants import Ranking, Result, POV
 from OLA.helpers import (get_random_permutation, get_hex_uppercase_string,
-                         find_indices, find_unique_value, defeats)
+                         find_indices, find_unique_locations, defeats)
 
 # Configure the logging
 logging.basicConfig(level=logging.WARNING)
@@ -763,11 +763,10 @@ class Board:
         red_sum = 0  # Initialize material sums
 
         red_offset = Ranking.SPY  # See Ranking class for details
-        material_weight = 50 # Multiplier for winning or losing material
+        material_weight = 50  # Multiplier for winning or losing material
 
-        blue_flag_loc = find_unique_value(self.matrix, Ranking.FLAG)
-        red_flag_loc = find_unique_value(
-            self.matrix, Ranking.FLAG + red_offset)
+        blue_flag_loc, red_flag_loc = find_unique_locations([
+            Ranking.FLAG, Ranking.FLAG + Ranking.SPY], self.matrix)
 
         blue_access = self._get_blue_access_values(blue_flag_loc)
         red_access = self._get_red_access_values(red_flag_loc)
@@ -807,7 +806,7 @@ class Board:
                     if access_point_distances:
                         blue_sum -= min(access_point_distances) * piece
                     else:
-                        blue_sum -= total_guards # If all guards are stronger, their sum is the penalty
+                        blue_sum -= total_guards  # If all guards are stronger, their sum is the penalty
 
                 elif Ranking.PRIVATE + red_offset <= piece <= red_offset*2:
                     red_sum += (piece - red_offset) * material_weight
