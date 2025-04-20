@@ -20,3 +20,7 @@ The **OLA Engine** aims to:
 - **Extensibility:** Designed for easy integration into larger projects or graphical user interfaces.
 
 ---
+
+## Notes for Data Generation
+Install `cython` using `pip install cython` and run `python setup.py build_ext --inplace`. This
+compiles one of the functions to C.
