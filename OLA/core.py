@@ -9,8 +9,11 @@ from dataclasses import dataclass
 
 from OLA.constants import Ranking, Result, POV
 from OLA.helpers import (get_random_permutation, get_hex_uppercase_string,
-                         find_indices, defeats)
+                         find_indices)
+
 from OLA.find_locations import find_unique_locations
+
+import OLA.fasteval as fev
 
 # Configure the logging
 logging.basicConfig(level=logging.WARNING)
@@ -760,25 +763,7 @@ class Board:
         if self.is_terminal():
             return self.reward()
 
-        forward_weight = 2  # Weight given to advancing a piece
-
-        blue_sum = 0
-        red_sum = 0  # Initialize material sums
-
-        red_offset = Ranking.SPY  # See Ranking class for details
-
-        for i, row in enumerate(self.matrix):
-            for j, piece in enumerate(row):
-                if Ranking.PRIVATE <= piece <= Ranking.SPY:
-                    blue_sum += piece
-                    blue_sum += min(i*forward_weight, 5*forward_weight)*piece
-
-                elif Ranking.PRIVATE + red_offset <= piece <= red_offset*2:
-                    red_sum += (piece - red_offset)
-                    red_sum += min((Board.ROWS - 1 - i)*forward_weight,
-                                   5*forward_weight)*(piece - red_offset)
-
-        advantage = blue_sum - red_sum
+        advantage = fev.evaluation(self.matrix) # Use the Cython implementation
         if self.player_to_move == Player.RED:
             advantage *= -1
 

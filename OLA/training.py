@@ -14,10 +14,9 @@ import tkinter as tk
 from anytree import Node
 from anytree.exporter import UniqueDotExporter  # Graphviz has to be installed
 
-from OLA.core import Board, Infostate, Player, BoardPrinter
+from OLA.core import Board, Infostate, Player
 from OLA.simulation import MatchSimulator
-from OLA.constants import Ranking, Result, POV
-
+from OLA.constants import Ranking, Result
 
 class MatrixApp:
     def __init__(self, root, matrix):
