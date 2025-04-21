@@ -234,6 +234,9 @@ class ActionsFilter:
             if self._to_include(action):
                 filtered_actions.append(action)
 
+        if not filtered_actions:
+            filtered_actions = actions
+
         return filtered_actions
 
     def _to_include(self, action: str):
@@ -387,9 +390,13 @@ class CFRTrainer:
             next_profile = [1 / len(state.actions()) for _ in state.actions()]
         else:
             positive_regret_sum = sum(r for r in regret_table if r > 0)
-            for r, regret in enumerate(regret_table):
-                if regret > 0:
-                    next_profile[r] = regret / positive_regret_sum
+            if positive_regret_sum > 0:
+                for r, regret in enumerate(regret_table):
+                    if regret > 0:
+                        next_profile[r] = regret / positive_regret_sum
+            else:
+                # Fallback to uniform distribution if positive_regret_sum is 0
+                next_profile = [1 / len(state.actions()) for _ in state.actions()]
 
         return next_profile
 
@@ -601,13 +608,13 @@ class DepthLimitedCFRTrainer(CFRTrainer):
 
         if params.visualize and params.parent_data_node is not None:
             data_node = Node(
-                f"Utility: Unknown\n{opponent_probability*100:.2f}%",
+                f"Utility: Unknown\n{opponent_probability*100}%",
                 parent=params.parent_data_node
             )
             params.data_node = data_node
         elif params.visualize and params.parent_data_node is None:
             data_node = Node(
-                f"Utility: Unknown\n{opponent_probability*100:.2f}%"
+                f"Utility: Unknown\n{opponent_probability*100}%"
             )
             params.data_node = data_node
 
@@ -618,7 +625,7 @@ class DepthLimitedCFRTrainer(CFRTrainer):
                     and params.action_taken is not None):
                 params.data_node.name = (
                     f"{params.action_taken}\n"
-                    f"Utility: {node_utility:.2f}\n{opponent_probability*100:.2f}%")
+                    f"Utility: {node_utility:.2f}\n{opponent_probability*100}%")
 
             self.memo_cache[key] = node_utility
             return node_utility
@@ -629,7 +636,7 @@ class DepthLimitedCFRTrainer(CFRTrainer):
             if params.visualize and params.data_node is not None:
                 params.data_node.name = (
                     f"{params.action_taken}\n"
-                    f"Utility: {node_utility:.2f}\n{opponent_probability*100:.2f}%")
+                    f"Utility: {node_utility:.2f}\n{opponent_probability*100}%")
 
             self.memo_cache[key] = node_utility
             return node_utility
@@ -660,7 +667,7 @@ class DepthLimitedCFRTrainer(CFRTrainer):
                         player_probability=player_probability), infostate=abstraction.infostate))
 
         if params.visualize and params.data_node is not None:
-            params.data_node.name = f"Utility: {node_utility:.2f}\n{opponent_probability*100:.2f}%"
+            params.data_node.name = f"Utility: {node_utility:.2f}\n{opponent_probability*100}%"
 
             if params.action_taken is not None:
                 params.data_node.name = f"{params.action_taken}\n" + \
@@ -695,8 +702,8 @@ class DepthLimitedCFRTrainer(CFRTrainer):
 
                 if (i == iterations - 1
                         and abstraction.state.player_to_move == player):
-                    # visualize = True
-                    pass
+                    visualize = True
+                    # pass
 
                 arguments = CFRParameters(abstraction=abstraction, current_player=player,
                                           iteration=i, blue_probability=1, red_probability=1,

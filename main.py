@@ -33,7 +33,7 @@ def main():
         simulator = CFRTrainingSimulator(formations=[None, None],
                                          controllers=None, save_data=False,
                                          pov=POV.WORLD)
-        simulator.start(target=20000)
+        simulator.start(target=1)
 
 
 if __name__ == "__main__":
