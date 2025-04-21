@@ -235,7 +235,7 @@ class ActionsFilter:
                 filtered_actions.append(action)
 
         if not filtered_actions:
-            filtered_actions = actions
+            filtered_actions = self.state.actions()
 
         return filtered_actions
 
@@ -396,7 +396,8 @@ class CFRTrainer:
                         next_profile[r] = regret / positive_regret_sum
             else:
                 # Fallback to uniform distribution if positive_regret_sum is 0
-                next_profile = [1 / len(state.actions()) for _ in state.actions()]
+                next_profile = [1 / len(state.actions())
+                                for _ in state.actions()]
 
         return next_profile
 
@@ -528,6 +529,7 @@ class DepthLimitedCFRTrainer(CFRTrainer):
                       node_utility: float
                       ):
         state, infostate = parameters.abstraction.state, parameters.abstraction.infostate
+        win_value = 1000000
 
         actions_filter = None
         # Get new actions filter
@@ -539,9 +541,7 @@ class DepthLimitedCFRTrainer(CFRTrainer):
                 previous_result=parameters.previous_result,
                 attack_location=parameters.attack_location
             )
-        elif (parameters.previous_action is not None
-              and parameters.previous_result is not None
-                and parameters.turn_number in [1, 2]):
+        elif (parameters.turn_number in [1, 2]):
             actions_filter = ActionsFilter(state=state, directions=DirectionFilter(
                 back=False, right=False, left=False),
                 square_whitelist=[(x, y) for y in range(Board.COLUMNS)
@@ -554,7 +554,7 @@ class DepthLimitedCFRTrainer(CFRTrainer):
 
         for a, action in enumerate(state.actions()):
             if filtered_actions is not None and action not in filtered_actions:
-                utilities[a] = 0
+                utilities[a] = -win_value # Consider other actions to be losing
                 continue
 
             new_state = state.transition(action)

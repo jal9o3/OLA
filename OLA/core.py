@@ -760,91 +760,23 @@ class Board:
         if self.is_terminal():
             return self.reward()
 
+        forward_weight = 2  # Weight given to advancing a piece
+
         blue_sum = 0
         red_sum = 0  # Initialize material sums
 
         red_offset = Ranking.SPY  # See Ranking class for details
-        material_weight = 50  # Multiplier for winning or losing material
-
-        blue_flag_loc, red_flag_loc = find_unique_locations([
-            Ranking.FLAG, Ranking.FLAG + Ranking.SPY], self.matrix)
-
-        blue_access = self._get_blue_access_values(blue_flag_loc)
-        red_access = self._get_red_access_values(red_flag_loc)
 
         for i, row in enumerate(self.matrix):
             for j, piece in enumerate(row):
                 if Ranking.PRIVATE <= piece <= Ranking.SPY:
-                    blue_sum += piece * material_weight
-
-                    # Obtain the minimum distance to an open enemy access point
-                    access_point_distances = []
-                    total_guards = 0
-
-                    if red_access.front is not None and defeats(piece, red_access.front):
-                        access_point_distances.append(
-                            abs(i - (red_flag_loc[0] - 1)) + abs(j - red_flag_loc[1]))
-                        total_guards += piece
-
-                    if red_access.back is not None and defeats(piece, red_access.back):
-                        access_point_distances.append(
-                            abs(i - (red_flag_loc[0] + 1)
-                                ) + abs(j - red_flag_loc[1]))
-                        total_guards += piece
-
-                    if red_access.left is not None and defeats(piece, red_access.left):
-                        access_point_distances.append(
-                            abs(i - red_flag_loc[0]) + abs(j - (red_flag_loc[1] - 1)))
-                        total_guards += piece
-
-                    if red_access.right is not None and defeats(piece, red_access.right):
-                        access_point_distances.append(
-                            abs(i - red_flag_loc[0]) + abs(red_flag_loc[1] + 1))
-                        total_guards += piece
-
-                    # Apply the shortest distance as penalty to self, weighted by the piece value
-                    # This is to incentivize making the distance even shorter
-                    if access_point_distances:
-                        blue_sum -= min(access_point_distances) * piece
-                    else:
-                        blue_sum -= total_guards  # If all guards are stronger, their sum is the penalty
+                    blue_sum += piece
+                    blue_sum += min(i*forward_weight, 5*forward_weight)*piece
 
                 elif Ranking.PRIVATE + red_offset <= piece <= red_offset*2:
-                    red_sum += (piece - red_offset) * material_weight
-
-                    # Apply the logic above for blue's access points
-                    access_point_distances = []
-                    total_guards = 0
-
-                    if blue_access.front is not None and defeats(piece - red_offset,
-                                                                 blue_access.front):
-                        access_point_distances.append(
-                            abs(i - (blue_flag_loc[0] + 1)) + abs(j - blue_flag_loc[1]))
-                        total_guards += piece - red_offset
-
-                    if blue_access.back is not None and defeats(piece - red_offset,
-                                                                blue_access.back):
-                        access_point_distances.append(
-                            abs(i - (blue_flag_loc[0] - 1)) + abs(j - blue_flag_loc[1]))
-                        total_guards += piece - red_offset
-
-                    if blue_access.left is not None and defeats(piece - red_offset,
-                                                                blue_access.left):
-                        access_point_distances.append(
-                            abs(i - blue_flag_loc[0]) + abs(j - (blue_flag_loc[0] - 1)))
-                        total_guards += piece - red_offset
-
-                    if blue_access.right is not None and defeats(piece - red_offset,
-                                                                 blue_access.right):
-                        access_point_distances.append(
-                            abs(i - blue_flag_loc[0]) + abs(j - (blue_flag_loc[0] + 1)))
-                        total_guards += piece - red_offset
-
-                    if access_point_distances:
-                        red_sum -= min(access_point_distances) * \
-                            (piece - red_offset)
-                    else:
-                        red_sum -= total_guards
+                    red_sum += (piece - red_offset)
+                    red_sum += min((Board.ROWS - 1 - i)*forward_weight,
+                                   5*forward_weight)*(piece - red_offset)
 
         advantage = blue_sum - red_sum
         if self.player_to_move == Player.RED:
