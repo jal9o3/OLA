@@ -6,6 +6,7 @@ import random
 import csv
 import time
 import copy
+import shutil
 import os
 
 from dataclasses import dataclass
@@ -18,6 +19,7 @@ from anytree.exporter import UniqueDotExporter  # Graphviz has to be installed
 from OLA.core import Board, Infostate, Player
 from OLA.simulation import MatchSimulator
 from OLA.constants import Ranking, Result
+
 
 class MatrixApp:
     def __init__(self, root, matrix):
@@ -554,7 +556,8 @@ class DepthLimitedCFRTrainer(CFRTrainer):
 
         for a, action in enumerate(state.actions()):
             if filtered_actions is not None and action not in filtered_actions:
-                utilities[a] = -win_value # Consider other actions to be losing
+                # Consider other actions to be losing
+                utilities[a] = -win_value
                 continue
 
             new_state = state.transition(action)
@@ -885,12 +888,9 @@ class CFRTrainingSimulator(MatchSimulator):
         for action in current_abstraction.state.actions():
             full_strategy[fullgame_actions.index(action)] = strategy[
                 current_abstraction.state.actions().index(action)]
+
         # Store the infostate string with the corresponding strategy in a CSV file
-
-        # Ensure the 'drive' directory exists
-        os.makedirs("drive/MyDrive/Training_Data", exist_ok=True)
-
-        with open("drive/training_data.csv", "a", encoding="utf-8") as training_data:
+        with open("training_data.csv", "a", encoding="utf-8") as training_data:
             writer = csv.writer(training_data)
             # Split the infostate string
             infostate_split = list(
@@ -988,3 +988,7 @@ class CFRTrainingSimulator(MatchSimulator):
 
         end = time.time()
         print(f"{(end - start)/60/60:.2f} hours elapsed.")
+
+        # Copy to ../drive/MyDrive/Training_Data
+        os.makedirs("../drive/MyDrive/Training_Data", exist_ok=True)
+        shutil.copy("training_data.csv", "../drive/MyDrive/Training_Data")
