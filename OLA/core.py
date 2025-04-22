@@ -11,8 +11,6 @@ from OLA.constants import Ranking, Result, POV
 from OLA.helpers import (get_random_permutation, get_hex_uppercase_string,
                          find_indices)
 
-from OLA.find_locations import find_unique_locations
-
 import OLA.fasteval as fev
 
 # Configure the logging
