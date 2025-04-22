@@ -6,6 +6,7 @@ import random
 import csv
 import time
 import copy
+import os
 
 from dataclasses import dataclass
 from collections import deque, Counter
@@ -885,7 +886,11 @@ class CFRTrainingSimulator(MatchSimulator):
             full_strategy[fullgame_actions.index(action)] = strategy[
                 current_abstraction.state.actions().index(action)]
         # Store the infostate string with the corresponding strategy in a CSV file
-        with open("training_data.csv", "a", encoding="utf-8") as training_data:
+
+        # Ensure the 'drive' directory exists
+        os.makedirs("drive", exist_ok=True)
+
+        with open("drive/training_data.csv", "a", encoding="utf-8") as training_data:
             writer = csv.writer(training_data)
             # Split the infostate string
             infostate_split = list(
