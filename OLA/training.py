@@ -888,7 +888,7 @@ class CFRTrainingSimulator(MatchSimulator):
         # Store the infostate string with the corresponding strategy in a CSV file
 
         # Ensure the 'drive' directory exists
-        os.makedirs("drive", exist_ok=True)
+        os.makedirs("drive/MyDrive/Training_Data", exist_ok=True)
 
         with open("drive/training_data.csv", "a", encoding="utf-8") as training_data:
             writer = csv.writer(training_data)
