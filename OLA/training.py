@@ -808,12 +808,8 @@ class CFRTrainingSimulator(MatchSimulator):
             strategy = [1 / len(valid_actions) for _ in valid_actions]
 
         if actions_filter is None:
-            # Find all actions with the maximum probability
-            max_probability = max(strategy)
-            max_indices = [i for i, p in enumerate(
-                strategy) if p == max_probability]
-            # Choose randomly among them
-            action = valid_actions[random.choice(max_indices)]
+            # Sample an action weighted by the strategy
+            action = random.choices(valid_actions, weights=strategy, k=1)[0]
         else:
             filtered_actions = actions_filter.filter()
             filtered_strategy = []
@@ -830,12 +826,8 @@ class CFRTrainingSimulator(MatchSimulator):
                 # Reset options if all evaluated actions seem bad
                 filtered_actions, filtered_strategy = valid_actions, strategy
 
-            # Find all actions with the maximum probability
-            max_probability = max(filtered_strategy)
-            max_indices = [i for i, p in enumerate(
-                filtered_strategy) if p == max_probability]
-            # Choose randomly among them
-            action = filtered_actions[random.choice(max_indices)]
+            # Sample an action weighted by the filtered strategy
+            action = random.choices(filtered_actions, weights=filtered_strategy, k=1)[0]
 
         return action, trainer, strategy[valid_actions.index(action)]
 
